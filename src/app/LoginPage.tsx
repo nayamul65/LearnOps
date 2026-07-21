@@ -37,8 +37,6 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  const activeRole = ROLES.find((r) => r.id === role)!;
-
   function validate() {
     const e: typeof errors = {};
     if (!email) e.email = "ইমেইল প্রবেশ করুন";
