@@ -5,6 +5,10 @@ import Dashboard from "./Dashboard";
 import CourseListPage from "./CourseListPage";
 import CourseDetailPage from "./CourseDetailPage";
 import SuccessStories from "./components/SuccessStories";
+import TeachersSection from "./components/TeachersSection";
+import ContactSection from "./components/ContactSection";
+import { mockTeachers, mockContactInfo, ContactInfo } from "./data/teachersAndContactData";
+import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 import {
   Sun,
   Moon,
@@ -62,7 +66,7 @@ function useDarkMode() {
   return { dark, toggle };
 }
 
-type Page = "home" | "courses" | "course-detail" | "login" | "dashboard" | "shafoller-golpo";
+type Page = "home" | "courses" | "course-detail" | "login" | "dashboard" | "shafoller-golpo" | "teachers" | "contact";
 
 /* ══════════════════════════════════════════
    COURSE DATA
@@ -224,6 +228,7 @@ function Navbar({
 }: {
   dark: boolean; toggleDark: () => void; page: Page; setPage: (p: Page) => void;
 }) {
+  const { lang, toggleLang, t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -233,11 +238,11 @@ function Navbar({
   }, []);
 
   const links = [
-    { label: "হোম", target: "home" as Page },
-    { label: "কোর্সসমূহ", target: "courses" as Page },
-    { label: "সাফল্যের গল্প", target: "shafoller-golpo" as Page },
-    { label: "শিক্ষকবৃন্দ", target: "home" as Page },
-    { label: "যোগাযোগ", target: "home" as Page },
+    { label: t("home"), target: "home" as Page },
+    { label: t("courses"), target: "courses" as Page },
+    { label: t("successStories"), target: "shafoller-golpo" as Page },
+    { label: t("teachers"), target: "teachers" as Page },
+    { label: t("contact"), target: "contact" as Page },
   ];
 
   const activePage = page === "course-detail" ? "courses" : page;
@@ -256,7 +261,7 @@ function Navbar({
 
           <div className="hidden lg:flex items-center gap-8">
             {links.map((l) => (
-              <button key={l.label} onClick={() => setPage(l.target)}
+              <button key={l.target} onClick={() => setPage(l.target)}
                 style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                 className={cn("text-sm font-medium transition-colors relative group cursor-pointer",
                   activePage === l.target ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
@@ -268,18 +273,35 @@ function Navbar({
           </div>
 
           <div className="hidden lg:flex items-center gap-3">
+            {/* Top Bar Dedicated Language Switcher Toggle */}
+            <button
+              onClick={toggleLang}
+              className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border border-border bg-card text-foreground hover:bg-muted transition-all cursor-pointer shadow-2xs"
+              title="Switch Language"
+            >
+              <Globe2 className="w-3.5 h-3.5 text-primary" />
+              <span>{lang === "BN" ? "ENG" : "বাংলা"}</span>
+            </button>
+
             <button onClick={toggleDark} className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all cursor-pointer">
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             <button onClick={() => setPage("login")} style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-              className="text-sm font-semibold text-foreground border border-border px-4 py-2 rounded-full hover:bg-muted transition-colors cursor-pointer">লগ ইন</button>
+              className="text-sm font-semibold text-foreground border border-border px-4 py-2 rounded-full hover:bg-muted transition-colors cursor-pointer">{t("login")}</button>
             <button onClick={() => setPage("courses")} style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
               className="inline-flex items-center gap-1.5 text-sm font-semibold bg-primary text-white px-5 py-2 rounded-full hover:bg-green-600 transition-all shadow-lg shadow-green-200/50 cursor-pointer">
-              শুরু করুন <ArrowRight className="w-3.5 h-3.5" />
+              {t("getStarted")} <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           <div className="flex lg:hidden items-center gap-2">
+            <button
+              onClick={toggleLang}
+              className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border border-border bg-card text-foreground hover:bg-muted cursor-pointer"
+            >
+              <Globe2 className="w-3 h-3 text-primary" />
+              <span>{lang === "BN" ? "ENG" : "BAN"}</span>
+            </button>
             <button onClick={toggleDark} className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted cursor-pointer">
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -292,7 +314,7 @@ function Navbar({
       {open && (
         <div className="lg:hidden bg-background border-t border-border px-4 pb-5 pt-3 space-y-1">
           {links.map((l) => (
-            <button key={l.label} onClick={() => { setPage(l.target); setOpen(false); }}
+            <button key={l.target} onClick={() => { setPage(l.target); setOpen(false); }}
               style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
               className={cn("w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl transition-colors cursor-pointer",
                 activePage === l.target ? "text-primary bg-secondary" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
@@ -301,10 +323,10 @@ function Navbar({
           ))}
           <div className="flex gap-2 pt-3">
             <button onClick={() => { setPage("login"); setOpen(false); }} style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-              className="flex-1 text-sm font-semibold border border-border py-2.5 rounded-xl hover:bg-muted cursor-pointer">লগ ইন</button>
+              className="flex-1 text-sm font-semibold border border-border py-2.5 rounded-xl hover:bg-muted cursor-pointer">{t("login")}</button>
             <button onClick={() => { setPage("courses"); setOpen(false); }}
               style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-              className="flex-1 text-sm font-semibold bg-primary text-white py-2.5 rounded-xl hover:bg-green-600 cursor-pointer">শুরু করুন</button>
+              className="flex-1 text-sm font-semibold bg-primary text-white py-2.5 rounded-xl hover:bg-green-600 cursor-pointer">{t("getStarted")}</button>
           </div>
         </div>
       )}
@@ -316,6 +338,9 @@ function Navbar({
    HERO (homepage)
 ══════════════════════════════════════════ */
 function Hero({ setPage }: { setPage: (p: Page) => void }) {
+  const { t, isEnglish } = useLanguage();
+  const featuredTeacher = mockTeachers[0];
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-background pt-20">
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -328,38 +353,42 @@ function Hero({ setPage }: { setPage: (p: Page) => void }) {
             <div className="inline-flex items-center gap-2 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-xs font-bold px-4 py-2 rounded-full border border-red-100 dark:border-red-900/40"
               style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              বাংলাদেশের সেরা অনলাইন হ্যান্ডরাইটিং কোর্স
+              {t("heroBadge")}
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-foreground"
               style={{ fontFamily: "'Hind Siliguri', sans-serif", lineHeight: "1.3" }}>
-              সুন্দর হাতের লেখাই{" "}
-              <span className="text-primary relative">সন্তানের
+              {t("heroTitle1")}{" "}
+              <span className="text-primary relative">{t("heroTitle2")}
                 <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
                   <path d="M2 9C60 3 120 0 180 4C220 7 260 9 298 6" stroke="#22C55E" strokeWidth="3" strokeLinecap="round" />
                 </svg>
               </span>{" "}
-              <span className="text-red-500">আত্মবিশ্বাস বাড়ায়</span>
+              <span className="text-red-500">{t("heroTitle3")}</span>
             </h1>
             <p className="text-base lg:text-lg text-muted-foreground leading-relaxed max-w-xl"
               style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-              ভিডিও ক্লাস, বিশেষ হ্যান্ডরাইটিং খাতা এবং অভিজ্ঞ শিক্ষকদের ব্যক্তিগত গাইডলাইনের মাধ্যমে আপনার শিশুর হাতের লেখা উন্নত করুন।
+              {t("heroSubtitle")}
             </p>
             <div className="flex flex-wrap gap-3">
               <button onClick={() => setPage("courses")}
                 style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                 className="inline-flex items-center gap-2 bg-primary text-white font-bold px-7 py-4 rounded-full text-sm hover:bg-green-600 transition-all shadow-lg shadow-green-200/60 hover:-translate-y-0.5 cursor-pointer">
-                কোর্স দেখুন <ArrowRight className="w-4 h-4" />
+                {t("viewCourses")} <ArrowRight className="w-4 h-4" />
               </button>
               <button style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                 className="inline-flex items-center gap-2.5 bg-card border border-border text-foreground font-bold px-7 py-4 rounded-full text-sm hover:bg-muted transition-all hover:-translate-y-0.5 cursor-pointer">
                 <span className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <Play className="w-3 h-3 text-white fill-white ml-0.5" />
                 </span>
-                ফ্রি ডেমো দেখুন
+                {t("watchDemo")}
               </button>
             </div>
             <div className="flex flex-wrap gap-6 pt-2">
-              {[{ num: "৫,০০০+", label: "সক্রিয় শিক্ষার্থী" }, { num: "৯৮%", label: "সাফল্যের হার" }, { num: "৫০+", label: "অভিজ্ঞ শিক্ষক" }].map((s) => (
+              {[
+                { num: isEnglish ? "5,000+" : "৫,০০০+", label: t("activeStudents") },
+                { num: "98%", label: t("successRate") },
+                { num: isEnglish ? "50+" : "৫০+", label: t("expertTeachers") }
+              ].map((s) => (
                 <div key={s.label}>
                   <div className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{s.num}</div>
                   <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{s.label}</div>
@@ -373,8 +402,8 @@ function Hero({ setPage }: { setPage: (p: Page) => void }) {
                 <img src="https://images.unsplash.com/photo-1560785496-3c9d27877182?w=600&h=420&fit=crop&auto=format" alt="Child writing" className="w-full h-72 object-cover" />
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-bold text-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>বেগিনার হ্যান্ডরাইটিং কোর্স</span>
-                    <span className="bg-red-100 dark:bg-red-900/30 text-red-600 text-xs font-bold px-2.5 py-1 rounded-full" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>লাইভ</span>
+                    <span className="text-sm font-bold text-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t("popularCourse")}</span>
+                    <span className="bg-red-100 dark:bg-red-900/30 text-red-600 text-xs font-bold px-2.5 py-1 rounded-full" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t("liveBadge")}</span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-1.5 mb-3"><div className="bg-primary h-1.5 rounded-full" style={{ width: "65%" }} /></div>
                   <div className="flex items-center justify-between">
@@ -383,15 +412,17 @@ function Hero({ setPage }: { setPage: (p: Page) => void }) {
                         <div key={i} className="w-7 h-7 rounded-full bg-green-100 dark:bg-green-900 border-2 border-background text-sm flex items-center justify-center">{e}</div>
                       ))}
                     </div>
-                    <span className="text-xs text-muted-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>৩২ জন এনরোলড</span>
+                    <span className="text-xs text-muted-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t("enrolledCount")}</span>
                   </div>
                 </div>
               </div>
               <div className="absolute -top-5 -right-5 bg-white dark:bg-card border border-border rounded-2xl p-3.5 shadow-xl flex items-center gap-3 max-w-[180px]">
-                <img src="https://images.unsplash.com/photo-1619852182277-79aa23f82c8e?w=80&h=80&fit=crop&auto=format" alt="Teacher" className="w-11 h-11 rounded-xl object-cover" />
+                <img src={featuredTeacher.photoUrl} alt={featuredTeacher.name} className="w-11 h-11 rounded-xl object-cover" />
                 <div>
-                  <div className="text-xs font-bold text-foreground">রাহেলা ম্যাম</div>
-                  <div className="text-[10px] text-primary font-semibold" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>অনলাইনে আছেন</div>
+                  <div className="text-xs font-bold text-foreground">{t("rahelaName")}</div>
+                  <div className="text-[10px] text-primary font-semibold" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                    {featuredTeacher.onlineStatus ? t("onlineNow") : t("offlineNow")}
+                  </div>
                   <div className="flex gap-0.5 mt-0.5">{[...Array(5)].map((_, i) => <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />)}</div>
                 </div>
               </div>
@@ -406,31 +437,38 @@ function Hero({ setPage }: { setPage: (p: Page) => void }) {
 /* ══════════════════════════════════════════
    CAROUSEL
 ══════════════════════════════════════════ */
-const slides = [
-  { img: "https://images.unsplash.com/photo-1678822872007-698d622afeb7?w=1400&h=700&fit=crop&auto=format", tag: "শিক্ষার্থীর খাতা", title: "বিশেষ হ্যান্ডরাইটিং খাতা", desc: "আমাদের ডিজাইন করা বিশেষ খাতায় শিশুরা সহজেই সুন্দর লেখা রপ্ত করতে পারে।" },
-  { img: "https://images.unsplash.com/photo-1619852182277-79aa23f82c8e?w=1400&h=700&fit=crop&auto=format", tag: "লাইভ ক্লাস", title: "শিক্ষকের সরাসরি গাইডলাইন", desc: "অভিজ্ঞ শিক্ষকরা প্রতিটি শিক্ষার্থীকে আলাদাভাবে মনোযোগ দেন।" },
-  { img: "https://images.unsplash.com/photo-1560785496-3c9d27877182?w=1400&h=700&fit=crop&auto=format", tag: "আগে ও পরে", title: "অবিশ্বাস্য পরিবর্তন মাত্র ৩০ দিনে", desc: "আমাদের শিক্ষার্থীদের হাতের লেখার আগে ও পরের তুলনা দেখলে আপনি অবাক হবেন।" },
-  { img: "https://images.unsplash.com/photo-1623076189461-f7706b741c04?w=1400&h=700&fit=crop&auto=format", tag: "অনলাইন ক্লাস", title: "ঘরে বসেই পেশাদার ক্লাস", desc: "উচ্চমানের ভিডিও ক্লাস ও লাইভ সেশনে অংশ নিন।" },
-  { img: "https://images.unsplash.com/photo-1778338790249-a2f033a11b99?w=1400&h=700&fit=crop&auto=format", tag: "সার্টিফিকেট", title: "সাফল্যের স্বীকৃতি", desc: "কোর্স সম্পন্ন করলে স্বীকৃত সার্টিফিকেট পাবে আপনার সন্তান।" },
-];
-
 function Carousel() {
+  const { t, isEnglish } = useLanguage();
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
-  const next = useCallback(() => setCurrent((c) => (c + 1) % slides.length), []);
+
+  const slides = [
+    { img: "https://images.unsplash.com/photo-1678822872007-698d622afeb7?w=1400&h=700&fit=crop&auto=format", tag: isEnglish ? "Student Notebook" : "শিক্ষার্থীর খাতা", title: isEnglish ? "Special Handwriting Notebook" : "বিশেষ হ্যান্ডরাইটিং খাতা", desc: isEnglish ? "Children easily master beautiful writing with our custom designed notebooks." : "আমাদের ডিজাইন করা বিশেষ খাতায় শিশুরা সহজেই সুন্দর লেখা রপ্ত করতে পারে।" },
+    { img: "https://images.unsplash.com/photo-1619852182277-79aa23f82c8e?w=1400&h=700&fit=crop&auto=format", tag: isEnglish ? "Live Class" : "লাইভ ক্লাস", title: isEnglish ? "Direct Teacher Guidance" : "শিক্ষকের সরাসরি গাইডলাইন", desc: isEnglish ? "Experienced teachers pay individual attention to every single student." : "অভিজ্ঞ শিক্ষকরা প্রতিটি শিক্ষার্থীকে আলাদাভাবে মনোযোগ দেন।" },
+    { img: "https://images.unsplash.com/photo-1560785496-3c9d27877182?w=1400&h=700&fit=crop&auto=format", tag: isEnglish ? "Before & After" : "আগে ও পরে", title: isEnglish ? "Amazing Transformation in 30 Days" : "অবিশ্বাস্য পরিবর্তন মাত্র ৩০ দিনে", desc: isEnglish ? "Compare our students' handwriting before and after the course to see the difference." : "আমাদের শিক্ষার্থীদের হাতের লেখার আগে ও পরের তুলনা দেখলে আপনি অবাক হবেন।" },
+    { img: "https://images.unsplash.com/photo-1623076189461-f7706b741c04?w=1400&h=700&fit=crop&auto=format", tag: isEnglish ? "Online Class" : "অনলাইন ক্লাস", title: isEnglish ? "Professional Classes From Home" : "ঘরে বসেই পেশাদার ক্লাস", desc: isEnglish ? "Join high-quality video lessons and live interactive sessions." : "উচ্চমানের ভিডিও ক্লাস ও লাইভ সেশনে অংশ নিন।" },
+    { img: "https://images.unsplash.com/photo-1778338790249-a2f033a11b99?w=1400&h=700&fit=crop&auto=format", tag: isEnglish ? "Certificate" : "সার্টিফিকেট", title: isEnglish ? "Recognition of Success" : "সাফল্যের স্বীকৃতি", desc: isEnglish ? "Your child receives an official certificate upon course completion." : "কোর্স সম্পন্ন করলে স্বীকৃত সার্টিফিকেট পাবে আপনার সন্তান।" },
+  ];
+
+  const next = useCallback(() => setCurrent((c) => (c + 1) % slides.length), [slides.length]);
   const prev = () => setCurrent((c) => (c - 1 + slides.length) % slides.length);
+
   useEffect(() => {
     if (paused) return;
-    const t = setInterval(next, 4500);
-    return () => clearInterval(t);
+    const timer = setInterval(next, 4500);
+    return () => clearInterval(timer);
   }, [paused, next]);
 
   return (
     <section className="py-16 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground text-xs font-bold px-4 py-2 rounded-full mb-3" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>আমাদের প্ল্যাটফর্ম</div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>একতু দেখুন, সিদ্ধান্ত নিন</h2>
+          <div className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground text-xs font-bold px-4 py-2 rounded-full mb-3" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+            {t("ourPlatform")}
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+            {t("carouselTitle")}
+          </h2>
         </div>
         <div className="relative rounded-3xl overflow-hidden shadow-2xl group" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
           <div className="relative h-[320px] sm:h-[440px] lg:h-[540px] bg-muted">
@@ -461,13 +499,7 @@ function Carousel() {
    HOME SECTIONS
 ══════════════════════════════════════════ */
 function HomeSections({ setPage }: { setPage: (p: Page) => void }) {
-  const [faqOpen, setFaqOpen] = useState<number | null>(0);
-  const faqs = [
-    { q: "কোন বয়স থেকে ভর্তি হওয়া যাবে?", a: "৫ বছর বয়স থেকে শুরু করে যেকোনো বয়সে ভর্তি হওয়া যাবে।" },
-    { q: "কোর্স কীভাবে পরিচালিত হয়?", a: "সপ্তাহে ২টি লাইভ ক্লাস হয় Zoom-এ। প্রতিটি ক্লাস ৪৫ মিনিটের।" },
-    { q: "মানি-ব্যাক গ্যারান্টি কীভাবে কাজ করে?", a: "যদি ৩০ দিনের মধ্যে সন্তুষ্ট না হন, আমরা সম্পূর্ণ অর্থ ফেরত দেব।" },
-    { q: "একাধিক সন্তান থাকলে কি ছাড় পাব?", a: "হ্যাঁ! ২ বা তার বেশি সন্তানের জন্য ১৫% পারিবারিক ছাড় পাবেন।" },
-  ];
+  const { t, isEnglish } = useLanguage();
 
   return (
     <>
@@ -475,21 +507,21 @@ function HomeSections({ setPage }: { setPage: (p: Page) => void }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground text-xs font-bold px-4 py-2 rounded-full mb-5" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>কেন LearnOps বেছে নেবেন?</div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-5" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>আমরা শুধু পড়াই না, <span className="text-primary">গড়ে তুলি</span></h2>
-              <p className="text-muted-foreground leading-relaxed mb-8" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>সুন্দর হাতের লেখা শুধু দেখতে ভালো নয়, এটি শিশুর মনোযোগ ও সৃজনশীলতা বিকাশে গুরুত্বপূর্ণ।</p>
-              {["৩০ দিনের মানি-ব্যাক গ্যারান্টি", "বছরে ৪৮টি লাইভ ক্লাস", "অভিভাবক পোর্টালে রিয়েল-টাইম আপডেট"].map((t) => (
-                <div key={t} className="flex items-center gap-3 mb-3"><CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" /><span className="text-sm font-medium text-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t}</span></div>
+              <div className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground text-xs font-bold px-4 py-2 rounded-full mb-5" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t("whyChooseUs")}</div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-5" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t("whyHeading1")} <span className="text-primary">{t("whyHeading2")}</span></h2>
+              <p className="text-muted-foreground leading-relaxed mb-8" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t("whySubtitle")}</p>
+              {[t("featureMoneyBack"), t("featureLiveClasses"), t("featureParentUpdates")].map((text) => (
+                <div key={text} className="flex items-center gap-3 mb-3"><CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" /><span className="text-sm font-medium text-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{text}</span></div>
               ))}
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: Video, color: "bg-green-50 dark:bg-green-950/30 text-green-600", border: "border-green-100 dark:border-green-900/30", title: "লাইভ ভিডিও ক্লাস", desc: "প্রতিটি ক্লাস রেকর্ড করা থাকে।" },
-                { icon: PenLine, color: "bg-red-50 dark:bg-red-950/30 text-red-600", border: "border-red-100 dark:border-red-900/30", title: "বিশেষ খাতা", desc: "হ্যান্ডরাইটিং খাতা ও কলম।" },
-                { icon: Users, color: "bg-blue-50 dark:bg-blue-950/30 text-blue-600", border: "border-blue-100 dark:border-blue-900/30", title: "ব্যক্তিগত মনোযোগ", desc: "ব্যক্তিগতভাবে গাইড করা হয়।" },
-                { icon: Award, color: "bg-amber-50 dark:bg-amber-950/30 text-amber-600", border: "border-amber-100 dark:border-amber-900/30", title: "সার্টিফিকেট", desc: "স্বীকৃত সার্টিফিকেট প্রোগ্রাম।" },
-                { icon: Clock, color: "bg-purple-50 dark:bg-purple-950/30 text-purple-600", border: "border-purple-100 dark:border-purple-900/30", title: "নিজের সময়ে", desc: "সুবিধামতো সময়ে ক্লাস নিন।" },
-                { icon: Globe2, color: "bg-teal-50 dark:bg-teal-950/30 text-teal-600", border: "border-teal-100 dark:border-teal-900/30", title: "সারাদেশে", desc: "যেকোনো জায়গা থেকে শিখুন।" },
+                { icon: Video, color: "bg-green-50 dark:bg-green-950/30 text-green-600", border: "border-green-100 dark:border-green-900/30", title: t("liveVideoTitle"), desc: t("liveVideoDesc") },
+                { icon: PenLine, color: "bg-red-50 dark:bg-red-950/30 text-red-600", border: "border-red-100 dark:border-red-900/30", title: t("specialBookTitle"), desc: t("specialBookDesc") },
+                { icon: Users, color: "bg-blue-50 dark:bg-blue-950/30 text-blue-600", border: "border-blue-100 dark:border-blue-900/30", title: t("personalAttentionTitle"), desc: t("personalAttentionDesc") },
+                { icon: Award, color: "bg-amber-50 dark:bg-amber-950/30 text-amber-600", border: "border-amber-100 dark:border-amber-900/30", title: t("certificateTitle"), desc: t("certificateDesc") },
+                { icon: Clock, color: "bg-purple-50 dark:bg-purple-950/30 text-purple-600", border: "border-purple-100 dark:border-purple-900/30", title: t("ownTimeTitle"), desc: t("ownTimeDesc") },
+                { icon: Globe2, color: "bg-teal-50 dark:bg-teal-950/30 text-teal-600", border: "border-teal-100 dark:border-teal-900/30", title: t("countrywideTitle"), desc: t("countrywideDesc") },
               ].map((item) => (
                 <div key={item.title} className={cn("bg-card border rounded-2xl p-5 hover:shadow-md transition-all hover:-translate-y-0.5", item.border)}>
                   <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center mb-3", item.color)}><item.icon className="w-5 h-5" /></div>
@@ -505,14 +537,14 @@ function HomeSections({ setPage }: { setPage: (p: Page) => void }) {
       <section id="success" className="py-24 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground text-xs font-bold px-4 py-2 rounded-full mb-4" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>সাফল্যের গল্প</div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>অভিভাবকরা যা বলছেন</h2>
+            <div className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground text-xs font-bold px-4 py-2 rounded-full mb-4" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t("successBadge")}</div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t("parentsAreSaying")}</h2>
           </div>
           <div className="grid sm:grid-cols-3 gap-6">
             {[
-              { name: "রাফি আহমেদের মা", role: "ঢাকা", text: "মাত্র ৩ মাসে রাফির লেখা এতটাই সুন্দর হয়ে গেছে যে ওর ক্লাস টিচার অবাক হয়ে গেছেন।", img: "https://images.unsplash.com/photo-1560785496-3c9d27877182?w=80&h=80&fit=crop&auto=format" },
-              { name: "তাহিয়ার বাবা", role: "চট্টগ্রাম", text: "তাহিয়া এখন পরীক্ষায় বাড়তি নম্বর পাচ্ছে শুধু সুন্দর লেখার জন্য।", img: "https://images.unsplash.com/photo-1629360021730-3d258452c425?w=80&h=80&fit=crop&auto=format" },
-              { name: "সামিনের মা", role: "সিলেট", text: "সামিনের কনফিডেন্স অনেক বেড়ে গেছে। আগে লেখতে চাইত না, এখন নিজেই বসে লেখে।", img: "https://images.unsplash.com/photo-1623076189461-f7706b741c04?w=80&h=80&fit=crop&auto=format" },
+              { name: isEnglish ? "Rafi's Mother" : "রাফি আহমেদের মা", role: isEnglish ? "Dhaka" : "ঢাকা", text: isEnglish ? "In just 3 months Rafi's handwriting improved so much that his teacher was amazed." : "মাত্র ৩ মাসে রাফির লেখা এতটাই সুন্দর হয়ে গেছে যে ওর ক্লাস টিচার অবাক হয়ে গেছেন।", img: "https://images.unsplash.com/photo-1560785496-3c9d27877182?w=80&h=80&fit=crop&auto=format" },
+              { name: isEnglish ? "Tahiya's Father" : "তাহিয়ার বাবা", role: isEnglish ? "Chittagong" : "চট্টগ্রাম", text: isEnglish ? "Tahiya gets extra marks in exams simply because of her neat and clear handwriting." : "তাহিয়া এখন পরীক্ষায় বাড়তি নম্বর পাচ্ছে শুধু সুন্দর লেখার জন্য।", img: "https://images.unsplash.com/photo-1629360021730-3d258452c425?w=80&h=80&fit=crop&auto=format" },
+              { name: isEnglish ? "Samin's Mother" : "সামিনের মা", role: isEnglish ? "Sylhet" : "সিলেট", text: isEnglish ? "Samin's confidence has grown tremendously. Now he happily sits down to practice on his own." : "সামিনের কনফিডেন্স অনেক বেড়ে গেছে। আগে লেখতে চাইত না, এখন নিজেই বসে লেখে।", img: "https://images.unsplash.com/photo-1623076189461-f7706b741c04?w=80&h=80&fit=crop&auto=format" },
             ].map((s) => (
               <div key={s.name} className="bg-card border border-border rounded-2xl p-7 flex flex-col gap-4">
                 <Quote className="w-7 h-7 text-primary/30" />
@@ -534,11 +566,11 @@ function HomeSections({ setPage }: { setPage: (p: Page) => void }) {
       <section className="py-20 relative overflow-hidden bg-gradient-to-br from-green-600 via-green-500 to-green-700">
         <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-5xl font-bold text-white mb-5" style={{ fontFamily: "'Hind Siliguri', sans-serif", lineHeight: "1.3" }}>আজই আপনার সন্তানের <span className="text-red-300">সুন্দর ভবিষ্যৎ</span> গড়ুন</h2>
-          <p className="text-green-100 text-lg mb-8" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>১৪ দিনের বিনামূল্যে ট্রায়াল শুরু করুন।</p>
+          <h2 className="text-3xl sm:text-5xl font-bold text-white mb-5" style={{ fontFamily: "'Hind Siliguri', sans-serif", lineHeight: "1.3" }}>{t("ctaHeading1")} <span className="text-red-300">{t("ctaHeading2")}</span> {t("ctaHeading3")}</h2>
+          <p className="text-green-100 text-lg mb-8" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t("ctaSubtitle")}</p>
           <button onClick={() => setPage("courses")} style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
             className="inline-flex items-center gap-2 bg-white text-green-700 font-bold px-8 py-4 rounded-full hover:bg-green-50 transition-all shadow-xl text-sm cursor-pointer">
-            বিনামূল্যে শুরু করুন <ArrowRight className="w-4 h-4" />
+            {t("ctaButton")} <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </section>
@@ -549,7 +581,9 @@ function HomeSections({ setPage }: { setPage: (p: Page) => void }) {
 /* ══════════════════════════════════════════
    FOOTER
 ══════════════════════════════════════════ */
-function Footer({ setPage }: { setPage: (p: Page) => void }) {
+function Footer({ setPage, contactInfo = mockContactInfo }: { setPage: (p: Page) => void; contactInfo?: ContactInfo }) {
+  const { t } = useLanguage();
+
   return (
     <footer className="bg-foreground dark:bg-card text-background dark:text-foreground pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -562,28 +596,37 @@ function Footer({ setPage }: { setPage: (p: Page) => void }) {
               <span className="font-bold text-xl">Learn<span className="text-primary">Ops</span></span>
             </div>
             <p className="text-sm opacity-70 leading-relaxed mb-5 max-w-xs" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-              বাংলাদেশের শিশুদের সুন্দর হাতের লেখা শেখানোর সেরা অনলাইন প্ল্যাটফর্ম।
+              {t("footerDesc")}
             </p>
             <div className="space-y-2.5">
-              {[{ icon: Phone, text: "+880 1700-000000" }, { icon: Mail, text: "hello@learnops.com.bd" }, { icon: MapPin, text: "ধানমন্ডি, ঢাকা ১২০৫" }].map((c) => (
-                <div key={c.text} className="flex items-center gap-3 text-sm opacity-70">
-                  <c.icon className="w-4 h-4 flex-shrink-0 text-primary" />
-                  <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{c.text}</span>
-                </div>
-              ))}
+              <div className="flex items-center gap-3 text-sm opacity-70">
+                <Phone className="w-4 h-4 flex-shrink-0 text-primary" />
+                <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{contactInfo.phone}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm opacity-70">
+                <Mail className="w-4 h-4 flex-shrink-0 text-primary" />
+                <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{contactInfo.email}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm opacity-70">
+                <MapPin className="w-4 h-4 flex-shrink-0 text-primary" />
+                <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{contactInfo.address}</span>
+              </div>
             </div>
             <div className="flex gap-3 mt-5">
-              {[Facebook, Youtube, Instagram].map((Icon, i) => (
-                <button key={i} className="w-9 h-9 rounded-full bg-white/10 hover:bg-primary flex items-center justify-center transition-colors cursor-pointer">
-                  <Icon className="w-4 h-4" />
-                </button>
+              {contactInfo.socialLinks.map((s) => (
+                <a key={s.platform} href={s.url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 hover:bg-primary flex items-center justify-center transition-colors cursor-pointer text-white">
+                  {s.platform === "facebook" && <Facebook className="w-4 h-4" />}
+                  {s.platform === "youtube" && <Youtube className="w-4 h-4" />}
+                  {s.platform === "instagram" && <Instagram className="w-4 h-4" />}
+                  {s.platform === "whatsapp" && <MessageCircle className="w-4 h-4" />}
+                </a>
               ))}
             </div>
           </div>
           {[
-            { title: "প্ল্যাটফর্ম", links: ["কোর্সসমূহ", "লাইভ ক্লাস", "সার্টিফিকেট", "রেকর্ডেড ভিডিও"] },
-            { title: "কোম্পানি", links: ["আমাদের সম্পর্কে", "শিক্ষকবৃন্দ", "ব্লগ", "ক্যারিয়ার"] },
-            { title: "সহায়তা", links: ["সাপোর্ট সেন্টার", "গোপনীয়তা নীতি", "শর্তাবলি", "রিফান্ড পলিসি"] },
+            { title: t("platformCol"), links: [t("courses"), t("liveVideoTitle"), t("certificateTitle")] },
+            { title: t("companyCol"), links: [t("teachers"), t("contact")] },
+            { title: t("supportCol"), links: ["Support Center", "Privacy Policy", "Terms & Conditions"] },
           ].map((col) => (
             <div key={col.title}>
               <h4 className="font-bold text-sm mb-5" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{col.title}</h4>
@@ -596,7 +639,7 @@ function Footer({ setPage }: { setPage: (p: Page) => void }) {
           ))}
         </div>
         <div className="border-t border-white/10 pt-6 flex justify-between items-center gap-3 flex-wrap">
-          <p className="text-xs opacity-50" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>© ২০২৪ LearnOps Bangladesh। সর্বস্বত্ব সংরক্ষিত।</p>
+          <p className="text-xs opacity-50" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{t("allRightsReserved")}</p>
         </div>
       </div>
     </footer>
@@ -604,13 +647,13 @@ function Footer({ setPage }: { setPage: (p: Page) => void }) {
 }
 
 /* ══════════════════════════════════════════
-   ROOT
+   APP CONTENT (Inside LanguageProvider)
 ══════════════════════════════════════════ */
-export default function App() {
+function AppContent() {
   const { dark, toggle } = useDarkMode();
+  const { lang, setLang } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
-  const [lang, setLang] = useState<"BN" | "EN">("BN");
 
   const isAuthOrDashboard = location.pathname === "/login" || location.pathname === "/dashboard";
 
@@ -618,6 +661,8 @@ export default function App() {
   if (location.pathname === "/courses") page = "courses";
   else if (location.pathname.startsWith("/course/")) page = "course-detail";
   else if (location.pathname === "/shafoller-golpo") page = "shafoller-golpo";
+  else if (location.pathname === "/teachers") page = "teachers";
+  else if (location.pathname === "/contact") page = "contact";
   else if (location.pathname === "/login") page = "login";
   else if (location.pathname === "/dashboard") page = "dashboard";
 
@@ -625,6 +670,8 @@ export default function App() {
     if (p === "home") navigate("/");
     else if (p === "courses") navigate("/courses");
     else if (p === "shafoller-golpo") navigate("/shafoller-golpo");
+    else if (p === "teachers") navigate("/teachers");
+    else if (p === "contact") navigate("/contact");
     else if (p === "login") navigate("/login");
     else if (p === "dashboard") navigate("/dashboard");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -657,6 +704,18 @@ export default function App() {
             <Footer setPage={handleNavigate} />
           </main>
         } />
+        <Route path="/teachers" element={
+          <main className="pt-16">
+            <TeachersSection />
+            <Footer setPage={handleNavigate} />
+          </main>
+        } />
+        <Route path="/contact" element={
+          <main className="pt-16">
+            <ContactSection />
+            <Footer setPage={handleNavigate} />
+          </main>
+        } />
         <Route path="/course/:id" element={
           <>
             <CourseDetailPage dark={dark} toggleDark={toggle} lang={lang} />
@@ -671,5 +730,16 @@ export default function App() {
         } />
       </Routes>
     </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   ROOT
+══════════════════════════════════════════ */
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }

@@ -16,6 +16,7 @@ import {
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
+import { useLanguage } from "./context/LanguageContext";
 
 export const GOOGLE_FORM_URL = "https://forms.google.com/demo-enrollment-form";
 
@@ -204,7 +205,9 @@ interface CourseListPageProps {
   setLang: (lang: "BN" | "EN") => void;
 }
 
-export default function CourseListPage({ dark, toggleDark, lang, setLang }: CourseListPageProps) {
+export default function CourseListPage({ dark, toggleDark, lang: propsLang }: CourseListPageProps) {
+  const { lang: ctxLang } = useLanguage();
+  const lang = ctxLang || propsLang || "BN";
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const navigate = useNavigate();
@@ -307,37 +310,12 @@ export default function CourseListPage({ dark, toggleDark, lang, setLang }: Cour
                 {lang === "BN" ? "আপনার সন্তানের নিখুঁত দক্ষতার বিকাশ" : "Nurturing Your Child's Perfect Skills"}
               </div>
 
-              {/* Title with inline language switcher */}
-              <div className="flex flex-wrap items-center gap-4 mb-4">
-                <h1
-                  className="text-4xl sm:text-5xl font-bold text-white tracking-tight"
-                  style={{ fontFamily: "'Hind Siliguri', sans-serif", lineHeight: "1.3" }}
-                >
-                  {lang === "BN" ? "আমাদের স্পেশাল কোর্সসমূহ" : "Our Special Courses"}
-                </h1>
-                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-1 flex items-center shadow-lg">
-                  <button
-                    onClick={() => setLang("BN")}
-                    className={`text-[10px] sm:text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                      lang === "BN"
-                        ? "bg-white text-green-700 shadow-sm"
-                        : "text-white hover:bg-white/15"
-                    }`}
-                  >
-                    বাংলা
-                  </button>
-                  <button
-                    onClick={() => setLang("EN")}
-                    className={`text-[10px] sm:text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                      lang === "EN"
-                        ? "bg-white text-green-700 shadow-sm"
-                        : "text-white hover:bg-white/15"
-                    }`}
-                  >
-                    English
-                  </button>
-                </div>
-              </div>
+              <h1
+                className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4"
+                style={{ fontFamily: "'Hind Siliguri', sans-serif", lineHeight: "1.3" }}
+              >
+                {lang === "BN" ? "আমাদের স্পেশাল কোর্সসমূহ" : "Our Special Courses"}
+              </h1>
 
               <p
                 className="text-green-50 text-base sm:text-lg leading-relaxed font-medium"
