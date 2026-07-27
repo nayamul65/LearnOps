@@ -7,6 +7,10 @@ import CourseDetailPage from "./CourseDetailPage";
 import SuccessStories from "./components/SuccessStories";
 import TeachersSection from "./components/TeachersSection";
 import ContactSection from "./components/ContactSection";
+import TelesalesPage from "./TelesalesPage";
+import AdminPage from "./AdminPage";
+import TeacherPage from "./TeacherPage";
+import GuardianPage from "./GuardianPage";
 import { mockTeachers, mockContactInfo, ContactInfo } from "./data/teachersAndContactData";
 import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 import {
@@ -654,8 +658,16 @@ function AppContent() {
   const { lang, setLang } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isRoleSwitcherOpen, setIsRoleSwitcherOpen] = useState(true);
 
-  const isAuthOrDashboard = location.pathname === "/login" || location.pathname === "/dashboard";
+  // Check if current route is a public page where Navbar should be rendered
+  const isPublicPage =
+    location.pathname === "/" ||
+    location.pathname === "/courses" ||
+    location.pathname.startsWith("/course/") ||
+    location.pathname === "/shafoller-golpo" ||
+    location.pathname === "/teachers" ||
+    location.pathname === "/contact";
 
   let page: Page = "home";
   if (location.pathname === "/courses") page = "courses";
@@ -679,9 +691,56 @@ function AppContent() {
 
   return (
     <div style={{ fontFamily: "'Poppins', sans-serif" }} className="min-h-screen bg-background text-foreground">
-      {!isAuthOrDashboard && (
+      {/* Public Navbar rendered ONLY on public pages */}
+      {isPublicPage && (
         <Navbar dark={dark} toggleDark={toggle} page={page} setPage={handleNavigate} />
       )}
+
+      {/* ── FLOATING BOTTOM-RIGHT ROLE SWITCHER WIDGET ── */}
+      <div className="fixed bottom-4 right-4 z-50 transition-all">
+        {isRoleSwitcherOpen ? (
+          <div className="bg-slate-900/95 text-white backdrop-blur-lg border border-slate-700/80 p-3 rounded-2xl shadow-2xl max-w-xs sm:max-w-md animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-center justify-between gap-3 mb-2 px-1">
+              <div className="flex items-center gap-1.5 font-bold text-[11px] text-amber-400">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Role Portals Switcher</span>
+              </div>
+              <button
+                onClick={() => setIsRoleSwitcherOpen(false)}
+                className="text-slate-400 hover:text-white text-xs px-1 cursor-pointer font-bold"
+                title="Minimize"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button onClick={() => navigate("/courses")} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${location.pathname === "/courses" ? "bg-primary text-white shadow-xs" : "bg-slate-800 hover:bg-slate-700 text-slate-300"}`}>
+                🎓 Public Courses
+              </button>
+              <button onClick={() => navigate("/employee")} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${location.pathname === "/employee" ? "bg-emerald-600 text-white shadow-xs" : "bg-slate-800 hover:bg-slate-700 text-slate-300"}`}>
+                📞 Telesales
+              </button>
+              <button onClick={() => navigate("/admin")} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${location.pathname === "/admin" ? "bg-indigo-600 text-white shadow-xs" : "bg-slate-800 hover:bg-slate-700 text-slate-300"}`}>
+                🔐 Admin
+              </button>
+              <button onClick={() => navigate("/teacher")} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${location.pathname === "/teacher" ? "bg-amber-600 text-white shadow-xs" : "bg-slate-800 hover:bg-slate-700 text-slate-300"}`}>
+                👨‍🏫 Teacher
+              </button>
+              <button onClick={() => navigate("/guardian")} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${location.pathname === "/guardian" ? "bg-blue-600 text-white shadow-xs" : "bg-slate-800 hover:bg-slate-700 text-slate-300"}`}>
+                👨‍👩‍👧 Guardian
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsRoleSwitcherOpen(true)}
+            className="bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700/80 px-3.5 py-2 rounded-full shadow-2xl flex items-center gap-2 text-xs font-bold transition-all cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>Role Switcher</span>
+          </button>
+        )}
+      </div>
 
       <Routes>
         <Route path="/" element={
@@ -722,6 +781,10 @@ function AppContent() {
             <Footer setPage={handleNavigate} />
           </>
         } />
+        <Route path="/employee" element={<TelesalesPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/teacher" element={<TeacherPage />} />
+        <Route path="/guardian" element={<GuardianPage />} />
         <Route path="/login" element={
           <LoginPage onLogin={() => navigate("/dashboard")} />
         } />
