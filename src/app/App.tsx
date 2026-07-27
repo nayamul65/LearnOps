@@ -4,6 +4,7 @@ import LoginPage from "./LoginPage";
 import Dashboard from "./Dashboard";
 import CourseListPage from "./CourseListPage";
 import CourseDetailPage from "./CourseDetailPage";
+import SuccessStories from "./components/SuccessStories";
 import {
   Sun,
   Moon,
@@ -61,7 +62,7 @@ function useDarkMode() {
   return { dark, toggle };
 }
 
-type Page = "home" | "courses" | "course-detail" | "login" | "dashboard";
+type Page = "home" | "courses" | "course-detail" | "login" | "dashboard" | "shafoller-golpo";
 
 /* ══════════════════════════════════════════
    COURSE DATA
@@ -234,7 +235,7 @@ function Navbar({
   const links = [
     { label: "হোম", target: "home" as Page },
     { label: "কোর্সসমূহ", target: "courses" as Page },
-    { label: "সাফল্যের গল্প", target: "home" as Page },
+    { label: "সাফল্যের গল্প", target: "shafoller-golpo" as Page },
     { label: "শিক্ষকবৃন্দ", target: "home" as Page },
     { label: "যোগাযোগ", target: "home" as Page },
   ];
@@ -616,12 +617,14 @@ export default function App() {
   let page: Page = "home";
   if (location.pathname === "/courses") page = "courses";
   else if (location.pathname.startsWith("/course/")) page = "course-detail";
+  else if (location.pathname === "/shafoller-golpo") page = "shafoller-golpo";
   else if (location.pathname === "/login") page = "login";
   else if (location.pathname === "/dashboard") page = "dashboard";
 
   const handleNavigate = (p: Page) => {
     if (p === "home") navigate("/");
     else if (p === "courses") navigate("/courses");
+    else if (p === "shafoller-golpo") navigate("/shafoller-golpo");
     else if (p === "login") navigate("/login");
     else if (p === "dashboard") navigate("/dashboard");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -647,6 +650,12 @@ export default function App() {
             <CourseListPage dark={dark} toggleDark={toggle} lang={lang} setLang={setLang} />
             <Footer setPage={handleNavigate} />
           </>
+        } />
+        <Route path="/shafoller-golpo" element={
+          <main className="pt-16">
+            <SuccessStories />
+            <Footer setPage={handleNavigate} />
+          </main>
         } />
         <Route path="/course/:id" element={
           <>
