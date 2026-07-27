@@ -5,6 +5,9 @@ import Dashboard from "./Dashboard";
 import CourseListPage from "./CourseListPage";
 import CourseDetailPage from "./CourseDetailPage";
 import SuccessStories from "./components/SuccessStories";
+import TeachersSection from "./components/TeachersSection";
+import ContactSection from "./components/ContactSection";
+import { mockTeachers, mockContactInfo, ContactInfo } from "./data/teachersAndContactData";
 import {
   Sun,
   Moon,
@@ -62,7 +65,7 @@ function useDarkMode() {
   return { dark, toggle };
 }
 
-type Page = "home" | "courses" | "course-detail" | "login" | "dashboard" | "shafoller-golpo";
+type Page = "home" | "courses" | "course-detail" | "login" | "dashboard" | "shafoller-golpo" | "teachers" | "contact";
 
 /* ══════════════════════════════════════════
    COURSE DATA
@@ -236,8 +239,8 @@ function Navbar({
     { label: "হোম", target: "home" as Page },
     { label: "কোর্সসমূহ", target: "courses" as Page },
     { label: "সাফল্যের গল্প", target: "shafoller-golpo" as Page },
-    { label: "শিক্ষকবৃন্দ", target: "home" as Page },
-    { label: "যোগাযোগ", target: "home" as Page },
+    { label: "শিক্ষকবৃন্দ", target: "teachers" as Page },
+    { label: "যোগাযোগ", target: "contact" as Page },
   ];
 
   const activePage = page === "course-detail" ? "courses" : page;
@@ -549,7 +552,7 @@ function HomeSections({ setPage }: { setPage: (p: Page) => void }) {
 /* ══════════════════════════════════════════
    FOOTER
 ══════════════════════════════════════════ */
-function Footer({ setPage }: { setPage: (p: Page) => void }) {
+function Footer({ setPage, contactInfo = mockContactInfo }: { setPage: (p: Page) => void; contactInfo?: ContactInfo }) {
   return (
     <footer className="bg-foreground dark:bg-card text-background dark:text-foreground pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -565,18 +568,27 @@ function Footer({ setPage }: { setPage: (p: Page) => void }) {
               বাংলাদেশের শিশুদের সুন্দর হাতের লেখা শেখানোর সেরা অনলাইন প্ল্যাটফর্ম।
             </p>
             <div className="space-y-2.5">
-              {[{ icon: Phone, text: "+880 1700-000000" }, { icon: Mail, text: "hello@learnops.com.bd" }, { icon: MapPin, text: "ধানমন্ডি, ঢাকা ১২০৫" }].map((c) => (
-                <div key={c.text} className="flex items-center gap-3 text-sm opacity-70">
-                  <c.icon className="w-4 h-4 flex-shrink-0 text-primary" />
-                  <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{c.text}</span>
-                </div>
-              ))}
+              <div className="flex items-center gap-3 text-sm opacity-70">
+                <Phone className="w-4 h-4 flex-shrink-0 text-primary" />
+                <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{contactInfo.phone}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm opacity-70">
+                <Mail className="w-4 h-4 flex-shrink-0 text-primary" />
+                <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{contactInfo.email}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm opacity-70">
+                <MapPin className="w-4 h-4 flex-shrink-0 text-primary" />
+                <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{contactInfo.address}</span>
+              </div>
             </div>
             <div className="flex gap-3 mt-5">
-              {[Facebook, Youtube, Instagram].map((Icon, i) => (
-                <button key={i} className="w-9 h-9 rounded-full bg-white/10 hover:bg-primary flex items-center justify-center transition-colors cursor-pointer">
-                  <Icon className="w-4 h-4" />
-                </button>
+              {contactInfo.socialLinks.map((s) => (
+                <a key={s.platform} href={s.url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 hover:bg-primary flex items-center justify-center transition-colors cursor-pointer text-white">
+                  {s.platform === "facebook" && <Facebook className="w-4 h-4" />}
+                  {s.platform === "youtube" && <Youtube className="w-4 h-4" />}
+                  {s.platform === "instagram" && <Instagram className="w-4 h-4" />}
+                  {s.platform === "whatsapp" && <MessageCircle className="w-4 h-4" />}
+                </a>
               ))}
             </div>
           </div>
@@ -618,6 +630,8 @@ export default function App() {
   if (location.pathname === "/courses") page = "courses";
   else if (location.pathname.startsWith("/course/")) page = "course-detail";
   else if (location.pathname === "/shafoller-golpo") page = "shafoller-golpo";
+  else if (location.pathname === "/teachers") page = "teachers";
+  else if (location.pathname === "/contact") page = "contact";
   else if (location.pathname === "/login") page = "login";
   else if (location.pathname === "/dashboard") page = "dashboard";
 
@@ -625,6 +639,8 @@ export default function App() {
     if (p === "home") navigate("/");
     else if (p === "courses") navigate("/courses");
     else if (p === "shafoller-golpo") navigate("/shafoller-golpo");
+    else if (p === "teachers") navigate("/teachers");
+    else if (p === "contact") navigate("/contact");
     else if (p === "login") navigate("/login");
     else if (p === "dashboard") navigate("/dashboard");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -654,6 +670,18 @@ export default function App() {
         <Route path="/shafoller-golpo" element={
           <main className="pt-16">
             <SuccessStories />
+            <Footer setPage={handleNavigate} />
+          </main>
+        } />
+        <Route path="/teachers" element={
+          <main className="pt-16">
+            <TeachersSection />
+            <Footer setPage={handleNavigate} />
+          </main>
+        } />
+        <Route path="/contact" element={
+          <main className="pt-16">
+            <ContactSection />
             <Footer setPage={handleNavigate} />
           </main>
         } />
