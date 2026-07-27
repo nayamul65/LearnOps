@@ -9,10 +9,10 @@ import {
   Youtube,
   Instagram,
   Send,
-  Sparkles,
   CheckCircle2,
 } from "lucide-react";
 import { ContactInfo, mockContactInfo } from "../data/teachersAndContactData";
+import { useLanguage } from "../context/LanguageContext";
 
 interface ContactSectionProps {
   contactInfo?: ContactInfo;
@@ -22,9 +22,10 @@ interface ContactSectionProps {
 
 export const ContactSection: React.FC<ContactSectionProps> = ({
   contactInfo = mockContactInfo,
-  title = "যোগাযোগ করুন",
-  subtitle = "আপনার যেকোনো প্রশ্ন, পরামর্শ বা ভর্তি সংক্রান্ত তথ্যের জন্য আমাদের সাথে যোগাযোগ করুন।",
+  title,
+  subtitle,
 }) => {
+  const { t } = useLanguage();
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -32,6 +33,9 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     subject: "",
     message: "",
   });
+
+  const displayTitle = title || t("contactHeading");
+  const displaySubtitle = subtitle || t("contactSubtitle");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +64,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
 
   return (
     <section id="contact" className="py-20 md:py-28 bg-muted/30 relative overflow-hidden">
-      {/* Background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-r from-primary/5 via-emerald-500/5 to-amber-500/5 pointer-events-none blur-3xl" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -71,29 +74,28 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
             style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
           >
             <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>যোগাযোগ</span>
+            <span>{t("contactBadge")}</span>
           </div>
 
           <h2
             className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-foreground tracking-tight mb-5 leading-tight"
             style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
           >
-            {title}
+            {displayTitle}
           </h2>
 
           <p
             className="text-base sm:text-lg text-muted-foreground leading-relaxed"
             style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
           >
-            {subtitle}
+            {displaySubtitle}
           </p>
         </div>
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-          {/* Left Column: Contact Cards & Info (5 Cols) */}
+          {/* Left Column: Contact Details (5 Cols) */}
           <div className="lg:col-span-5 space-y-6">
-            {/* Phone Card */}
             <a
               href={`tel:${contactInfo.phone.replace(/[^0-9+]/g, "")}`}
               className="bg-card border border-border rounded-2xl p-6 flex items-start gap-4 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group block cursor-pointer"
@@ -106,7 +108,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                   className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider"
                   style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                 >
-                  ফোন নম্বর
+                  {t("phoneLabel")}
                 </h4>
                 <p
                   className="text-lg font-bold text-foreground group-hover:text-primary transition-colors"
@@ -114,16 +116,9 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 >
                   {contactInfo.phone}
                 </p>
-                <p
-                  className="text-xs text-muted-foreground mt-0.5"
-                  style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-                >
-                  সরাসরি কলের জন্য ক্লিক করুন
-                </p>
               </div>
             </a>
 
-            {/* Email Card */}
             <a
               href={`mailto:${contactInfo.email}`}
               className="bg-card border border-border rounded-2xl p-6 flex items-start gap-4 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group block cursor-pointer"
@@ -136,7 +131,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                   className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider"
                   style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                 >
-                  ইমেইল এড্রেস
+                  {t("emailLabel")}
                 </h4>
                 <p
                   className="text-lg font-bold text-foreground group-hover:text-emerald-600 transition-colors"
@@ -144,16 +139,9 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 >
                   {contactInfo.email}
                 </p>
-                <p
-                  className="text-xs text-muted-foreground mt-0.5"
-                  style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-                >
-                  ইমেইল পাঠাতে ক্লিক করুন
-                </p>
               </div>
             </a>
 
-            {/* Address & Hours Card */}
             <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
@@ -164,7 +152,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                     className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider"
                     style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                   >
-                    অফিস ঠিকানা
+                    {t("addressLabel")}
                   </h4>
                   <p
                     className="text-base font-bold text-foreground"
@@ -184,7 +172,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                     className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider"
                     style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                   >
-                    অফিস সময়সূচি
+                    {t("hoursLabel")}
                   </h4>
                   <p
                     className="text-sm font-bold text-foreground"
@@ -196,13 +184,12 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
               </div>
             </div>
 
-            {/* Social Links */}
             <div className="bg-card border border-border rounded-2xl p-6">
               <h4
                 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-wider"
                 style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
               >
-                সামাজিক যোগাযোগ মাধ্যম
+                {t("socialLabel")}
               </h4>
               <div className="flex items-center gap-3 flex-wrap">
                 {contactInfo.socialLinks.map((social) => (
@@ -228,13 +215,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
               className="text-2xl font-bold text-foreground mb-2"
               style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
             >
-              সরাসরি মেসেজ পাঠান
+              {t("sendMessage")}
             </h3>
             <p
               className="text-sm text-muted-foreground mb-6"
               style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
             >
-              নিচের ফর্মে আপনার নাম ও মেসেজ লিখে সাবমিট করুন, আমাদের টিম দ্রুত আপনার সাথে যোগাযোগ করবে।
+              {t("sendSubtitle")}
             </p>
 
             {submitted ? (
@@ -244,13 +231,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                   className="text-xl font-bold text-emerald-800 dark:text-emerald-200"
                   style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                 >
-                  ধন্যবাদ! আপনার বার্তা সফলভাবে পাঠানো হয়েছে।
+                  {t("thankYouMessage")}
                 </h4>
                 <p
                   className="text-sm text-emerald-600 dark:text-emerald-400"
                   style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                 >
-                  আমাদের সাপোর্ট টিম খুব শীঘ্রই আপনার সাথে যোগাযোগ করবে।
+                  {t("thankYouSubtitle")}
                 </p>
               </div>
             ) : (
@@ -261,12 +248,12 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       className="block text-xs font-bold text-foreground mb-2"
                       style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                     >
-                      আপনার নাম *
+                      {t("nameLabel")}
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="যেমন: রাশেদুল ইসলাম"
+                      placeholder={t("namePlaceholder")}
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -279,7 +266,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       className="block text-xs font-bold text-foreground mb-2"
                       style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                     >
-                      মোবাইল নম্বর *
+                      {t("phoneInputLabel")}
                     </label>
                     <input
                       type="tel"
@@ -298,11 +285,11 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                     className="block text-xs font-bold text-foreground mb-2"
                     style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                   >
-                    বিষয় / কোর্স
+                    {t("subjectLabel")}
                   </label>
                   <input
                     type="text"
-                    placeholder="যেমন: হ্যান্ডরাইটিং কোর্স সংক্রান্ত তথ্য"
+                    placeholder={t("subjectPlaceholder")}
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -315,11 +302,11 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                     className="block text-xs font-bold text-foreground mb-2"
                     style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                   >
-                    আপনার মেসেজ / প্রশ্ন
+                    {t("messageLabel")}
                   </label>
                   <textarea
                     rows={4}
-                    placeholder="আপনার প্রশ্ন বিস্তারিত লিখুন..."
+                    placeholder={t("messagePlaceholder")}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
@@ -333,7 +320,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                   className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white font-bold py-3.5 px-6 rounded-xl hover:bg-green-600 transition-all shadow-md cursor-pointer text-sm"
                 >
                   <Send className="w-4 h-4" />
-                  মেসেজ পাঠান
+                  {t("submitButton")}
                 </button>
               </form>
             )}
