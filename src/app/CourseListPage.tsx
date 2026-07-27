@@ -12,6 +12,8 @@ import {
   Moon,
   ChevronRight,
   TrendingUp,
+  Play,
+  X,
 } from "lucide-react";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
 import { Badge } from "./components/ui/badge";
@@ -210,6 +212,7 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
   const lang = ctxLang || propsLang || "BN";
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [demoCourse, setDemoCourse] = useState<Course | null>(null);
   const navigate = useNavigate();
 
   const categories = ["All", "Handwriting", "English", "Language", "Islamic"];
@@ -457,6 +460,16 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
                       </span>
                     </div>
 
+                    {/* Video Demo Button Overlay */}
+                    <button
+                      onClick={() => setDemoCourse(course)}
+                      className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    >
+                      <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-xl hover:scale-110 transition-transform">
+                        <Play className="w-6 h-6 fill-white ml-1" />
+                      </div>
+                    </button>
+
                     {/* Emoji Floating Badge with dynamic theme accent shadow */}
                     <div
                       className={`absolute bottom-4 right-4 w-12 h-12 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl shadow-lg border border-border group-hover:scale-110 transition-transform duration-300`}
@@ -599,6 +612,55 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
           </div>
         )}
       </div>
+
+      {/* ── VIDEO DEMO MODAL ── */}
+      {demoCourse && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-3xl max-w-3xl w-full p-6 relative shadow-2xl overflow-hidden">
+            <button
+              onClick={() => setDemoCourse(null)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="mb-4">
+              <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-md" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                {lang === "BN" ? "ফ্রি ডেমো ক্লাস ভিডিও" : "Free Demo Class Video"}
+              </span>
+              <h3 className="text-xl font-bold text-foreground mt-2" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                {lang === "BN" ? demoCourse.title : demoCourse.titleEN}
+              </h3>
+            </div>
+
+            {/* Video Player Frame */}
+            <div className="relative aspect-video rounded-2xl overflow-hidden bg-black mb-4 border border-border">
+              <iframe
+                className="w-full h-full"
+                src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0"
+                title="Demo Class Video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                {lang === "BN" ? "অভিজ্ঞ শিক্ষকের সরাসরি ক্লাসের কিছু অংশ দেখুন এবং সিদ্ধান্ত নিন।" : "Watch a preview of our live mentor classes."}
+              </p>
+
+              <Button
+                asChild
+                className="text-xs font-bold rounded-xl shadow-md bg-primary text-white hover:bg-green-600 px-6 py-2.5"
+              >
+                <a href={GOOGLE_FORM_URL} target="_blank" rel="noopener noreferrer">
+                  {lang === "BN" ? "এনরোলমেন্ট কমপ্লিট করুন" : "Complete Enrollment"} →
+                </a>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
