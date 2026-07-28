@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { ALL_COURSES } from "./App";
 import { GOOGLE_FORM_URL } from "./CourseListPage";
+import Course1DetailsModal from "../components/Course1DetailsModal";
 
 function StarRating({ rating, size = "md" }: { rating: number; size?: "sm" | "md" }) {
   const cls = size === "sm" ? "w-3 h-3" : "w-4 h-4";
@@ -198,6 +199,17 @@ export default function CourseDetailPage({ dark, toggleDark, lang = "BN" }: Cour
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeMonth, setActiveMonth] = useState(0);
+
+  if (Number(id) === 1) {
+    return (
+      <div className="min-h-screen bg-background pt-16">
+        <Course1DetailsModal
+          isOpen={true}
+          onClose={() => navigate("/courses")}
+        />
+      </div>
+    );
+  }
 
   const isEnglish = lang === "EN";
   const course = ALL_COURSES.find((c) => c.id === Number(id)) ?? ALL_COURSES[0];
