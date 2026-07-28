@@ -20,6 +20,7 @@ import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
 import { useLanguage } from "./context/LanguageContext";
 import Course1DetailsModal from "../components/Course1DetailsModal";
+import Course2DetailsModal from "../components/Course2DetailsModal";
 
 export const GOOGLE_FORM_URL = "https://forms.google.com/demo-enrollment-form";
 
@@ -215,6 +216,7 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [demoCourse, setDemoCourse] = useState<Course | null>(null);
   const [course1ModalOpen, setCourse1ModalOpen] = useState(false);
+  const [course2ModalOpen, setCourse2ModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const categories = ["All", "Handwriting", "English", "Language", "Islamic"];
@@ -594,6 +596,8 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
                           onClick={() => {
                             if (course.id === 1) {
                               setCourse1ModalOpen(true);
+                            } else if (course.id === 2) {
+                              setCourse2ModalOpen(true);
                             } else {
                               navigate(`/course/${course.id}`);
                             }
@@ -674,6 +678,12 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
       <Course1DetailsModal
         isOpen={course1ModalOpen}
         onClose={() => setCourse1ModalOpen(false)}
+      />
+
+      {/* ── COURSE 2 DETAILS MODAL ── */}
+      <Course2DetailsModal
+        isOpen={course2ModalOpen}
+        onClose={() => setCourse2ModalOpen(false)}
       />
     </div>
   );
