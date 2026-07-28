@@ -23,6 +23,7 @@ import {
 import { ALL_COURSES } from "./App";
 import { GOOGLE_FORM_URL } from "./CourseListPage";
 import Course1DetailsModal from "../components/Course1DetailsModal";
+import Course2DetailsModal from "../components/Course2DetailsModal";
 
 function StarRating({ rating, size = "md" }: { rating: number; size?: "sm" | "md" }) {
   const cls = size === "sm" ? "w-3 h-3" : "w-4 h-4";
@@ -204,6 +205,17 @@ export default function CourseDetailPage({ dark, toggleDark, lang = "BN" }: Cour
     return (
       <div className="min-h-screen bg-background pt-16">
         <Course1DetailsModal
+          isOpen={true}
+          onClose={() => navigate("/courses")}
+        />
+      </div>
+    );
+  }
+
+  if (Number(id) === 2) {
+    return (
+      <div className="min-h-screen bg-background pt-16">
+        <Course2DetailsModal
           isOpen={true}
           onClose={() => navigate("/courses")}
         />
