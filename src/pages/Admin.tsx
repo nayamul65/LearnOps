@@ -92,6 +92,7 @@ export interface StudentRosterItem {
 
 export interface BatchItem {
   id: string;
+  courseId?: string | number;
   name: string;
   courseTitle: string;
   headTeacher: string;
@@ -279,6 +280,7 @@ const INITIAL_LEADS: Lead[] = [
 const INITIAL_BATCHES: BatchItem[] = [
   {
     id: "batch-101",
+    courseId: "c-101",
     name: "ব্যাচ ০৪ (বিকাল ৪:০০ টা)",
     courseTitle: "২৫ দিনে সুন্দর হাতের লেখা",
     headTeacher: "ফারহানা বেগম",
@@ -294,6 +296,7 @@ const INITIAL_BATCHES: BatchItem[] = [
   },
   {
     id: "batch-102",
+    courseId: "c-102",
     name: "ব্যাচ ০২ (সকাল ১০:০০ টা)",
     courseTitle: "মাত্র ৩০ দিনে ছোটদের হ্যান্ডরাইটিং",
     headTeacher: "রাহেলা খাতুন",
@@ -303,6 +306,21 @@ const INITIAL_BATCHES: BatchItem[] = [
       { id: "std-6", name: "মারুফ হাসান", parentName: "কামরুল হাসান", rollNo: "01", attendancePercentage: 94, avgExamScore: 90, grade: "A+", status: "Active" },
       { id: "std-7", name: "আতিয়া ফারহিন", parentName: "ফারুক আহমেদ", rollNo: "02", attendancePercentage: 90, avgExamScore: 86, grade: "A", status: "Active" },
       { id: "std-8", name: "জায়ান করিম", parentName: "রেজাউল করিম", rollNo: "03", attendancePercentage: 96, avgExamScore: 92, grade: "A+", status: "Active" },
+    ],
+  },
+  {
+    id: "batch-103",
+    courseId: "c-103",
+    name: "ব্যাচ ০১ (রাত ৮:০০ টা)",
+    courseTitle: "8 WEEKS ENGLISH SPEAKING (start program)",
+    headTeacher: "মো. আরিফুল ইসলাম",
+    totalStudents: 4,
+    schedule: "শনিবার-সোম-বুধবার (রাত ৮:০০)",
+    roster: [
+      { id: "std-9", name: "রাফসান জামান", parentName: "আরিফ জামান", rollNo: "01", attendancePercentage: 95, avgExamScore: 91, grade: "A+", status: "Active" },
+      { id: "std-10", name: "মেহজাবিন মেহনাজ", parentName: "মেহেদী হাসান", rollNo: "02", attendancePercentage: 88, avgExamScore: 85, grade: "A", status: "Active" },
+      { id: "std-11", name: "সামিউল ইসলাম", parentName: "শহিদুল ইসলাম", rollNo: "03", attendancePercentage: 92, avgExamScore: 89, grade: "A+", status: "Active" },
+      { id: "std-12", name: "অনন্যা চৌধুরী", parentName: "কবীর চৌধুরী", rollNo: "04", attendancePercentage: 98, avgExamScore: 96, grade: "A+", status: "Active" },
     ],
   },
 ];
@@ -343,6 +361,7 @@ export default function Admin() {
   const [courses, setCourses] = useState<CMSCourse[]>(INITIAL_COURSES);
   const [employees, setEmployees] = useState<EmployeePerf[]>(INITIAL_EMPLOYEES);
   const [batches, setBatches] = useState<BatchItem[]>(INITIAL_BATCHES);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | number | null>(null);
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>("batch-101");
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
@@ -1265,115 +1284,162 @@ export default function Admin() {
         {/* ═══════════════════════════════════════════════════════════════════════════
            SECTION 4: 👨‍🏫 TEACHER & BATCH MANAGEMENT VIEW
         ═══════════════════════════════════════════════════════════════════════════ */}
-        {activeTab === "batches" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Set Head Teacher for Courses Card */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
-              <div className="flex items-center gap-2 mb-4">
-                <GraduationCap className="w-6 h-6 text-amber-400" />
-                <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  কোর্সের প্রধান শিক্ষক নির্বাচন (Set Head Teacher)
-                </h3>
-              </div>
-              <p className="text-xs text-slate-400 mb-6" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                প্রতিটি কোর্সের হেড ইনস্ট্রাক্টর ড্রপডাউন থেকে নির্বাচন করুন। এটি সঙ্গে সঙ্গে ডাটাবেজে সংরক্ষিত হবে।
-              </p>
+        {/* ═══════════════════════════════════════════════════════════════════════════
+           SECTION 4: 👨‍🏫 TEACHER & BATCH MANAGEMENT VIEW
+        ═══════════════════════════════════════════════════════════════════════════ */}
+        {activeTab === "batches" && (() => {
+          const selectedCourse = courses.find((c) => String(c.id) === String(selectedCourseId)) || courses[0];
+          const filteredBatches = batches.filter((b) => {
+            if (!selectedCourse) return true;
+            if (b.courseId !== undefined) return String(b.courseId) === String(selectedCourse.id);
+            return b.courseTitle === selectedCourse.title;
+          });
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {courses.map((course) => (
-                  <div key={course.id} className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
-                    <div className="font-bold text-sm text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                      {course.title}
-                    </div>
-                    <div className="text-xs text-emerald-400">বর্তমান হেড টিচার: {course.headTeacher || course.instructor}</div>
-                    
-                    <select
-                      value={course.headTeacher || course.instructor}
-                      onChange={(e) => handleSetHeadTeacher(course.id, e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 text-xs font-bold text-white rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                      style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-                    >
-                      <option value="রাহেলা খাতুন">রাহেলা খাতুন (হ্যান্ডরাইটিং বিশেষজ্ঞ)</option>
-                      <option value="ফারহানা বেগম">ফারহানা বেগম (হস্তলিখন মেন্টর)</option>
-                      <option value="মো. আরিফুল ইসলাম">মো. আরিফুল ইসলাম (স্পোকেন ট্রেইনার)</option>
-                      <option value="সুমাইয়া আক্তার">সুমাইয়া আক্তার (ভাষা শিক্ষা বিশেষজ্ঞ)</option>
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
+          return (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              {/* Step 1 & 2: Course Cards Overview with glowing active border */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div className="flex items-center gap-2 mb-4">
+                  <GraduationCap className="w-6 h-6 text-amber-400" />
+                  <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                    কোর্সের প্রধান শিক্ষক নির্বাচন (Set Head Teacher)
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-400 mb-6" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                  যেকোনো কোর্স কার্ডে ক্লিক করে উক্ত কোর্সের ব্যাচসমূহ নিচে ফিল্টার করে দেখুন। প্রতিটি কোর্সের হেড ইনস্ট্রাক্টর ড্রপডাউন থেকে নির্বাচন করুন।
+                </p>
 
-            {/* Expandable Batches List */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
-              <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                অ্যাক্টিভ ব্যাচসমূহ ও স্টুডেন্ট পারফরম্যান্স রোস্টার (Expandable Batches List)
-              </h3>
-
-              <div className="space-y-4">
-                {batches.map((batch) => {
-                  const isExpanded = expandedBatchId === batch.id;
-                  return (
-                    <div key={batch.id} className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/60">
-                      {/* Batch Header */}
-                      <button
-                        onClick={() => setExpandedBatchId(isExpanded ? null : batch.id)}
-                        className="w-full p-5 flex items-center justify-between bg-slate-900 hover:bg-slate-800/80 transition-colors text-left cursor-pointer"
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {courses.map((course) => {
+                    const isSelected = selectedCourse && String(course.id) === String(selectedCourse.id);
+                    return (
+                      <div
+                        key={course.id}
+                        onClick={() => setSelectedCourseId(course.id)}
+                        className={`p-5 rounded-2xl cursor-pointer transition-all space-y-3 ${
+                          isSelected
+                            ? "bg-slate-900 border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.35)] ring-2 ring-emerald-500/40"
+                            : "bg-slate-950 border border-slate-800 hover:border-slate-700"
+                        }`}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm">
-                            <Building className="w-5 h-5" />
+                        <div className="flex items-center justify-between">
+                          <div className="font-bold text-sm text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                            {course.title}
                           </div>
-                          <div>
-                            <h4 className="font-bold text-base text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                              {batch.name} - <span className="text-emerald-400">{batch.courseTitle}</span>
-                            </h4>
-                            <p className="text-xs text-slate-400">হেড ইনস্ট্রাক্টর: {batch.headTeacher} | সময়সূচি: {batch.schedule}</p>
-                          </div>
+                          {isSelected && (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                              Selected
+                            </span>
+                          )}
                         </div>
+                        <div className="text-xs text-emerald-400">বর্তমান হেড টিচার: {course.headTeacher || course.instructor}</div>
 
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            {batch.totalStudents} জন শিক্ষার্থী
-                          </span>
-                          {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-                        </div>
-                      </button>
+                        <select
+                          value={course.headTeacher || course.instructor}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleSetHeadTeacher(course.id, e.target.value);
+                          }}
+                          className="w-full bg-slate-900 border border-slate-700 text-xs font-bold text-white rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                          style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                        >
+                          <option value="রাহেলা খাতুন">রাহেলা খাতুন (হ্যান্ডরাইটিং বিশেষজ্ঞ)</option>
+                          <option value="ফারহানা বেগম">ফারহানা বেগম (হস্তলিখন মেন্টর)</option>
+                          <option value="মো. আরিফুল ইসলাম">মো. আরিফুল ইসলাম (স্পোকেন ট্রেইনার)</option>
+                          <option value="সুমাইয়া আক্তার">সুমাইয়া আক্তার (ভাষা শিক্ষা বিশেষজ্ঞ)</option>
+                        </select>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                      {/* Expandable Student Roster */}
-                      {isExpanded && (
-                        <div className="p-6 border-t border-slate-800 bg-slate-950 space-y-4">
-                          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                            ফুল স্টুডেন্ট রোস্টার ও একাডেমি পারফরম্যান্স মার্কস
-                          </div>
+              {/* Step 2 & 3: Filtered Batches List & Student Roster */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                    অ্যাক্টিভ ব্যাচসমূহ ও স্টুডেন্ট পারফরম্যান্স রোস্টার (Expandable Batches List)
+                  </h3>
+                  {selectedCourse && (
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                      ফিল্টারকৃত কোর্স: {selectedCourse.title}
+                    </span>
+                  )}
+                </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {batch.roster.map((std) => (
-                              <div key={std.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs font-bold text-amber-400">Roll #{std.rollNo}</span>
-                                  <span className="text-xs font-black text-emerald-400">{std.grade}</span>
-                                </div>
-                                <h5 className="font-bold text-white text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                                  {std.name}
-                                </h5>
-                                <p className="text-[11px] text-slate-400">অভিভাবক: {std.parentName}</p>
-
-                                <div className="pt-2 border-t border-slate-800 flex justify-between text-xs font-semibold">
-                                  <span>উপস্থিতি: <strong className="text-emerald-400">{std.attendancePercentage}%</strong></span>
-                                  <span>গড় এক্সাম মার্কস: <strong className="text-purple-400">{std.avgExamScore}/১০০</strong></span>
-                                </div>
+                <div className="space-y-4">
+                  {filteredBatches.length > 0 ? (
+                    filteredBatches.map((batch) => {
+                      const isExpanded = expandedBatchId === batch.id;
+                      return (
+                        <div key={batch.id} className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/60">
+                          {/* Batch Header Card */}
+                          <button
+                            onClick={() => setExpandedBatchId(isExpanded ? null : batch.id)}
+                            className="w-full p-5 flex items-center justify-between bg-slate-900 hover:bg-slate-800/80 transition-colors text-left cursor-pointer"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm">
+                                <Building className="w-5 h-5" />
                               </div>
-                            ))}
-                          </div>
+                              <div>
+                                <h4 className="font-bold text-base text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                                  {batch.name} - <span className="text-emerald-400">{batch.courseTitle}</span>
+                                </h4>
+                                <p className="text-xs text-slate-400">ইনস্ট্রাক্টর: {batch.headTeacher} | সময়সূচি: {batch.schedule}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                {batch.totalStudents} জন শিক্ষার্থী
+                              </span>
+                              {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                            </div>
+                          </button>
+
+                          {/* Step 3: Expandable Student Roster & Performance Reports */}
+                          {isExpanded && (
+                            <div className="p-6 border-t border-slate-800 bg-slate-950 space-y-4">
+                              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                ফুল স্টুডেন্ট রোস্টার ও একাডেমি পারফরম্যান্স মার্কস
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {batch.roster.map((std) => (
+                                  <div key={std.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-bold text-amber-400">Roll #{std.rollNo}</span>
+                                      <span className="text-xs font-black text-emerald-400">{std.grade}</span>
+                                    </div>
+                                    <h5 className="font-bold text-white text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                                      {std.name}
+                                    </h5>
+                                    <p className="text-[11px] text-slate-400">অভিভাবক: {std.parentName}</p>
+
+                                    <div className="pt-2 border-t border-slate-800 flex justify-between text-xs font-semibold">
+                                      <span>উপস্থিতি: <strong className="text-emerald-400">{std.attendancePercentage}%</strong></span>
+                                      <span>গড় এক্সাম মার্কস: <strong className="text-purple-400">{std.avgExamScore}/১০০</strong></span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      );
+                    })
+                  ) : (
+                    <div className="p-8 text-center bg-slate-950/40 rounded-2xl border border-slate-800 text-slate-400 text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                      এই কোর্সের জন্য কোনো অ্যাক্টিভ ব্যাচ পাওয়া যায়নি।
                     </div>
-                  );
-                })}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ═══════════════════════════════════════════════════════════════════════════
            SECTION 5: 📚 COURSE CMS VIEW
