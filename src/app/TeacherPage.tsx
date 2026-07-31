@@ -31,11 +31,12 @@ import {
 } from "lucide-react";
 
 /* ── DATA TYPES ── */
-interface Student {
+export interface Student {
   id: string;
-  name: string;
+  name: string | { bn: string; en: string };
   rollNo: string;
-  batch: string;
+  batch: string | { bn: string; en: string };
+  courseId: number;
   phone: string;
   attendanceStatus: "Present" | "Absent" | "Late";
   submittedHwCount: number;
@@ -43,38 +44,76 @@ interface Student {
   progressPercent: number;
 }
 
-interface HomeworkSubmission {
+export interface HomeworkSubmission {
   id: string;
   studentId: string;
-  studentName: string;
-  batch: string;
-  title: string;
-  subject: string;
+  studentName: string | { bn: string; en: string };
+  batch: string | { bn: string; en: string };
+  courseId: number;
+  title: string | { bn: string; en: string };
+  subject: string | { bn: string; en: string };
   submittedDate: string;
   dueDate: string;
   submissionUrl?: string;
-  submissionNote?: string;
+  submissionNote?: string | { bn: string; en: string };
   score: number;
   grade: string;
-  feedback: string;
+  feedback: string | { bn: string; en: string };
   status: "Graded" | "Pending";
 }
 
-interface NotificationItem {
+export interface NotificationItem {
   id: string;
-  title: string;
-  time: string;
-  type: "submission" | "deadline" | "attendance" | "system";
+  title: { bn: string; en: string };
+  time: { bn: string; en: string };
+  type: "submission" | "deadline" | "attendance" | "system" | "zoom";
   read: boolean;
 }
 
+export interface Course {
+  id: number | "all";
+  title: { bn: string; en: string };
+}
+
+/* ── HELPER FUNCTIONS ── */
+export function getLocalizedText(
+  val: string | { bn: string; en: string } | undefined,
+  lang: "bn" | "en"
+): string {
+  if (!val) return "";
+  if (typeof val === "object") {
+    return val[lang] || val.bn || "";
+  }
+  return val;
+}
+
+export function toBNDigits(str: string | number): string {
+  const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return String(str).replace(/[0-9]/g, (w) => bnDigits[parseInt(w, 10)]);
+}
+
+export function formatNumber(num: string | number, lang: "bn" | "en"): string {
+  if (lang === "bn") return toBNDigits(num);
+  return String(num);
+}
+
 /* ── INITIAL MOCK DATA ── */
-const INITIAL_STUDENTS: Student[] = [
+export const ASSIGNED_COURSES: Course[] = [
+  { id: "all", title: { bn: "সকল কোর্স (All Courses)", en: "All Courses" } },
+  { id: 1, title: { bn: "২৫ দিনে সুন্দর হাতের লেখা", en: "Beautiful Handwriting in 25 Days" } },
+  { id: 2, title: { bn: "মাত্র ৩০ দিনে ছোট থেকে সুন্দর হাতের লেখা", en: "Beautiful Handwriting for Kids in 30 Days" } },
+  { id: 3, title: { bn: "8 WEEKS ENGLISH SPEAKING (start program)", en: "8 Weeks English Speaking (Start Program)" } },
+  { id: 4, title: { bn: "READING & SPELLING DEVELOPMENT with PHONICS", en: "Reading & Spelling Development with Phonics" } },
+  { id: 5, title: { bn: "স্পিড রাইটিং ও অ্যাডভান্সড ক্যালিগ্রাফি", en: "Speed Writing & Advanced Calligraphy" } }
+];
+
+export const INITIAL_STUDENTS: Student[] = [
   {
     id: "std-1",
-    name: "আরাফ হোসেন",
-    rollNo: "০১",
-    batch: "ব্যাচ ০১ (সকাল ১০:০০)",
+    name: { bn: "আরাফ হোসেন", en: "Araf Hossain" },
+    rollNo: "01",
+    batch: { bn: "ব্যাচ ০১ (সকাল ১০:০০)", en: "Batch 01 (10:00 AM)" },
+    courseId: 1,
     phone: "+8801712345678",
     attendanceStatus: "Present",
     submittedHwCount: 5,
@@ -83,9 +122,10 @@ const INITIAL_STUDENTS: Student[] = [
   },
   {
     id: "std-2",
-    name: "তাহিয়া রহমান",
-    rollNo: "০২",
-    batch: "ব্যাচ ০১ (সকাল ১০:০০)",
+    name: { bn: "তাহিয়া রহমান", en: "Tahiya Rahman" },
+    rollNo: "02",
+    batch: { bn: "ব্যাচ ০১ (সকাল ১০:০০)", en: "Batch 01 (10:00 AM)" },
+    courseId: 1,
     phone: "+8801812345678",
     attendanceStatus: "Present",
     submittedHwCount: 4,
@@ -94,9 +134,10 @@ const INITIAL_STUDENTS: Student[] = [
   },
   {
     id: "std-3",
-    name: "সামিন চৌধুরী",
-    rollNo: "০৩",
-    batch: "ব্যাচ ০২ (বিকেল ৪:০০)",
+    name: { bn: "সামিন চৌধুরী", en: "Samin Chowdhury" },
+    rollNo: "03",
+    batch: { bn: "ব্যাচ ০২ (বিকেল ৪:০০)", en: "Batch 02 (04:00 PM)" },
+    courseId: 2,
     phone: "+8801912345678",
     attendanceStatus: "Late",
     submittedHwCount: 3,
@@ -105,9 +146,10 @@ const INITIAL_STUDENTS: Student[] = [
   },
   {
     id: "std-4",
-    name: "তানভীর আহম্মেদ",
-    rollNo: "০৪",
-    batch: "ব্যাচ ০২ (বিকেল ৪:০০)",
+    name: { bn: "তানভীর আহম্মেদ", en: "Tanvir Ahmed" },
+    rollNo: "04",
+    batch: { bn: "ব্যাচ ০২ (বিকেল ৪:০০)", en: "Batch 02 (04:00 PM)" },
+    courseId: 2,
     phone: "+8801612345678",
     attendanceStatus: "Absent",
     submittedHwCount: 2,
@@ -116,9 +158,10 @@ const INITIAL_STUDENTS: Student[] = [
   },
   {
     id: "std-5",
-    name: "নুসাইবা পারভীন",
-    rollNo: "০৫",
-    batch: "ব্যাচ ০৩ (সন্ধ্যা ৭:০০)",
+    name: { bn: "নুসাইবা পারভীন", en: "Nusaiba Parveen" },
+    rollNo: "05",
+    batch: { bn: "ব্যাচ ০৩ (সন্ধ্যা ৭:০০)", en: "Batch 03 (07:00 PM)" },
+    courseId: 3,
     phone: "+8801512345678",
     attendanceStatus: "Present",
     submittedHwCount: 5,
@@ -127,117 +170,158 @@ const INITIAL_STUDENTS: Student[] = [
   },
   {
     id: "std-6",
-    name: "রাফিদ আল হাসান",
-    rollNo: "০৬",
-    batch: "ব্যাচ ০৩ (সন্ধ্যা ৭:০০)",
+    name: { bn: "রাফিদ আল হাসান", en: "Rafid Al Hasan" },
+    rollNo: "06",
+    batch: { bn: "ব্যাচ ০৩ (সন্ধ্যা ৭:০০)", en: "Batch 03 (07:00 PM)" },
+    courseId: 4,
     phone: "+8801312345678",
     attendanceStatus: "Present",
     submittedHwCount: 4,
     totalHwCount: 5,
     progressPercent: 84,
   },
+  {
+    id: "std-7",
+    name: { bn: "ফারজানা ইসলাম", en: "Farzana Islam" },
+    rollNo: "07",
+    batch: { bn: "ব্যাচ ০১ (সকাল ১০:০০)", en: "Batch 01 (10:00 AM)" },
+    courseId: 5,
+    phone: "+8801412345678",
+    attendanceStatus: "Present",
+    submittedHwCount: 5,
+    totalHwCount: 5,
+    progressPercent: 90,
+  }
 ];
 
-const INITIAL_HOMEWORKS: HomeworkSubmission[] = [
+export const INITIAL_HOMEWORKS: HomeworkSubmission[] = [
   {
     id: "hw-1",
     studentId: "std-1",
-    studentName: "আরাফ হোসেন",
-    batch: "ব্যাচ ০১ (সকাল ১০:০০)",
-    subject: "সুন্দর হাতের লেখা",
-    title: "মাত্রা ও বর্ণমালা সোজা রাখার অনুশীলন (পৃষ্ঠা ৪)",
+    studentName: { bn: "আরাফ হোসেন", en: "Araf Hossain" },
+    batch: { bn: "ব্যাচ ০১ (সকাল ১০:০০)", en: "Batch 01 (10:00 AM)" },
+    courseId: 1,
+    subject: { bn: "সুন্দর হাতের লেখা", en: "Handwriting" },
+    title: { bn: "মাত্রা ও বর্ণমালা সোজা রাখার অনুশীলন (পৃষ্ঠা ৪)", en: "Line Alignment & Alphabet Practice (Page 4)" },
     submittedDate: "2026-07-27",
     dueDate: "2026-07-28",
     submissionUrl: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600",
-    submissionNote: "স্যার, পৃষ্ঠা ৪ এবং ৫ এর সম্পূর্ণ হাতের লেখা জমা দিলাম।",
+    submissionNote: { bn: "স্যার, পৃষ্ঠা ৪ এবং ৫ এর সম্পূর্ণ হাতের লেখা জমা দিলাম।", en: "Sir, I submitted complete handwriting for pages 4 and 5." },
     score: 95,
     grade: "A+",
-    feedback: "খুব সুন্দর ও পরিচ্ছন্ন হয়েছে! লাইন পুরো সোজা রাখা শিখেছো।",
+    feedback: { bn: "খুব সুন্দর ও পরিচ্ছন্ন হয়েছে! লাইন পুরো সোজা রাখা শিখেছো।", en: "Very neat and clean! You learned to keep lines straight." },
     status: "Graded",
   },
   {
     id: "hw-2",
     studentId: "std-2",
-    studentName: "তাহিয়া রহমান",
-    batch: "ব্যাচ ০১ (সকাল ১০:০০)",
-    subject: "স্পিড রাইটিং",
-    title: "দ্রুত লেখার স্পিড টেস্ট ১ (১ মিনিটে ৩০ শব্দ)",
+    studentName: { bn: "তাহিয়া রহমান", en: "Tahiya Rahman" },
+    batch: { bn: "ব্যাচ ০১ (সকাল ১০:০০)", en: "Batch 01 (10:00 AM)" },
+    courseId: 1,
+    subject: { bn: "স্পিড রাইটিং", en: "Speed Writing" },
+    title: { bn: "দ্রুত লেখার স্পিড টেস্ট ১ (১ মিনিটে ৩০ শব্দ)", en: "Speed Writing Test 1 (30 wpm)" },
     submittedDate: "2026-07-28",
     dueDate: "2026-07-29",
     submissionUrl: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600",
-    submissionNote: "টাইমার সেট করে ৩০টি শব্দ অনুশীলন করেছি।",
+    submissionNote: { bn: "টাইমার সেট করে ৩০টি শব্দ অনুশীলন করেছি।", en: "Practiced 30 words with timer set." },
     score: 88,
     grade: "A",
-    feedback: "স্পিড চমৎকার, যুক্তবর্ণ গঠনে আরও একটু সময় নাও।",
+    feedback: { bn: "স্পিড চমৎকার, যুক্তবর্ণ গঠনে আরও একটু সময় নাও।", en: "Excellent speed, take a bit more time for conjunct letters." },
     status: "Graded",
   },
   {
     id: "hw-3",
     studentId: "std-3",
-    studentName: "সামিন চৌধুরী",
-    batch: "ব্যাচ ০২ (বিকেল ৪:০০)",
-    subject: "স্বরবর্ণ ও কারেকশন",
-    title: "পেন্সিল গ্রিপ ও স্বরবর্ণ কারেকশন অনুশীলন",
+    studentName: { bn: "সামিন চৌধুরী", en: "Samin Chowdhury" },
+    batch: { bn: "ব্যাচ ০২ (বিকেল ৪:০০)", en: "Batch 02 (04:00 PM)" },
+    courseId: 2,
+    subject: { bn: "স্বরবর্ণ ও কারেকশন", en: "Vowel Correction" },
+    title: { bn: "পেন্সিল গ্রিপ ও স্বরবর্ণ কারেকশন অনুশীলন", en: "Pencil Grip & Vowel Correction Practice" },
     submittedDate: "2026-07-28",
     dueDate: "2026-07-29",
     submissionUrl: "https://images.unsplash.com/photo-1517842645767-c639042777db?w=600",
-    submissionNote: "পেন্সিল ধরে অ আ ই উ অনুশীলন ছবি তুলে পাঠালাম।",
+    submissionNote: { bn: "পেন্সিল ধরে অ আ ই উ অনুশীলন ছবি তুলে পাঠালাম।", en: "Took picture of pencil grip and vowel practice." },
     score: 0,
     grade: "-",
-    feedback: "",
+    feedback: { bn: "", en: "" },
     status: "Pending",
   },
   {
     id: "hw-4",
     studentId: "std-5",
-    studentName: "নুসাইবা পারভীন",
-    batch: "ব্যাচ ০৩ (সন্ধ্যা ৭:০০)",
-    subject: "যুক্তবর্ণ চর্চা",
-    title: "ক্ব, ক্ত, গ্ধ এবং ঙ্ক লেখার সঠিক নিয়মাবলী",
+    studentName: { bn: "নুসাইবা পারভীন", en: "Nusaiba Parveen" },
+    batch: { bn: "ব্যাচ ০৩ (সন্ধ্যা ৭:০০)", en: "Batch 03 (07:00 PM)" },
+    courseId: 3,
+    subject: { bn: "যুক্তবর্ণ চর্চা", en: "Compound Letters" },
+    title: { bn: "ক্ব, ক্ত, গ্ধ এবং ঙ্ক লেখার সঠিক নিয়মাবলী", en: "Rules for writing compound letters" },
     submittedDate: "2026-07-28",
     dueDate: "2026-07-30",
     submissionUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600",
-    submissionNote: "যুক্তবর্ণগুলো ৫ বার করে লিখে জমা দিলাম।",
+    submissionNote: { bn: "যুক্তবর্ণগুলো ৫ বার করে লিখে জমা দিলাম।", en: "Submitted compound letters written 5 times each." },
     score: 0,
     grade: "-",
-    feedback: "",
+    feedback: { bn: "", en: "" },
     status: "Pending",
   },
 ];
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: "notif-1",
-    title: "নুসাইবা পারভীন 'যুক্তবর্ণ চর্চা' হোমওয়ার্ক জমা দিয়েছে।",
-    time: "১০ মিনিট আগে",
+    title: {
+      bn: "আরাফ হোসেন হোমওয়ার্ক জমা দিয়েছেন - ব্যাচ ০১",
+      en: "Araf Hossain submitted homework - Batch 01"
+    },
+    time: {
+      bn: "১০ মিনিট আগে",
+      en: "10 mins ago"
+    },
     type: "submission",
     read: false,
   },
   {
     id: "notif-2",
-    title: "সামিন চৌধুরী 'পেন্সিল গ্রিপ' হোমওয়ার্ক জমা দিয়েছে।",
-    time: "৪৫ মিনিট আগে",
-    type: "submission",
+    title: {
+      bn: "নতুন লাইভ ক্লাসের লিঙ্ক তৈরি করা হয়েছে - জুম মিটিং",
+      en: "New live class link created - Zoom Meeting"
+    },
+    time: {
+      bn: "১ ঘণ্টা আগে",
+      en: "1 hour ago"
+    },
+    type: "zoom",
     read: false,
   },
   {
     id: "notif-3",
-    title: "ব্যাচ ০২-এর হোমওয়ার্কের সময়সীমা আজ রাত ১২টায় শেষ হবে।",
-    time: "২ ঘণ্টা আগে",
-    type: "deadline",
+    title: {
+      bn: "নুসাইবা পারভীন আপনার ফিডব্যাক দেখেছেন",
+      en: "Nusaiba Parveen viewed your feedback"
+    },
+    time: {
+      bn: "গতকাল",
+      en: "Yesterday"
+    },
+    type: "submission",
     read: true,
   },
   {
     id: "notif-4",
-    title: "তানভীর আহম্মেদ আজকের ক্লাসে অনুপস্থিত ছিলেন।",
-    time: "৩ ঘণ্টা আগে",
+    title: {
+      bn: "তানভীর আহম্মেদ আজকের ক্লাসে অনুপস্থিত ছিলেন",
+      en: "Tanvir Ahmed was absent in today's class"
+    },
+    time: {
+      bn: "৩ ঘণ্টা আগে",
+      en: "3 hours ago"
+    },
     type: "attendance",
     read: true,
   },
 ];
 
 /* ── BILINGUAL DICTIONARY (BN / EN) ── */
-const dictionary = {
+export const dictionary = {
   bn: {
     // Header & Banner
     portalTag: "শিক্ষক ও মেন্টর ড্যাশবোর্ড",
@@ -245,6 +329,7 @@ const dictionary = {
     loggedInMentor: "লগইনকৃত শিক্ষকের নাম:",
     teacherName: "রাহেলা খাতুন (প্রধান মেন্টর)",
     assignHwBtn: "নতুন হোমওয়ার্ক অ্যাসাইন করুন",
+    selectCourseLabel: "অর্পিত কোর্স:",
 
     // Stats Widgets
     assignedStudents: "মোট অর্পিত শিক্ষার্থী",
@@ -265,22 +350,27 @@ const dictionary = {
     // Homework & WhatsApp Section
     assignHomework: "হোমওয়ার্ক অ্যাসাইন করুন",
     sendViaWhatsApp: "হোয়াটসঅ্যাপে পাঠান",
+    shareWhatsapp: "হোয়াটসঅ্যাপে শেয়ার করুন",
     copyLink: "লিঙ্ক কপি করুন",
     linkCopied: "কপি হয়েছে!",
     copy: "কপি",
 
     // Zoom Live Class Section
     zoomLiveClass: "জুম লাইভ ক্লাস হাব",
-    createLiveClass: "লাইভ ক্লাস তৈরি করুন",
+    createLiveClass: "লাইভ ক্লাস লিঙ্ক তৈরি করুন",
     startClass: "ক্লাস শুরু করুন",
     nextLiveClass: "পরবর্তী লাইভ ক্লাস",
     zoomDesc: "শিক্ষার্থীদের সাথে সরাসরি অনলাইনে লাইভ ক্লাসে যুক্ত হন",
-    zoomTopic: "বিষয়: সুন্দর হাতের লেখা অ্যাডভান্সড সেশন (ব্যাচ ০১)",
+    zoomTopic: "সুন্দর হাতের লেখা অ্যাডভান্সড সেশন (ব্যাচ ০১)",
     zoomTime: "আজ বিকেল ৪:০০ টা",
+    zoomTopicLabel: "বিষয়/টপিক",
+    zoomDateTimeLabel: "তারিখ ও সময়",
+    zoomPasscodeLabel: "পাসকোড",
+    createLiveClassModalTitle: "লাইভ ক্লাস লিঙ্ক তৈরি করুন",
 
     // Main Tabs / Sections
     studentList: "শিক্ষার্থী তালিকা",
-    homeworkQueue: "হোমওয়ার্ক রিভিউ কিউ",
+    homeworkQueue: "হোমওয়ার্ক রিভিউ কিউ",
     oneClickAttendance: "১-ক্লিক উপস্থিতি",
     performanceStats: "পারফরম্যান্স পরিসংখ্যান",
     notifications: "নোটিফিকেশন",
@@ -292,6 +382,7 @@ const dictionary = {
     batch1: "ব্যাচ ০১ (সকাল ১০:০০)",
     batch2: "ব্যাচ ০২ (বিকেল ৪:০০)",
     batch3: "ব্যাচ ০৩ (সন্ধ্যা ৭:০০)",
+    allCourses: "সকল কোর্স",
     rollAndName: "রোল ও নাম",
     batch: "ব্যাচ",
     todayAttendance: "আজকের উপস্থিতি",
@@ -304,19 +395,22 @@ const dictionary = {
     noStudentsFound: "কোন শিক্ষার্থী পাওয়া যায়নি।",
 
     // Homework Queue
-    queueTitle: "হোমওয়ার্ক রিভিউ কিউ (Grading Queue)",
+    queueTitle: "হোমওয়ার্ক রিভিউ কিউ",
     queueDesc: "শিক্ষার্থীদের জমা দেওয়া হোমওয়ার্ক ফাইল দেখুন, নম্বর দিন এবং শিক্ষকের ফিডব্যাক প্রদান করুন।",
-    pendingFilter: "অপেক্ষমাণ",
+    pendingFilter: "বাকি আছে",
     gradedFilter: "যাচাইকৃত",
     allFilter: "সকল",
     gradeLabel: "গ্রেড",
-    pendingStatus: "অপেক্ষমাণ",
+    pendingStatus: "বাকি আছে",
     studentNoteLabel: "শিক্ষার্থীর নোট:",
     previewFileBtn: "জমা দেওয়া ফাইল/ছবি প্রিভিউ করুন 🖼️",
-    teacherFeedbackLabel: "শিক্ষকের ফিডব্যাক:",
+    teacherFeedbackLabel: "শিক্ষকের মতামত/ফিডব্যাক",
     editGradeBtn: "গ্রেড সম্পাদন করুন",
-    gradeSubmitBtn: "মূল্যায়ন ও নম্বর দিন (যাচাই সম্পন্ন)",
+    enterMarksGrade: "মার্কস/গ্রেড দিন",
+    markAsReviewed: "যাচাইকৃত হিসেবে মার্ক করুন",
     noHomeworkFound: "এই ক্যাটাগরিতে কোনো হোমওয়ার্ক পাওয়া যায়নি।",
+    submittedDateLabel: "জমার তারিখ:",
+    dueDateLabelShort: "ডেডলাইন:",
 
     // 1-Click Attendance
     attendanceTitle: "আজকের ক্লাসের ১-ক্লিক উপস্থিতি রেজিস্টার",
@@ -327,20 +421,21 @@ const dictionary = {
     absentCount: "অনুপস্থিত:",
 
     // Performance Stats
-    statsTitle: "ব্যাচভিত্তিক হোমওয়ার্ক ও পারফরম্যান্স পরিসংখ্যান",
+    statsTitle: "পারফরম্যান্স পরিসংখ্যান",
     completedTag: "সম্পন্ন",
     totalStudentsLabel: "মোট শিক্ষার্থী:",
-    avgScoreLabel: "গড় নম্বর:",
-    attendanceRateLabel: "উপস্থিতির হার:",
+    avgScoreLabel: "গড় স্কোর:",
+    attendanceRateLabel: "মোট উপস্থিতি:",
+    batchCompletionRate: "ব্যাচভিত্তিক সম্পন্ন করার হার",
 
     // Notifications
-    notifTitle: "সাম্প্রতিক নোটিফিকেশন ও অ্যালার্ট",
+    notifTitle: "নোটিফিকেশন",
     markAllRead: "সব পড়া হয়েছে চিহ্নিত করুন",
 
     // Assign Modal
     assignModalTitle: "নতুন হোমওয়ার্ক অ্যাসাইনমেন্ট",
     batchSelectLabel: "ব্যাচ / ক্লাসের নাম *",
-    subjectSelectLabel: "বিষয় *",
+    subjectSelectLabel: "বিষয়/টপিক *",
     dueDateLabel: "জমার শেষ তারিখ (Due Date) *",
     hwTitleInputLabel: "হোমওয়ার্কের শিরোনাম *",
     hwTitlePlaceholder: "যেমন: মাত্রা ও বর্ণমালা সোজা রাখার অনুশীলন (পৃষ্ঠা ৪)",
@@ -355,18 +450,18 @@ const dictionary = {
     // Grade Modal
     gradeModalTitle: "হোমওয়ার্ক মূল্যায়ন - ",
     scoreInputLabel: "স্কোর / নম্বর (১০০ এর মধ্যে) *",
-    feedbackInputLabel: "শিক্ষকের ফিডব্যাক ও মন্তব্য",
     feedbackPlaceholder: "যেমন: লেখা খুব সুন্দর হয়েছে, স্বরবর্ণগুলোতে আরেকটু মনোযোগী হও...",
     cancelBtn: "বাতিল",
-    submitGradeBtn: "গ্রেড ও নম্বর জমা দিন (যাচাই সম্পন্ন) ✓"
+    submitGradeBtn: "যাচাইকৃত হিসেবে মার্ক করুন ✓"
   },
   en: {
     // Header & Banner
     portalTag: "Teacher & Mentor Portal",
     mainHeading: "1-Click Attendance, Homework & WhatsApp Hub",
-    loggedInMentor: "LoggedIn Mentor:",
+    loggedInMentor: "Logged-in Mentor:",
     teacherName: "Rahela Khatun (Lead Mentor)",
     assignHwBtn: "Assign New Homework",
+    selectCourseLabel: "Assigned Course:",
 
     // Stats Widgets
     assignedStudents: "Assigned Students",
@@ -387,18 +482,23 @@ const dictionary = {
     // Homework & WhatsApp Section
     assignHomework: "Assign Homework",
     sendViaWhatsApp: "Send via WhatsApp",
+    shareWhatsapp: "Share via WhatsApp",
     copyLink: "Copy Link",
     linkCopied: "Copied!",
     copy: "Copy",
 
     // Zoom Live Class Section
     zoomLiveClass: "Zoom Live Class Hub",
-    createLiveClass: "Create Live Class",
+    createLiveClass: "Create Live Class Link",
     startClass: "Start Class",
     nextLiveClass: "Next Live Class",
     zoomDesc: "Join live interactive video sessions with your students",
-    zoomTopic: "Topic: Advanced Handwriting Masterclass (Batch 01)",
+    zoomTopic: "Advanced Handwriting Masterclass (Batch 01)",
     zoomTime: "Today at 4:00 PM",
+    zoomTopicLabel: "Topic/Subject",
+    zoomDateTimeLabel: "Date & Time",
+    zoomPasscodeLabel: "Passcode",
+    createLiveClassModalTitle: "Create Live Class Link",
 
     // Main Tabs / Sections
     studentList: "Student List",
@@ -414,6 +514,7 @@ const dictionary = {
     batch1: "Batch 01 (10:00 AM)",
     batch2: "Batch 02 (04:00 PM)",
     batch3: "Batch 03 (07:00 PM)",
+    allCourses: "All Courses",
     rollAndName: "Roll & Name",
     batch: "Batch",
     todayAttendance: "Today's Attendance",
@@ -426,19 +527,22 @@ const dictionary = {
     noStudentsFound: "No students found.",
 
     // Homework Queue
-    queueTitle: "Homework Review Queue (Grading Queue)",
+    queueTitle: "Homework Review Queue",
     queueDesc: "Review student homework submissions, assign scores, and leave feedback.",
     pendingFilter: "Pending",
-    gradedFilter: "Reviewed",
+    gradedFilter: "Marked as Reviewed",
     allFilter: "All",
     gradeLabel: "Grade",
     pendingStatus: "Pending",
     studentNoteLabel: "Student Note:",
     previewFileBtn: "Preview Submitted File / Image 🖼️",
-    teacherFeedbackLabel: "Teacher Feedback:",
+    teacherFeedbackLabel: "Teacher Feedback",
     editGradeBtn: "Edit Grade",
-    gradeSubmitBtn: "Grade & Review Homework",
+    enterMarksGrade: "Enter Marks/Grade",
+    markAsReviewed: "Mark as Reviewed",
     noHomeworkFound: "No homework found in this category.",
+    submittedDateLabel: "Submitted Date:",
+    dueDateLabelShort: "Due Date:",
 
     // 1-Click Attendance
     attendanceTitle: "1-Click Attendance Register for Today's Class",
@@ -449,20 +553,21 @@ const dictionary = {
     absentCount: "Absent:",
 
     // Performance Stats
-    statsTitle: "Batch Homework & Performance Statistics",
+    statsTitle: "Performance Statistics",
     completedTag: "Completed",
     totalStudentsLabel: "Total Students:",
-    avgScoreLabel: "Average Marks:",
-    attendanceRateLabel: "Attendance Rate:",
+    avgScoreLabel: "Average Score:",
+    attendanceRateLabel: "Total Attendance:",
+    batchCompletionRate: "Batch Completion Rate",
 
     // Notifications
-    notifTitle: "Recent Notifications & Alerts",
+    notifTitle: "Notifications",
     markAllRead: "Mark all as read",
 
     // Assign Modal
     assignModalTitle: "New Homework Assignment",
     batchSelectLabel: "Batch / Class Name *",
-    subjectSelectLabel: "Subject *",
+    subjectSelectLabel: "Topic/Subject *",
     dueDateLabel: "Due Date *",
     hwTitleInputLabel: "Homework Title *",
     hwTitlePlaceholder: "e.g., Line alignment & alphabet practice (Page 4)",
@@ -477,10 +582,9 @@ const dictionary = {
     // Grade Modal
     gradeModalTitle: "Homework Evaluation - ",
     scoreInputLabel: "Score / Marks (Out of 100) *",
-    feedbackInputLabel: "Teacher Feedback & Remarks",
     feedbackPlaceholder: "e.g., Handwriting is clean, pay attention to vowels...",
     cancelBtn: "Cancel",
-    submitGradeBtn: "Submit Grade & Marks ✓"
+    submitGradeBtn: "Mark as Reviewed ✓"
   }
 };
 
@@ -497,19 +601,26 @@ export default function TeacherPage() {
 
   /* Filter & Search States */
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBatch, setSelectedBatch] = useState("সকল ব্যাচ");
+  const [selectedBatch, setSelectedBatch] = useState<string>("all");
+  const [selectedCourseId, setSelectedCourseId] = useState<number | "all">("all");
   const [queueFilter, setQueueFilter] = useState<"all" | "pending" | "graded">("pending");
 
   /* Homework Modal & WhatsApp State */
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [newHwBatch, setNewHwBatch] = useState("ব্যাচ ০১ (সকাল ১০:০০)");
+  const [newHwBatch, setNewHwBatch] = useState("batch1");
   const [newHwSubject, setNewHwSubject] = useState("বাংলা সুন্দর হাতের লেখা");
   const [newHwTitle, setNewHwTitle] = useState("");
   const [newHwDesc, setNewHwDesc] = useState("");
-  const [newHwDueDate, setNewHwDueDate] = useState("2026-07-30");
+  const [newHwDueDate, setNewHwDueDate] = useState("2026-08-05");
   const [newHwPhone, setNewHwPhone] = useState("");
   const [generatedWaLink, setGeneratedWaLink] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
+
+  /* Zoom Live Class Modal State */
+  const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
+  const [zoomTopicInput, setZoomTopicInput] = useState(t.zoomTopic);
+  const [zoomDateTimeInput, setZoomDateTimeInput] = useState("2026-08-01T16:00");
+  const [zoomPasscodeInput, setZoomPasscodeInput] = useState("123456");
 
   /* Grade Modal State */
   const [selectedHw, setSelectedHw] = useState<HomeworkSubmission | null>(null);
@@ -544,6 +655,8 @@ export default function TeacherPage() {
     else if (scoreNum < 75) gradeLetter = "B";
     else if (scoreNum < 90) gradeLetter = "A";
 
+    const studentNameStr = getLocalizedText(selectedHw.studentName, currentLang);
+
     setHomeworks((prev) =>
       prev.map((hw) =>
         hw.id === selectedHw.id
@@ -551,7 +664,10 @@ export default function TeacherPage() {
               ...hw,
               score: scoreNum,
               grade: gradeLetter,
-              feedback: feedbackInput || (currentLang === "bn" ? "খুব সুন্দর চেষ্টা করা হয়েছে!" : "Great effort!"),
+              feedback: {
+                bn: feedbackInput || "খুব সুন্দর চেষ্টা করা হয়েছে!",
+                en: feedbackInput || "Great effort!"
+              },
               status: "Graded",
             }
           : hw
@@ -562,10 +678,14 @@ export default function TeacherPage() {
     setNotifications((prev) => [
       {
         id: `notif-${Date.now()}`,
-        title: currentLang === "bn"
-          ? `${selectedHw.studentName}-এর হোমওয়ার্ক গ্রেডিং সম্পন্ন করা হয়েছে (${scoreNum}/১০০)।`
-          : `Grading completed for ${selectedHw.studentName} (${scoreNum}/100).`,
-        time: currentLang === "bn" ? "এইমাত্র" : "Just now",
+        title: {
+          bn: `${getLocalizedText(selectedHw.studentName, "bn")}-এর হোমওয়ার্ক গ্রেডিং সম্পন্ন করা হয়েছে (${formatNumber(scoreNum, "bn")}/১০০)।`,
+          en: `Grading completed for ${getLocalizedText(selectedHw.studentName, "en")} (${scoreNum}/100).`
+        },
+        time: {
+          bn: "এইমাত্র",
+          en: "Just now"
+        },
         type: "submission",
         read: false,
       },
@@ -588,24 +708,53 @@ export default function TeacherPage() {
 
     setGeneratedWaLink(waUrl);
 
-    // Also add to homework list as sample pending
+    // Add to homework list as sample pending
     const newEntry: HomeworkSubmission = {
       id: `hw-${Date.now()}`,
       studentId: "std-new",
-      studentName: `${newHwBatch} (${currentLang === "bn" ? "নতুন অ্যাসাইনমেন্ট" : "New Assignment"})`,
-      batch: newHwBatch,
-      subject: newHwSubject,
-      title: newHwTitle,
+      studentName: { bn: "নতুন অ্যাসাইনমেন্ট", en: "New Assignment" },
+      batch: { bn: "ব্যাচ ০১ (সকাল ১০:০০)", en: "Batch 01 (10:00 AM)" },
+      courseId: selectedCourseId === "all" ? 1 : Number(selectedCourseId),
+      subject: { bn: newHwSubject, en: newHwSubject },
+      title: { bn: newHwTitle, en: newHwTitle },
       submittedDate: new Date().toISOString().split("T")[0],
       dueDate: newHwDueDate,
-      submissionNote: newHwDesc,
+      submissionNote: { bn: newHwDesc, en: newHwDesc },
       score: 0,
       grade: "-",
-      feedback: "",
+      feedback: { bn: "", en: "" },
       status: "Pending",
     };
 
     setHomeworks((prev) => [newEntry, ...prev]);
+  };
+
+  const handleCreateZoomLink = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const alertMsg = currentLang === "bn" 
+      ? "নতুন লাইভ ক্লাসের লিঙ্ক তৈরি করা হয়েছে - জুম মিটিং" 
+      : "New live class link created - Zoom Meeting";
+    alert(alertMsg);
+
+    // Add notification
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        title: {
+          bn: "নতুন লাইভ ক্লাসের লিঙ্ক তৈরি করা হয়েছে - জুম মিটিং",
+          en: "New live class link created - Zoom Meeting"
+        },
+        time: {
+          bn: "এইমাত্র",
+          en: "Just now"
+        },
+        type: "zoom",
+        read: false,
+      },
+      ...prev,
+    ]);
+
+    setIsZoomModalOpen(false);
   };
 
   const copyToClipboard = (text: string) => {
@@ -616,15 +765,26 @@ export default function TeacherPage() {
 
   /* Filtered Lists */
   const filteredStudents = students.filter((s) => {
+    const stdName = getLocalizedText(s.name, currentLang).toLowerCase();
+    const stdBatch = getLocalizedText(s.batch, currentLang);
     const matchesSearch =
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      stdName.includes(searchQuery.toLowerCase()) ||
       s.rollNo.includes(searchQuery);
     const matchesBatch =
-      selectedBatch === "সকল ব্যাচ" || s.batch === selectedBatch;
-    return matchesSearch && matchesBatch;
+      selectedBatch === "all" ||
+      (selectedBatch === "batch1" && stdBatch.includes("01")) ||
+      (selectedBatch === "batch2" && stdBatch.includes("02")) ||
+      (selectedBatch === "batch3" && stdBatch.includes("03"));
+    const matchesCourse =
+      selectedCourseId === "all" || s.courseId === Number(selectedCourseId);
+
+    return matchesSearch && matchesBatch && matchesCourse;
   });
 
   const filteredHomeworkQueue = homeworks.filter((hw) => {
+    const matchesCourse =
+      selectedCourseId === "all" || hw.courseId === Number(selectedCourseId);
+    if (!matchesCourse) return false;
     if (queueFilter === "pending") return hw.status === "Pending";
     if (queueFilter === "graded") return hw.status === "Graded";
     return true;
@@ -652,10 +812,30 @@ export default function TeacherPage() {
               </p>
             </div>
 
-            {/* Header Controls: Language Switcher & Action Button */}
+            {/* Header Controls: Course Selector & Language Switcher & Action Button */}
             <div className="flex flex-wrap items-center gap-3">
               
-              {/* 🌐 Clean Language Switcher Toggle (বাংলা | English) */}
+              {/* 5 Assigned Courses Dropdown */}
+              <div className="bg-white/15 backdrop-blur-md p-1.5 rounded-2xl border border-white/25 flex items-center">
+                <label className="text-xs font-bold text-white/90 px-2 flex items-center gap-1">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{t.selectCourseLabel}</span>
+                </label>
+                <select
+                  value={selectedCourseId}
+                  onChange={(e) => setSelectedCourseId(e.target.value === "all" ? "all" : Number(e.target.value))}
+                  className="bg-white text-amber-950 font-bold text-xs px-3 py-1.5 rounded-xl border-none focus:ring-2 focus:ring-amber-300 outline-none cursor-pointer max-w-[200px] sm:max-w-[240px] truncate"
+                  style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
+                >
+                  {ASSIGNED_COURSES.map((course) => (
+                    <option key={course.id} value={course.id} className="text-foreground">
+                      {getLocalizedText(course.title, currentLang)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 🌐 Language Switcher Toggle (বাংলা | English) */}
               <div className="bg-white/15 backdrop-blur-md p-1 rounded-2xl border border-white/25 flex items-center shadow-inner">
                 <button
                   type="button"
@@ -710,7 +890,7 @@ export default function TeacherPage() {
             </div>
             <div className="flex items-baseline justify-between">
               <h2 className="text-3xl font-extrabold text-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                {totalStudents} <span className="text-sm font-normal text-muted-foreground">{t.persons}</span>
+                {formatNumber(totalStudents, currentLang)} <span className="text-sm font-normal text-muted-foreground">{t.persons}</span>
               </h2>
               <span className="text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" /> {t.threeBatches}
@@ -733,7 +913,7 @@ export default function TeacherPage() {
             </div>
             <div className="flex items-baseline justify-between">
               <h2 className="text-3xl font-extrabold text-amber-600 dark:text-amber-500" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                {pendingHwCount} <span className="text-sm font-normal text-muted-foreground">{t.items}</span>
+                {formatNumber(pendingHwCount, currentLang)} <span className="text-sm font-normal text-muted-foreground">{t.items}</span>
               </h2>
               <span className="text-xs font-bold text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-md">
                 {t.reviewNeeded}
@@ -756,7 +936,7 @@ export default function TeacherPage() {
             </div>
             <div className="flex items-baseline justify-between">
               <h2 className="text-3xl font-extrabold text-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                {reviewedHwCount} <span className="text-sm font-normal text-muted-foreground">{t.items}</span>
+                {formatNumber(reviewedHwCount, currentLang)} <span className="text-sm font-normal text-muted-foreground">{t.items}</span>
               </h2>
               <span className="text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md">
                 {t.gradingCompleted}
@@ -779,7 +959,7 @@ export default function TeacherPage() {
             </div>
             <div className="flex items-baseline justify-between mb-2">
               <h2 className="text-3xl font-extrabold text-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                {avgProgress}%
+                {formatNumber(avgProgress, currentLang)}%
               </h2>
               <span className="text-xs font-bold text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-md">
                 {t.excellent}
@@ -813,7 +993,7 @@ export default function TeacherPage() {
                   <span className="text-xs text-amber-200/80 font-medium">{t.nextLiveClass}</span>
                 </div>
                 <h3 className="text-base sm:text-lg font-bold text-white mt-1" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                  {t.zoomTopic}
+                  {t.zoomTopicLabel}: {t.zoomTopic}
                 </h3>
                 <p className="text-xs text-slate-300 mt-0.5" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
                   {t.zoomDesc} • <span className="text-amber-300 font-bold">{t.zoomTime}</span>
@@ -823,7 +1003,7 @@ export default function TeacherPage() {
 
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               <button
-                onClick={() => alert(currentLang === 'bn' ? "নতুন লাইভ সেশন শিডিউল করা হচ্ছে..." : "Scheduling new live class session...")}
+                onClick={() => setIsZoomModalOpen(true)}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-700 transition-all cursor-pointer"
                 style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
               >
@@ -857,7 +1037,7 @@ export default function TeacherPage() {
             style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
           >
             <Users className="w-4 h-4" />
-            <span>{t.studentList} ({totalStudents})</span>
+            <span>{t.studentList} ({formatNumber(filteredStudents.length, currentLang)})</span>
           </button>
 
           <button
@@ -873,7 +1053,7 @@ export default function TeacherPage() {
             <span>{t.homeworkQueue}</span>
             {pendingHwCount > 0 && (
               <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-[10px] font-black flex items-center justify-center ml-1">
-                {pendingHwCount}
+                {formatNumber(pendingHwCount, currentLang)}
               </span>
             )}
           </button>
@@ -956,10 +1136,10 @@ export default function TeacherPage() {
                     className="px-3.5 py-2 rounded-xl bg-muted/40 border border-border text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
                     style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                   >
-                    <option value="সকল ব্যাচ">{t.allBatches}</option>
-                    <option value="ব্যাচ ০১ (সকাল ১০:০০)">{t.batch1}</option>
-                    <option value="ব্যাচ ০২ (বিকেল ৪:০০)">{t.batch2}</option>
-                    <option value="ব্যাচ ০৩ (সন্ধ্যা ৭:০০)">{t.batch3}</option>
+                    <option value="all">{t.allBatches}</option>
+                    <option value="batch1">{t.batch1}</option>
+                    <option value="batch2">{t.batch2}</option>
+                    <option value="batch3">{t.batch3}</option>
                   </select>
                 </div>
               </div>
@@ -986,11 +1166,11 @@ export default function TeacherPage() {
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 font-extrabold text-xs flex items-center justify-center">
-                            #{std.rollNo}
+                            #{formatNumber(std.rollNo, currentLang)}
                           </span>
                           <div>
                             <span className="font-bold text-foreground text-sm block" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                              {std.name}
+                              {getLocalizedText(std.name, currentLang)}
                             </span>
                             <span className="text-[11px] text-muted-foreground">{std.phone}</span>
                           </div>
@@ -999,7 +1179,7 @@ export default function TeacherPage() {
 
                       {/* Batch */}
                       <td className="py-3.5 px-4 text-muted-foreground font-medium" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                        {std.batch}
+                        {getLocalizedText(std.batch, currentLang)}
                       </td>
 
                       {/* Attendance Badge */}
@@ -1023,14 +1203,14 @@ export default function TeacherPage() {
 
                       {/* Homework Ratio */}
                       <td className="py-3.5 px-4 text-center font-bold text-foreground">
-                        {std.submittedHwCount}/{std.totalHwCount} {t.items}
+                        {formatNumber(std.submittedHwCount, currentLang)}/{formatNumber(std.totalHwCount, currentLang)} {t.items}
                       </td>
 
                       {/* Progress Bar */}
                       <td className="py-3.5 px-4">
                         <div className="w-28 mx-auto">
                           <div className="flex justify-between text-[10px] font-bold mb-1">
-                            <span>{std.progressPercent}%</span>
+                            <span>{formatNumber(std.progressPercent, currentLang)}%</span>
                           </div>
                           <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                             <div
@@ -1044,7 +1224,7 @@ export default function TeacherPage() {
                       {/* WhatsApp Direct Action */}
                       <td className="py-3.5 px-4 text-right">
                         <a
-                          href={`https://api.whatsapp.com/send?phone=${std.phone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(`Dear ${std.name}, update from LearnOps regarding homework.`)}`}
+                          href={`https://api.whatsapp.com/send?phone=${std.phone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(`Dear ${getLocalizedText(std.name, currentLang)}, update from LearnOps regarding homework.`)}`}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
@@ -1093,7 +1273,7 @@ export default function TeacherPage() {
                   }`}
                   style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                 >
-                  {t.pendingFilter} ({homeworks.filter((h) => h.status === "Pending").length})
+                  {t.pendingFilter} ({formatNumber(homeworks.filter((h) => h.status === "Pending").length, currentLang)})
                 </button>
                 <button
                   onClick={() => setQueueFilter("graded")}
@@ -1104,7 +1284,7 @@ export default function TeacherPage() {
                   }`}
                   style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                 >
-                  {t.gradedFilter} ({homeworks.filter((h) => h.status === "Graded").length})
+                  {t.gradedFilter} ({formatNumber(homeworks.filter((h) => h.status === "Graded").length, currentLang)})
                 </button>
                 <button
                   onClick={() => setQueueFilter("all")}
@@ -1115,7 +1295,7 @@ export default function TeacherPage() {
                   }`}
                   style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                 >
-                  {t.allFilter} ({homeworks.length})
+                  {t.allFilter} ({formatNumber(homeworks.length, currentLang)})
                 </button>
               </div>
             </div>
@@ -1132,9 +1312,9 @@ export default function TeacherPage() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h4 className="text-sm font-bold text-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                          {hw.studentName}
+                          {getLocalizedText(hw.studentName, currentLang)}
                         </h4>
-                        <p className="text-[11px] text-muted-foreground">{hw.batch}</p>
+                        <p className="text-[11px] text-muted-foreground">{getLocalizedText(hw.batch, currentLang)}</p>
                       </div>
 
                       <span
@@ -1145,20 +1325,20 @@ export default function TeacherPage() {
                         }`}
                         style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                       >
-                        {hw.status === "Graded" ? `${t.gradeLabel}: ${hw.grade} (${hw.score}/100)` : t.pendingStatus}
+                        {hw.status === "Graded" ? `${t.gradeLabel}: ${hw.grade} (${formatNumber(hw.score, currentLang)}/100)` : t.pendingStatus}
                       </span>
                     </div>
 
                     {/* Homework Title */}
                     <div className="mb-3">
                       <span className="text-[10px] font-bold uppercase text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-md mb-1 inline-block">
-                        {hw.subject}
+                        {getLocalizedText(hw.subject, currentLang)}
                       </span>
                       <h3 className="text-sm font-semibold text-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                        {hw.title}
+                        {getLocalizedText(hw.title, currentLang)}
                       </h3>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {currentLang === "bn" ? `জমার তারিখ: ${hw.submittedDate} | ডেডলাইন: ${hw.dueDate}` : `Submitted: ${hw.submittedDate} | Due: ${hw.dueDate}`}
+                        {t.submittedDateLabel} {hw.submittedDate} | {t.dueDateLabelShort} {hw.dueDate}
                       </p>
                     </div>
 
@@ -1166,7 +1346,7 @@ export default function TeacherPage() {
                     {hw.submissionNote && (
                       <div className="bg-background border border-border p-3 rounded-xl text-xs text-foreground/80 mb-3" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
                         <span className="font-bold block text-muted-foreground text-[10px] mb-0.5">{t.studentNoteLabel}</span>
-                        "{hw.submissionNote}"
+                        "{getLocalizedText(hw.submissionNote, currentLang)}"
                       </div>
                     )}
 
@@ -1185,7 +1365,7 @@ export default function TeacherPage() {
                     {hw.feedback && (
                       <div className="bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-xl text-xs text-emerald-900 dark:text-emerald-200 mb-4" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
                         <span className="font-bold block text-[10px] text-emerald-700 dark:text-emerald-400 mb-0.5">{t.teacherFeedbackLabel}</span>
-                        "{hw.feedback}"
+                        "{getLocalizedText(hw.feedback, currentLang)}"
                       </div>
                     )}
                   </div>
@@ -1196,13 +1376,13 @@ export default function TeacherPage() {
                       onClick={() => {
                         setSelectedHw(hw);
                         setScoreInput(hw.score ? String(hw.score) : "90");
-                        setFeedbackInput(hw.feedback || "");
+                        setFeedbackInput(getLocalizedText(hw.feedback, currentLang) || "");
                       }}
                       className="w-full inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer shadow-xs"
                       style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                     >
                       <Award className="w-4 h-4" />
-                      <span>{hw.status === "Graded" ? t.editGradeBtn : t.gradeSubmitBtn}</span>
+                      <span>{hw.status === "Graded" ? t.editGradeBtn : t.enterMarksGrade}</span>
                     </button>
                   </div>
                 </div>
@@ -1233,13 +1413,13 @@ export default function TeacherPage() {
 
               <div className="flex items-center gap-3 text-xs font-bold">
                 <span className="text-emerald-600 bg-emerald-500/10 px-3 py-1 rounded-full">
-                  {t.presentCount} {students.filter((s) => s.attendanceStatus === "Present").length} {t.persons}
+                  {t.presentCount} {formatNumber(students.filter((s) => s.attendanceStatus === "Present").length, currentLang)} {t.persons}
                 </span>
                 <span className="text-amber-600 bg-amber-500/10 px-3 py-1 rounded-full">
-                  {t.lateCount} {students.filter((s) => s.attendanceStatus === "Late").length} {t.persons}
+                  {t.lateCount} {formatNumber(students.filter((s) => s.attendanceStatus === "Late").length, currentLang)} {t.persons}
                 </span>
                 <span className="text-red-500 bg-red-500/10 px-3 py-1 rounded-full">
-                  {t.absentCount} {students.filter((s) => s.attendanceStatus === "Absent").length} {t.persons}
+                  {t.absentCount} {formatNumber(students.filter((s) => s.attendanceStatus === "Absent").length, currentLang)} {t.persons}
                 </span>
               </div>
             </div>
@@ -1252,13 +1432,13 @@ export default function TeacherPage() {
                 >
                   <div className="flex items-center gap-3">
                     <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-700 font-bold text-xs flex items-center justify-center">
-                      #{student.rollNo}
+                      #{formatNumber(student.rollNo, currentLang)}
                     </span>
                     <div>
                       <h4 className="text-sm font-bold text-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                        {student.name}
+                        {getLocalizedText(student.name, currentLang)}
                       </h4>
-                      <p className="text-[11px] text-muted-foreground">{student.batch}</p>
+                      <p className="text-[11px] text-muted-foreground">{getLocalizedText(student.batch, currentLang)}</p>
                     </div>
                   </div>
 
@@ -1327,16 +1507,17 @@ export default function TeacherPage() {
                       {t.batch1}
                     </h3>
                     <span className="text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                      92% {t.completedTag}
+                      {formatNumber(92, currentLang)}% {t.completedTag}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-3">{t.totalStudentsLabel} 20 {t.persons}</p>
+                  <p className="text-xs text-muted-foreground mb-3">{t.batchCompletionRate}: {formatNumber(92, currentLang)}%</p>
                   <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden mb-4">
                     <div className="h-full bg-emerald-500 rounded-full" style={{ width: "92%" }} />
                   </div>
                   <div className="text-xs space-y-1 text-muted-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                    <div className="flex justify-between"><span>{t.avgScoreLabel}</span> <span className="font-bold text-foreground">91/100</span></div>
-                    <div className="flex justify-between"><span>{t.attendanceRateLabel}</span> <span className="font-bold text-foreground">95%</span></div>
+                    <div className="flex justify-between"><span>{t.avgScoreLabel}</span> <span className="font-bold text-foreground">{formatNumber(91, currentLang)}/100</span></div>
+                    <div className="flex justify-between"><span>{t.attendanceRateLabel}</span> <span className="font-bold text-foreground">{formatNumber(95, currentLang)}%</span></div>
+                    <div className="flex justify-between"><span>{t.totalStudentsLabel}</span> <span className="font-bold text-foreground">{formatNumber(20, currentLang)} {t.persons}</span></div>
                   </div>
                 </div>
 
@@ -1347,16 +1528,17 @@ export default function TeacherPage() {
                       {t.batch2}
                     </h3>
                     <span className="text-xs font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-md">
-                      84% {t.completedTag}
+                      {formatNumber(84, currentLang)}% {t.completedTag}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-3">{t.totalStudentsLabel} 15 {t.persons}</p>
+                  <p className="text-xs text-muted-foreground mb-3">{t.batchCompletionRate}: {formatNumber(84, currentLang)}%</p>
                   <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden mb-4">
                     <div className="h-full bg-amber-500 rounded-full" style={{ width: "84%" }} />
                   </div>
                   <div className="text-xs space-y-1 text-muted-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                    <div className="flex justify-between"><span>{t.avgScoreLabel}</span> <span className="font-bold text-foreground">84/100</span></div>
-                    <div className="flex justify-between"><span>{t.attendanceRateLabel}</span> <span className="font-bold text-foreground">88%</span></div>
+                    <div className="flex justify-between"><span>{t.avgScoreLabel}</span> <span className="font-bold text-foreground">{formatNumber(84, currentLang)}/100</span></div>
+                    <div className="flex justify-between"><span>{t.attendanceRateLabel}</span> <span className="font-bold text-foreground">{formatNumber(88, currentLang)}%</span></div>
+                    <div className="flex justify-between"><span>{t.totalStudentsLabel}</span> <span className="font-bold text-foreground">{formatNumber(15, currentLang)} {t.persons}</span></div>
                   </div>
                 </div>
 
@@ -1367,16 +1549,17 @@ export default function TeacherPage() {
                       {t.batch3}
                     </h3>
                     <span className="text-xs font-bold text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-md">
-                      78% {t.completedTag}
+                      {formatNumber(78, currentLang)}% {t.completedTag}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-3">{t.totalStudentsLabel} 13 {t.persons}</p>
+                  <p className="text-xs text-muted-foreground mb-3">{t.batchCompletionRate}: {formatNumber(78, currentLang)}%</p>
                   <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden mb-4">
                     <div className="h-full bg-blue-500 rounded-full" style={{ width: "78%" }} />
                   </div>
                   <div className="text-xs space-y-1 text-muted-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                    <div className="flex justify-between"><span>{t.avgScoreLabel}</span> <span className="font-bold text-foreground">79/100</span></div>
-                    <div className="flex justify-between"><span>{t.attendanceRateLabel}</span> <span className="font-bold text-foreground">82%</span></div>
+                    <div className="flex justify-between"><span>{t.avgScoreLabel}</span> <span className="font-bold text-foreground">{formatNumber(79, currentLang)}/100</span></div>
+                    <div className="flex justify-between"><span>{t.attendanceRateLabel}</span> <span className="font-bold text-foreground">{formatNumber(82, currentLang)}%</span></div>
+                    <div className="flex justify-between"><span>{t.totalStudentsLabel}</span> <span className="font-bold text-foreground">{formatNumber(13, currentLang)} {t.persons}</span></div>
                   </div>
                 </div>
 
@@ -1417,9 +1600,11 @@ export default function TeacherPage() {
                   </div>
                   <div className="flex-1">
                     <p className="text-xs sm:text-sm font-semibold" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                      {notif.title}
+                      {getLocalizedText(notif.title, currentLang)}
                     </p>
-                    <span className="text-[11px] text-muted-foreground mt-1 block">{notif.time}</span>
+                    <span className="text-[11px] text-muted-foreground mt-1 block">
+                      {getLocalizedText(notif.time, currentLang)}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -1428,6 +1613,104 @@ export default function TeacherPage() {
         )}
 
       </div>
+
+      {/* ── ZOOM LIVE CLASS CREATION MODAL ── */}
+      {isZoomModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-3xl max-w-md w-full p-6 relative shadow-2xl">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Video className="w-5 h-5 text-amber-600" />
+                <h3 className="text-lg font-bold text-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
+                  {t.createLiveClassModalTitle}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsZoomModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateZoomLink} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
+                  {t.zoomTopicLabel} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={zoomTopicInput}
+                  onChange={(e) => setZoomTopicInput(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-xs font-medium focus:ring-2 focus:ring-amber-500"
+                  style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
+                  {t.zoomDateTimeLabel} *
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={zoomDateTimeInput}
+                  onChange={(e) => setZoomDateTimeInput(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-xs font-medium focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
+                  {t.zoomPasscodeLabel} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={zoomPasscodeInput}
+                  onChange={(e) => setZoomPasscodeInput(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-xs font-medium focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <button
+                  type="submit"
+                  className="w-full inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-3 rounded-xl transition-all cursor-pointer shadow-md text-xs"
+                  style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
+                >
+                  <Video className="w-4 h-4" />
+                  <span>{t.createLiveClass}</span>
+                </button>
+
+                <div className="flex gap-2">
+                  <a
+                    href="https://zoom.us/start"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all cursor-pointer text-center"
+                    style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
+                  >
+                    <span>{t.startClass}</span>
+                  </a>
+
+                  <a
+                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Zoom Meeting: ${zoomTopicInput}\nLink: https://zoom.us/j/123456789\nPasscode: ${zoomPasscodeInput}`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all cursor-pointer text-center"
+                    style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{t.shareWhatsapp}</span>
+                  </a>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── ASSIGN HOMEWORK & WHATSAPP INTEGRATION MODAL ── */}
       {isAssignModalOpen && (
@@ -1465,9 +1748,9 @@ export default function TeacherPage() {
                   className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-xs font-bold text-foreground focus:ring-2 focus:ring-amber-500 cursor-pointer"
                   style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                 >
-                  <option value="ব্যাচ ০১ (সকাল ১০:০০)">{t.batch1}</option>
-                  <option value="ব্যাচ ০২ (বিকেল ৪:০০)">{t.batch2}</option>
-                  <option value="ব্যাচ ০৩ (সন্ধ্যা ৭:০০)">{t.batch3}</option>
+                  <option value="batch1">{t.batch1}</option>
+                  <option value="batch2">{t.batch2}</option>
+                  <option value="batch3">{t.batch3}</option>
                 </select>
               </div>
 
@@ -1606,9 +1889,9 @@ export default function TeacherPage() {
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-3xl max-w-lg w-full p-6 relative shadow-2xl">
             <h3 className="text-xl font-bold text-foreground mb-1" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-              {t.gradeModalTitle}{selectedHw.studentName}
+              {t.gradeModalTitle}{getLocalizedText(selectedHw.studentName, currentLang)}
             </h3>
-            <p className="text-xs text-muted-foreground mb-4">{selectedHw.title}</p>
+            <p className="text-xs text-muted-foreground mb-4">{getLocalizedText(selectedHw.title, currentLang)}</p>
 
             <form onSubmit={handleSaveGrade} className="space-y-4">
               <div>
@@ -1628,7 +1911,7 @@ export default function TeacherPage() {
 
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                  {t.feedbackInputLabel}
+                  {t.teacherFeedbackLabel}
                 </label>
                 <textarea
                   rows={3}
@@ -1654,7 +1937,7 @@ export default function TeacherPage() {
                   className="flex-1 bg-amber-600 text-white font-bold py-3 rounded-xl hover:bg-amber-700 transition-all text-xs cursor-pointer shadow-md"
                   style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                 >
-                  {t.submitGradeBtn}
+                  {t.markAsReviewed}
                 </button>
               </div>
             </form>
