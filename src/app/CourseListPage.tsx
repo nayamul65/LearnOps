@@ -21,6 +21,8 @@ import { Button } from "./components/ui/button";
 import { useLanguage } from "./context/LanguageContext";
 import Course1DetailsModal from "../components/Course1DetailsModal";
 import Course2DetailsModal from "../components/Course2DetailsModal";
+import Course3DetailsModal from "../components/Course3DetailsModal";
+import Course4DetailsModal from "../components/Course4DetailsModal";
 
 export const GOOGLE_FORM_URL = "https://forms.google.com/demo-enrollment-form";
 
@@ -217,6 +219,8 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
   const [demoCourse, setDemoCourse] = useState<Course | null>(null);
   const [course1ModalOpen, setCourse1ModalOpen] = useState(false);
   const [course2ModalOpen, setCourse2ModalOpen] = useState(false);
+  const [course3ModalOpen, setCourse3ModalOpen] = useState(false);
+  const [course4ModalOpen, setCourse4ModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const categories = ["All", "Handwriting", "English", "Language", "Islamic"];
@@ -598,6 +602,10 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
                               setCourse1ModalOpen(true);
                             } else if (course.id === 2) {
                               setCourse2ModalOpen(true);
+                            } else if (course.id === 3) {
+                              setCourse3ModalOpen(true);
+                            } else if (course.id === 4) {
+                              setCourse4ModalOpen(true);
                             } else {
                               navigate(`/course/${course.id}`);
                             }
@@ -684,6 +692,18 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
       <Course2DetailsModal
         isOpen={course2ModalOpen}
         onClose={() => setCourse2ModalOpen(false)}
+      />
+
+      {/* ── COURSE 3 DETAILS MODAL ── */}
+      <Course3DetailsModal
+        isOpen={course3ModalOpen}
+        onClose={() => setCourse3ModalOpen(false)}
+      />
+
+      {/* ── COURSE 4 DETAILS MODAL ── */}
+      <Course4DetailsModal
+        isOpen={course4ModalOpen}
+        onClose={() => setCourse4ModalOpen(false)}
       />
     </div>
   );
