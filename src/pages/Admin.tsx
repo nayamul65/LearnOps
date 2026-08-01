@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   TrendingUp,
   BarChart3,
+  BarChart2,
   Users,
   BookOpen,
   Image as ImageIcon,
@@ -37,6 +38,14 @@ import {
   Sun,
   Moon,
   Globe,
+  Truck,
+  Receipt,
+  KeyRound,
+  UserX,
+  Package,
+  MapPin,
+  ShieldAlert,
+  Lock,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -49,7 +58,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { supabase, Lead, UserProfile } from "../lib/supabase";
+import { supabase, Lead, UserProfile, StaffMember, CourseExtraCost, DeliveryRecord } from "../lib/supabase";
 import { useLanguage } from "../app/context/LanguageContext";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -328,6 +337,130 @@ const INITIAL_BATCHES: BatchItem[] = [
   },
 ];
 
+const INITIAL_STAFF: StaffMember[] = [
+  {
+    id: "staff-1",
+    name: "আরিফুল ইসলাম",
+    email: "ariful@learnops.com",
+    phone: "01711-223344",
+    role: "Telesales",
+    status: "Active",
+    tempPassword: "pass1234password",
+    createdAt: "2026-07-01",
+  },
+  {
+    id: "staff-2",
+    name: "ফারহানা বেগম",
+    email: "farhana@learnops.com",
+    phone: "01822-334455",
+    role: "Teacher",
+    status: "Active",
+    tempPassword: "pass1234password",
+    createdAt: "2026-07-05",
+  },
+  {
+    id: "staff-3",
+    name: "রাহেলা খাতুন",
+    email: "rahela@learnops.com",
+    phone: "01933-445566",
+    role: "Teacher",
+    status: "Active",
+    tempPassword: "pass1234password",
+    createdAt: "2026-07-10",
+  },
+  {
+    id: "staff-4",
+    name: "সুমাইয়া আক্তার",
+    email: "sumaiya@learnops.com",
+    phone: "01644-556677",
+    role: "Telesales",
+    status: "Active",
+    tempPassword: "pass1234password",
+    createdAt: "2026-07-12",
+  },
+];
+
+const INITIAL_EXTRA_COSTS: CourseExtraCost[] = [
+  {
+    id: "cost-1",
+    courseTitle: "২৫ দিনে সুন্দর হাতের লেখা",
+    printingCost: 350,
+    inboundFreight: 80,
+    courierFee: 120,
+    totalExpense: 550,
+    unitPrice: 2500,
+    netMargin: 1950,
+  },
+  {
+    id: "cost-2",
+    courseTitle: "মাত্র ৩০ দিনে ছোটদের হ্যান্ডরাইটিং",
+    printingCost: 300,
+    inboundFreight: 70,
+    courierFee: 110,
+    totalExpense: 480,
+    unitPrice: 2000,
+    netMargin: 1520,
+  },
+  {
+    id: "cost-3",
+    courseTitle: "8 WEEKS ENGLISH SPEAKING (start program)",
+    printingCost: 450,
+    inboundFreight: 100,
+    courierFee: 130,
+    totalExpense: 680,
+    unitPrice: 3500,
+    netMargin: 2820,
+  },
+];
+
+const INITIAL_DELIVERIES: DeliveryRecord[] = [
+  {
+    id: "del-101",
+    studentName: "আরাফ হোসেন",
+    phone: "01711-223344",
+    address: "হাউজ ১২, রোড ৫, ধানমন্ডি, ঢাকা",
+    courierService: "Steadfast",
+    consignmentId: "STEAD-890123",
+    trxId: "BK892310X",
+    deliveryStatus: "Delivered",
+    date: "2026-07-25",
+  },
+  {
+    id: "del-102",
+    studentName: "তাহিয়া রহমান",
+    phone: "01822-334455",
+    address: "ব্লক সি, আফতাবনগর, ঢাকা",
+    courierService: "Pathao",
+    consignmentId: "PATHAO-445129",
+    trxId: "BK991204P",
+    deliveryStatus: "In Transit",
+    date: "2026-07-26",
+  },
+  {
+    id: "del-103",
+    studentName: "সামিন চৌধুরী",
+    phone: "01933-445566",
+    address: "১৫ জিইসি সার্কেল, চট্টগ্রাম",
+    courierService: "Steadfast",
+    consignmentId: "STEAD-901244",
+    trxId: "NG901234Y",
+    deliveryStatus: "Dispatched",
+    date: "2026-07-27",
+  },
+  {
+    id: "del-104",
+    studentName: "মারুফ হাসান",
+    phone: "01555-112233",
+    address: "জিন্দাবাজার, সিলেট",
+    courierService: "Paperfly",
+    consignmentId: "PFLY-332910",
+    trxId: "BK773341Z",
+    deliveryStatus: "Pending",
+    date: "2026-07-27",
+  },
+];
+
+
 /* ═══════════════════════════════════════════════════════════════════════════
    CENTRALIZED PURE TRANSLATIONS DICTIONARY
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -347,8 +480,6 @@ const adminTranslations = {
     teacherDesc: "Head Mentors & Roster",
     courseCms: "Course CMS",
     cmsDesc: "Create & Edit",
-    customization: "Customization",
-    customDesc: "Hero & Media Links",
 
     // Top headers
     badgeSales: "Revenue Graphs & Buyers List",
@@ -356,17 +487,60 @@ const adminTranslations = {
     badgeEmployees: "Telesales Representative Conversion",
     badgeBatches: "Head Teacher & Student Rosters",
     badgeCourses: "Live Course Catalog Management",
-    badgeCustomization: "Homepage Banner & Demo Video Links",
 
     titleSales: "Sales Analytics & Buyers History",
     titleLeads: "Inbound Lead Tracking & Assignment",
     titleEmployees: "Sales Representative Performance",
     titleBatches: "Head Teacher & Student Rosters",
     titleCourses: "Course CMS Portal",
-    titleCustomization: "Website Banner & Demo Video Settings",
 
     syncing: "Supabase Syncing...",
     addNewCourse: "Add New Course",
+
+    // Sales Sub-Tabs
+    overallSalesTab: "Overall Sales Report",
+    extraCostTab: "Extra Cost Report",
+    deliveryTab: "Delivery Report",
+
+    // Extra Cost Report
+    grossSales: "Gross Sales",
+    totalExpenses: "Total Product & Courier Expenses",
+    netProfit: "Net Profit",
+    itemizedCostTable: "Itemized Course & Product Expenses",
+    printingCost: "Unit Printing Cost (৳)",
+    inboundFreight: "Inbound Freight (৳)",
+    courierFee: "Unit Courier Fee (৳)",
+    totalExpenseCol: "Total Expense (৳)",
+    netProfitMargin: "Net Profit Margin",
+    editCostTitle: "Edit Course Expenses",
+
+    // Delivery Report
+    logisticsTrackingTable: "Logistics & Consignment Tracking",
+    searchDelivery: "Search by Consignment ID or Phone...",
+    courierService: "Courier Service",
+    consignmentId: "Consignment ID / Tracking Code",
+    deliveryStatus: "Delivery Status",
+    updateStatusBtn: "Update Status",
+    modalUpdateDeliveryTitle: "Update Delivery Consignment Status",
+    selectNewDeliveryStatus: "Select New Delivery Status:",
+    addressLabel: "Delivery Address:",
+
+    // Staff Management
+    staffManagementTitle: "Staff Credentials & Account Onboarding",
+    staffOnboardingSubtitle: "Add new employees, manage credentials, and toggle account activation status.",
+    addNewEmployee: "Add New Employee",
+    empName: "Employee Name",
+    empEmail: "Email Address",
+    empPhone: "Phone Number",
+    tempPassword: "Temporary Password",
+    empRole: "Role",
+    resetPassword: "Reset Password",
+    deactivateAccount: "Deactivate Account",
+    activateAccount: "Activate Account",
+    saveEmployee: "Create Employee Account ✓",
+    resetPassTitle: "Reset Staff Temporary Password",
+    newPasswordLabel: "New Temporary Password:",
+    saveNewPassword: "Save Password ✓",
 
     // Sales Tab
     timePeriodLabel: "Time Period:",
@@ -471,17 +645,6 @@ const adminTranslations = {
     saveChanges: "Save Changes ✓",
     publishCourse: "Publish Course ✓",
 
-    // Customization Tab
-    customizationTitle: "Homepage Live Hero & Media Settings",
-    customizationSuccess: "Website settings updated successfully!",
-    heroTitleLabel: "1. Homepage Hero Title",
-    heroSubLabel: "2. Hero Subtitle",
-    bannerUrlLabel: "3. Main Banner Image URL",
-    demoVideoUrlLabel: "4. Demo Class Video URL",
-    saveSiteSettings: "Save Website Settings ✓",
-    livePreviewTitle: "Live Site Preview",
-    guaranteedBadge: "Guaranteed Learning",
-    siteReflectNotice: "These updates will immediately reflect on the platform frontend.",
   },
   bn: {
     brandName: "লার্নঅপস অ্যাডমিন",
@@ -497,8 +660,6 @@ const adminTranslations = {
     teacherDesc: "হেড মেন্টর ও রোস্টার",
     courseCms: "কোর্স সিএমএস",
     cmsDesc: "তৈরি ও সম্পাদনা",
-    customization: "কাস্টমাইজেশন",
-    customDesc: "হিরো ও মিডিয়া লিংক",
 
     // Top headers
     badgeSales: "রেভিনিউ গ্রাফ এবং বায়ার্স তালিকা",
@@ -506,17 +667,60 @@ const adminTranslations = {
     badgeEmployees: "টেলিসেলস রিপ্রেজেন্টেটিভ কনভার্সন",
     badgeBatches: "হেড টিচার ও স্টুডেন্ট রোস্টার",
     badgeCourses: "লাইভ কোর্স ক্যাটালগ ম্যানেজমেন্ট",
-    badgeCustomization: "হোমপেজ ব্যানার ও ডেমো ভিডিও সেটিংস",
 
     titleSales: "সেলস অ্যানালিটিক্স ও বায়ার্স হিস্ট্রি",
     titleLeads: "ইনবাউন্ড লিড ট্র্যাকিং ও অ্যাসাইনমেন্ট",
     titleEmployees: "সেলস রিপ্রেজেন্টেটিভ পারফরম্যান্স",
     titleBatches: "হেড টিচার ও ব্যাচ স্টুডেন্ট রোস্টার",
     titleCourses: "কোর্স সিএমএস পোর্টাল",
-    titleCustomization: "ওয়েবসাইট ব্যানার ও ডেমো ভিডিও সেটিংস",
 
     syncing: "সুভাবেস সিঙ্ক হচ্ছে...",
     addNewCourse: "নতুন কোর্স যোগ করুন",
+
+    // Sales Sub-Tabs
+    overallSalesTab: "📊 সার্বিক সেলস রিপোর্ট",
+    extraCostTab: "💸 অতিরিক্ত খরচ রিপোর্ট",
+    deliveryTab: "🚚 ডেলিভারি ট্র্যাকিং রিপোর্ট",
+
+    // Extra Cost Report
+    grossSales: "মোট গ্রস সেলস",
+    totalExpenses: "মোট খরচ ও কুরিয়ার ফি",
+    netProfit: "নিট প্রফিট",
+    itemizedCostTable: "আইটেমাইজড কোর্স ও প্রোডাক্ট খরচ তালিকা",
+    printingCost: "ছাপা খরচ (৳)",
+    inboundFreight: "ইনবাউন্ড ফ্রেইট (৳)",
+    courierFee: "কুরিয়ার ফি (৳)",
+    totalExpenseCol: "মোট খরচ (৳)",
+    netProfitMargin: "নিট প্রফিট মার্জিন",
+    editCostTitle: "কোর্স খরচ পরিবর্তন করুন",
+
+    // Delivery Report
+    logisticsTrackingTable: "লজিস্টিকস ও কন্সাইনমেন্ট ট্র্যাকিং",
+    searchDelivery: "কন্সাইনমেন্ট আইডি বা ফোন দিয়ে খুঁজুন...",
+    courierService: "কুরিয়ার সার্ভিস",
+    consignmentId: "কন্সাইনমেন্ট আইডি / ট্র্যাকিং কোড",
+    deliveryStatus: "ডেলিভারি স্ট্যাটাস",
+    updateStatusBtn: "স্ট্যাটাস আপডেট",
+    modalUpdateDeliveryTitle: "ডেলিভারি কন্সাইনমেন্ট স্ট্যাটাস আপডেট",
+    selectNewDeliveryStatus: "নতুন ডেলিভারি স্ট্যাটাস নির্বাচন করুন:",
+    addressLabel: "ডেলিভারি ঠিকানা:",
+
+    // Staff Management
+    staffManagementTitle: "স্টাফ অ্যাকাউন্ট ও ক্রেডেনশিয়াল ম্যানেজমেন্ট",
+    staffOnboardingSubtitle: "নতুন এমপ্লয়ি যুক্ত করুন, পাসওয়ার্ড রিসেট এবং একাউন্ট অ্যাক্টিভ/ডিঅ্যাক্টিভেট করুন।",
+    addNewEmployee: "নতুন এমপ্লয়ি যোগ করুন",
+    empName: "এমপ্লয়ির নাম",
+    empEmail: "ইমেইল এড্রেস",
+    empPhone: "ফোন নম্বর",
+    tempPassword: "টেম্পোরারি পাসওয়ার্ড",
+    empRole: "দায়িত্ব/রোল",
+    resetPassword: "পাসওয়ার্ড রিসেট",
+    deactivateAccount: "ডিঅ্যাক্টিভেট",
+    activateAccount: "অ্যাক্টিভেট",
+    saveEmployee: "এমপ্লয়ি অ্যাকাউন্ট তৈরি করুন ✓",
+    resetPassTitle: "স্টাফ টেম্পোরারি পাসওয়ার্ড রিসেট",
+    newPasswordLabel: "নতুন টেম্পোরারি পাসওয়ার্ড:",
+    saveNewPassword: "পাসওয়ার্ড সেভ করুন ✓",
 
     // Sales Tab
     timePeriodLabel: "সময়কাল নির্বাচন:",
@@ -621,17 +825,6 @@ const adminTranslations = {
     saveChanges: "পরিবর্তন সেভ করুন ✓",
     publishCourse: "কোর্স পাবলিশ করুন ✓",
 
-    // Customization Tab
-    customizationTitle: "হোমপেজ লাইভ হিরো ও মিডিয়া সেটিংস",
-    customizationSuccess: "ওয়েবসাইট সেটিংস সফলভাবে আপডেট করা হয়েছে!",
-    heroTitleLabel: "১. হোমপেজ হিরো শিরোনাম",
-    heroSubLabel: "২. হিরো সাব-টাইটেল",
-    bannerUrlLabel: "৩. মেইন ব্যানার ইমেজ URL",
-    demoVideoUrlLabel: "৪. ডেমো ক্লাস ভিডিও URL",
-    saveSiteSettings: "ওয়েবসাইট সেটিংস পরিবর্তন সেভ করুন ✓",
-    livePreviewTitle: "লাইভ ওয়েবসাইট প্রিভিউ",
-    guaranteedBadge: "গ্যারান্টিযুক্ত শিখণ",
-    siteReflectNotice: "এই আপডেটগুলো সঙ্গে সঙ্গে প্ল্যাটফর্মের ফ্রন্টেন্ডে রিফ্লেক্ট করবে।",
   },
 };
 
@@ -645,7 +838,7 @@ export default function Admin() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   // Navigation Sidebar & Loading States
-  const [activeTab, setActiveTab] = useState<"sales" | "leads" | "employees" | "batches" | "courses" | "customization">("sales");
+  const [activeTab, setActiveTab] = useState<"sales" | "leads" | "employees" | "batches" | "courses">("sales");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -674,14 +867,7 @@ export default function Admin() {
   const [leadClaimFilter, setLeadClaimFilter] = useState<"All" | "Unassigned" | "Assigned">("All");
   const [leadSearchQuery, setLeadSearchQuery] = useState("");
 
-  // ── WEBSITE CUSTOMIZATION STATE ──
-  const [siteConfig, setSiteConfig] = useState({
-    heroTitle: "আপনার সন্তানের হাতের লেখা ও পড়া হোক নিখুঁত ও চমৎকার",
-    heroSubtitle: "অভিজ্ঞ মেন্টরদের সাথে সরাসরি লাইভ ক্লাসে মাত্র ২৫ দিনে হাতের লেখা ও পড়ার জড়তা কাটান।",
-    mainBannerUrl: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=1200&h=600&fit=crop&auto=format",
-    demoVideoUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
-  });
-  const [customizationSavedMessage, setCustomizationSavedMessage] = useState(false);
+
 
   // ── COURSE FORM MODAL STATE ──
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -698,6 +884,39 @@ export default function Admin() {
     googleFormUrl: "https://forms.google.com/demo-enrollment-form",
   });
 
+  // ── SALES ANALYTICS SUB-TAB STATE ──
+  const [salesSubTab, setSalesSubTab] = useState<"overall" | "extraCost" | "delivery">("overall");
+
+  // ── STAFF MANAGEMENT STATE ──
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>(INITIAL_STAFF);
+  const [newStaffForm, setNewStaffForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    tempPassword: "",
+    role: "Telesales" as "Telesales" | "Teacher",
+  });
+  const [resetPasswordStaff, setResetPasswordStaff] = useState<StaffMember | null>(null);
+  const [newTempPasswordInput, setNewTempPasswordInput] = useState("");
+
+  // ── EXTRA COST REPORT STATE ──
+  const [extraCosts, setExtraCosts] = useState<CourseExtraCost[]>(INITIAL_EXTRA_COSTS);
+  const [editingCostId, setEditingCostId] = useState<string | null>(null);
+  const [editingCostForm, setEditingCostForm] = useState({
+    printingCost: "350",
+    inboundFreight: "80",
+    courierFee: "120",
+  });
+
+  // ── DELIVERY TRACKING REPORT STATE ──
+  const [deliveries, setDeliveries] = useState<DeliveryRecord[]>(INITIAL_DELIVERIES);
+  const [deliverySearchQuery, setDeliverySearchQuery] = useState("");
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<
+    "All" | "Pending" | "Dispatched" | "In Transit" | "Delivered" | "Returned"
+  >("All");
+  const [editingDelivery, setEditingDelivery] = useState<DeliveryRecord | null>(null);
+  const [newDeliveryStatus, setNewDeliveryStatus] = useState<DeliveryRecord["deliveryStatus"]>("Pending");
+
   // ── SUPABASE LOAD FUNCTION ──
   const fetchSupabaseData = async () => {
     setIsLoading(true);
@@ -706,6 +925,55 @@ export default function Admin() {
       if (usersErr) console.error("Error fetching users from Supabase:", usersErr);
       else if (dbUsers && dbUsers.length > 0) {
         setUsersList(dbUsers);
+      }
+
+      const { data: dbStaff, error: staffErr } = await supabase.from("staff").select("*");
+      if (!staffErr && dbStaff && dbStaff.length > 0) {
+        setStaffMembers(
+          dbStaff.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            email: s.email,
+            phone: s.phone,
+            role: s.role as any,
+            status: s.status as any,
+            tempPassword: s.temp_password || s.tempPassword || "pass1234password",
+            createdAt: s.created_at ? s.created_at.substring(0, 10) : "2026-07-18",
+          }))
+        );
+      }
+
+      const { data: dbCosts, error: costsErr } = await supabase.from("extra_costs").select("*");
+      if (!costsErr && dbCosts && dbCosts.length > 0) {
+        setExtraCosts(
+          dbCosts.map((c: any) => ({
+            id: c.id,
+            courseTitle: c.course_title || c.courseTitle,
+            printingCost: c.printing_cost || c.printingCost || 0,
+            inboundFreight: c.inbound_freight || c.inboundFreight || 0,
+            courierFee: c.courier_fee || c.courierFee || 0,
+            totalExpense: c.total_expense || c.totalExpense || 0,
+            unitPrice: c.unit_price || c.unitPrice || 2500,
+            netMargin: c.net_margin || c.netMargin || 0,
+          }))
+        );
+      }
+
+      const { data: dbDeliveries, error: deliveriesErr } = await supabase.from("deliveries").select("*");
+      if (!deliveriesErr && dbDeliveries && dbDeliveries.length > 0) {
+        setDeliveries(
+          dbDeliveries.map((d: any) => ({
+            id: d.id,
+            studentName: d.student_name || d.studentName,
+            phone: d.phone,
+            address: d.address,
+            courierService: d.courier_service || d.courierService || "Steadfast",
+            consignmentId: d.consignment_id || d.consignmentId,
+            trxId: d.trx_id || d.trxId,
+            deliveryStatus: d.delivery_status || d.deliveryStatus || "Pending",
+            date: d.created_at ? d.created_at.substring(0, 10) : "2026-07-25",
+          }))
+        );
       }
 
       const { data: dbCourses, error: courseErr } = await supabase.from("courses").select("*");
@@ -759,6 +1027,226 @@ export default function Admin() {
       setIsLoading(false);
     }
   };
+
+  // ── STAFF MANAGEMENT HANDLERS ──
+  const handleAddEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStaffForm.name.trim() || !newStaffForm.email.trim()) return;
+
+    const newStaff: StaffMember = {
+      id: `staff-${Date.now()}`,
+      name: newStaffForm.name,
+      email: newStaffForm.email,
+      phone: newStaffForm.phone || "01700-000000",
+      role: newStaffForm.role,
+      status: "Active",
+      tempPassword: newStaffForm.tempPassword || "pass1234password",
+      createdAt: new Date().toISOString().substring(0, 10),
+    };
+
+    setStaffMembers((prev) => [newStaff, ...prev]);
+
+    // Also update employees performance list if missing
+    setEmployees((prev) => [
+      ...prev,
+      {
+        id: newStaff.id,
+        name: newStaff.name,
+        role: newStaff.role === "Telesales" ? "Telesales Representative" : "Course Instructor",
+        status: "Online",
+        totalCalls: 0,
+        convertedSales: 0,
+        revenueGenerated: 0,
+        socialDmConversion: 0,
+        adLeadConversion: 0,
+      },
+    ]);
+
+    try {
+      // 1. Sync to Supabase auth if allowed
+      await supabase.auth.signUp({
+        email: newStaffForm.email,
+        password: newStaffForm.tempPassword || "pass1234password",
+        options: {
+          data: {
+            name: newStaffForm.name,
+            role: newStaffForm.role.toLowerCase(),
+            phone: newStaffForm.phone,
+          },
+        },
+      });
+
+      // 2. Insert into users / profiles / staff table in Supabase
+      const { error: dbErr } = await supabase.from("staff").insert([
+        {
+          name: newStaffForm.name,
+          email: newStaffForm.email,
+          phone: newStaffForm.phone,
+          role: newStaffForm.role,
+          status: "Active",
+          temp_password: newStaffForm.tempPassword || "pass1234password",
+        },
+      ]);
+      if (dbErr) console.warn("Supabase staff table sync (non-fatal):", dbErr.message);
+
+      const { error: userErr } = await supabase.from("users").insert([
+        {
+          name: newStaffForm.name,
+          email: newStaffForm.email,
+          role: newStaffForm.role === "Teacher" ? "teacher" : "sales",
+        },
+      ]);
+      if (userErr) console.warn("Supabase users table sync (non-fatal):", userErr.message);
+    } catch (err) {
+      console.error("Exception adding employee to Supabase:", err);
+    }
+
+    setNewStaffForm({
+      name: "",
+      email: "",
+      phone: "",
+      tempPassword: "",
+      role: "Telesales",
+    });
+  };
+
+  const handleOpenResetPassword = (staff: StaffMember) => {
+    setResetPasswordStaff(staff);
+    setNewTempPasswordInput(staff.tempPassword || "pass1234password");
+  };
+
+  const handleSaveResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPasswordStaff || !newTempPasswordInput.trim()) return;
+
+    setStaffMembers((prev) =>
+      prev.map((s) => (s.id === resetPasswordStaff.id ? { ...s, tempPassword: newTempPasswordInput } : s))
+    );
+
+    try {
+      const { error } = await supabase
+        .from("staff")
+        .update({ temp_password: newTempPasswordInput })
+        .eq("id", resetPasswordStaff.id);
+      if (error) console.warn("Supabase staff password update error:", error.message);
+    } catch (err) {
+      console.error("Exception resetting password:", err);
+    }
+
+    setResetPasswordStaff(null);
+  };
+
+  const handleToggleStaffStatus = async (staffId: string) => {
+    setStaffMembers((prev) =>
+      prev.map((s) => {
+        if (s.id === staffId) {
+          const nextStatus = s.status === "Active" ? "Deactivated" : "Active";
+          try {
+            supabase.from("staff").update({ status: nextStatus }).eq("id", staffId);
+          } catch (err) {
+            console.error("Error toggling staff status:", err);
+          }
+          return { ...s, status: nextStatus };
+        }
+        return s;
+      })
+    );
+  };
+
+  // ── EXTRA COST REPORT HANDLERS ──
+  const handleOpenEditCost = (costItem: CourseExtraCost) => {
+    setEditingCostId(costItem.id);
+    setEditingCostForm({
+      printingCost: String(costItem.printingCost),
+      inboundFreight: String(costItem.inboundFreight),
+      courierFee: String(costItem.courierFee),
+    });
+  };
+
+  const handleSaveExtraCost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCostId) return;
+
+    const pCost = Number(editingCostForm.printingCost) || 0;
+    const fCost = Number(editingCostForm.inboundFreight) || 0;
+    const cCost = Number(editingCostForm.courierFee) || 0;
+    const tot = pCost + fCost + cCost;
+
+    setExtraCosts((prev) =>
+      prev.map((item) => {
+        if (item.id === editingCostId) {
+          const margin = item.unitPrice - tot;
+          try {
+            supabase
+              .from("extra_costs")
+              .update({
+                printing_cost: pCost,
+                inbound_freight: fCost,
+                courier_fee: cCost,
+                total_expense: tot,
+                net_margin: margin,
+              })
+              .eq("id", editingCostId);
+          } catch (err) {
+            console.error("Error syncing extra costs to Supabase:", err);
+          }
+          return {
+            ...item,
+            printingCost: pCost,
+            inboundFreight: fCost,
+            courierFee: cCost,
+            totalExpense: tot,
+            netMargin: margin,
+          };
+        }
+        return item;
+      })
+    );
+
+    setEditingCostId(null);
+  };
+
+  // ── DELIVERY TRACKING HANDLERS ──
+  const handleOpenUpdateDeliveryStatus = (delivery: DeliveryRecord) => {
+    setEditingDelivery(delivery);
+    setNewDeliveryStatus(delivery.deliveryStatus);
+  };
+
+  const handleSaveDeliveryStatus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDelivery) return;
+
+    setDeliveries((prev) =>
+      prev.map((d) => (d.id === editingDelivery.id ? { ...d, deliveryStatus: newDeliveryStatus } : d))
+    );
+
+    try {
+      await supabase
+        .from("deliveries")
+        .update({ delivery_status: newDeliveryStatus })
+        .eq("id", editingDelivery.id);
+    } catch (err) {
+      console.error("Error updating delivery status in Supabase:", err);
+    }
+
+    setEditingDelivery(null);
+  };
+
+  // ── FILTERED DELIVERIES ──
+  const filteredDeliveries = deliveries.filter((d) => {
+    if (deliveryStatusFilter !== "All" && d.deliveryStatus !== deliveryStatusFilter) {
+      return false;
+    }
+    if (deliverySearchQuery.trim()) {
+      const q = deliverySearchQuery.toLowerCase();
+      const matchName = d.studentName.toLowerCase().includes(q);
+      const matchPhone = d.phone.includes(q);
+      const matchCode = d.consignmentId.toLowerCase().includes(q) || d.trxId.toLowerCase().includes(q);
+      return matchName || matchPhone || matchCode;
+    }
+    return true;
+  });
+
 
   useEffect(() => {
     fetchSupabaseData();
@@ -1019,12 +1507,6 @@ export default function Admin() {
     }
   };
 
-  const handleSaveCustomization = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCustomizationSavedMessage(true);
-    setTimeout(() => setCustomizationSavedMessage(false), 3000);
-  };
-
   // ── DYNAMIC THEME CLASS HELPER ──
   const isDark = theme === "dark";
   const bgMain = isDark ? "bg-slate-950 text-slate-100" : "bg-[#F8FAFC] text-slate-900";
@@ -1125,12 +1607,12 @@ export default function Admin() {
           {/* Navigation Items */}
           <nav className="p-3 space-y-1.5 mt-1">
             {[
-              { id: "sales", label: `📈 ${t.salesAnalytics}`, icon: TrendingUp, desc: t.salesDesc },
-              { id: "leads", label: `👥 ${t.leadPipeline}`, icon: Users, desc: t.leadDesc },
-              { id: "employees", label: `🕵️ ${t.employeePerf}`, icon: PhoneCall, desc: t.employeeDesc },
-              { id: "batches", label: `👨‍🏫 ${t.teacherBatches}`, icon: GraduationCap, desc: t.teacherDesc },
-              { id: "courses", label: `📚 ${t.courseCms}`, icon: BookOpen, desc: t.cmsDesc },
-              { id: "customization", label: `🖼️ ${t.customization}`, icon: ImageIcon, desc: t.customDesc },
+              { id: "sales", label: t.salesAnalytics, icon: TrendingUp, desc: t.salesDesc },
+              { id: "leads", label: t.leadPipeline, icon: Users, desc: t.leadDesc },
+              { id: "employees", label: t.employeePerf, icon: PhoneCall, desc: t.employeeDesc },
+              { id: "batches", label: t.teacherBatches, icon: GraduationCap, desc: t.teacherDesc },
+              { id: "courses", label: t.courseCms, icon: BookOpen, desc: t.cmsDesc },
+
             ].map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -1197,7 +1679,6 @@ export default function Admin() {
                 {activeTab === "employees" && t.badgeEmployees}
                 {activeTab === "batches" && t.badgeBatches}
                 {activeTab === "courses" && t.badgeCourses}
-                {activeTab === "customization" && t.badgeCustomization}
               </span>
             </div>
             <h1 className={`text-3xl font-extrabold tracking-tight ${textHeading}`}>
@@ -1206,7 +1687,6 @@ export default function Admin() {
               {activeTab === "employees" && t.titleEmployees}
               {activeTab === "batches" && t.titleBatches}
               {activeTab === "courses" && t.titleCourses}
-              {activeTab === "customization" && t.titleCustomization}
             </h1>
           </div>
 
@@ -1231,192 +1711,462 @@ export default function Admin() {
         </header>
 
         {/* ═══════════════════════════════════════════════════════════════════════════
-           SECTION 1: 📈 SALES ANALYTICS VIEW & GRANULAR DATE FILTERS (FEATURE 4)
+           SECTION 1: 📈 SALES ANALYTICS VIEW WITH 3-TAB SUB-MENU
         ═══════════════════════════════════════════════════════════════════════════ */}
         {activeTab === "sales" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Filter Controls Bar with Conditional Date Dropdowns */}
-            <div className={`${bgCard} p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4 border`}>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xs font-bold text-slate-400">
-                  {t.timePeriodLabel}
-                </span>
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* 3-Tab Sub-Menu Pills */}
+            <div className={`p-1.5 rounded-2xl ${bgCard} border shadow-md inline-flex flex-wrap gap-2`}>
+              <button
+                onClick={() => setSalesSubTab("overall")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  salesSubTab === "overall"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md"
+                    : "text-slate-400 hover:text-emerald-500"
+                }`}
+              >
+                <BarChart2 className="w-4 h-4" />
+                <span>{t.overallSalesTab}</span>
+              </button>
 
-                {/* Main Period Selector: [ Weekly | Monthly | Yearly ] */}
-                <div className={`flex ${bgSubCard} p-1 rounded-2xl border`}>
-                  {(["Weekly", "Monthly", "Yearly"] as const).map((period) => (
-                    <button
-                      key={period}
-                      onClick={() => setSalesTimePeriod(period)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        salesTimePeriod === period
-                          ? "bg-emerald-500 text-white shadow-xs"
-                          : "text-slate-400 hover:text-emerald-500"
-                      }`}
-                    >
-                      {period === "Weekly" ? t.periodWeekly : period === "Monthly" ? t.periodMonthly : t.periodYearly}
-                    </button>
-                  ))}
-                </div>
+              <button
+                onClick={() => setSalesSubTab("extraCost")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  salesSubTab === "extraCost"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md"
+                    : "text-slate-400 hover:text-emerald-500"
+                }`}
+              >
+                <Receipt className="w-4 h-4" />
+                <span>{t.extraCostTab}</span>
+              </button>
 
-                {/* CONDITIONAL GRANULAR DATE DROPDOWNS */}
-                {/* 1. Year Selector (Fully Dynamic Array) */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-bold text-slate-400">{t.selectYear}</span>
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                    className={`${inputStyle} text-xs font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
-                  >
-                    {years.map((yr) => (
-                      <option key={yr} value={yr}>
-                        {yr}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 2. Month Selector (Shown for Monthly and Weekly) */}
-                {(salesTimePeriod === "Monthly" || salesTimePeriod === "Weekly") && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-slate-400">{t.selectMonth}</span>
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      className={`${inputStyle} text-xs font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
-                    >
-                      {t.months.map((m, idx) => (
-                        <option key={idx} value={String(idx)}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* 3. Week Selector (Shown only for Weekly) */}
-                {salesTimePeriod === "Weekly" && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-slate-400">{t.selectWeek}</span>
-                    <select
-                      value={selectedWeek}
-                      onChange={(e) => setSelectedWeek(e.target.value)}
-                      className={`${inputStyle} text-xs font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
-                    >
-                      {t.weeks.map((w, idx) => (
-                        <option key={idx} value={`Week ${idx + 1}`}>
-                          {w}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              {/* Course Filter Dropdown */}
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-slate-400">
-                  {t.courseFilterLabel}
-                </span>
-                <select
-                  value={salesCourseFilter}
-                  onChange={(e) => setSalesCourseFilter(e.target.value)}
-                  className={`${inputStyle} text-xs font-bold rounded-2xl px-4 py-2 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
-                >
-                  <option value="All">{t.allCourses}</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.title}>
-                      {c.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <button
+                onClick={() => setSalesSubTab("delivery")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  salesSubTab === "delivery"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md"
+                    : "text-slate-400 hover:text-emerald-500"
+                }`}
+              >
+                <Truck className="w-4 h-4" />
+                <span>{t.deliveryTab}</span>
+              </button>
             </div>
 
-            {/* Revenue Chart Visualizer */}
-            <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl border`}>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className={`text-xl font-bold ${textHeading}`}>
-                    {t.revenueTrend}
-                  </h3>
-                  <p className={`text-xs ${textSub}`}>{t.filteredRevenue} <strong className="text-emerald-500">৳{totalFilteredRevenue.toLocaleString()}</strong></p>
-                </div>
-                <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
-                  {t.revenueGrowth}
-                </span>
-              </div>
+            {/* ── SUB-TAB 1: 📊 OVERALL SALES REPORT ── */}
+            {salesSubTab === "overall" && (
+              <div className="space-y-8 animate-in fade-in duration-300">
+                {/* Filter Controls Bar with Conditional Date Dropdowns */}
+                <div className={`${bgCard} p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4 border`}>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-xs font-bold text-slate-400">
+                      {t.timePeriodLabel}
+                    </span>
 
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#1E293B" : "#E2E8F0"} />
-                    <XAxis dataKey="name" stroke={isDark ? "#64748B" : "#475569"} fontSize={12} />
-                    <YAxis stroke={isDark ? "#64748B" : "#475569"} fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: isDark ? "#0F172A" : "#FFFFFF",
-                        borderColor: isDark ? "#334155" : "#CBD5E1",
-                        borderRadius: "12px",
-                        color: isDark ? "#FFF" : "#0F172A",
-                        boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
-                      }}
+                    {/* Main Period Selector: [ Weekly | Monthly | Yearly ] */}
+                    <div className={`flex ${bgSubCard} p-1 rounded-2xl border`}>
+                      {(["Weekly", "Monthly", "Yearly"] as const).map((period) => (
+                        <button
+                          key={period}
+                          onClick={() => setSalesTimePeriod(period)}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            salesTimePeriod === period
+                              ? "bg-emerald-500 text-white shadow-xs"
+                              : "text-slate-400 hover:text-emerald-500"
+                          }`}
+                        >
+                          {period === "Weekly" ? t.periodWeekly : period === "Monthly" ? t.periodMonthly : t.periodYearly}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* CONDITIONAL GRANULAR DATE DROPDOWNS */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-slate-400">{t.selectYear}</span>
+                      <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(e.target.value)}
+                        className={`${inputStyle} text-xs font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                      >
+                        {years.map((yr) => (
+                          <option key={yr} value={yr}>
+                            {yr}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {(salesTimePeriod === "Monthly" || salesTimePeriod === "Weekly") && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-bold text-slate-400">{t.selectMonth}</span>
+                        <select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(e.target.value)}
+                          className={`${inputStyle} text-xs font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                        >
+                          {t.months.map((m, idx) => (
+                            <option key={idx} value={String(idx)}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {salesTimePeriod === "Weekly" && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-bold text-slate-400">{t.selectWeek}</span>
+                        <select
+                          value={selectedWeek}
+                          onChange={(e) => setSelectedWeek(e.target.value)}
+                          className={`${inputStyle} text-xs font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                        >
+                          {t.weeks.map((w, idx) => (
+                            <option key={idx} value={`Week ${idx + 1}`}>
+                              {w}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Course Filter Dropdown */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-slate-400">
+                      {t.courseFilterLabel}
+                    </span>
+                    <select
+                      value={salesCourseFilter}
+                      onChange={(e) => setSalesCourseFilter(e.target.value)}
+                      className={`${inputStyle} text-xs font-bold rounded-2xl px-4 py-2 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                    >
+                      <option value="All">{t.allCourses}</option>
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.title}>
+                          {c.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Revenue Chart Visualizer */}
+                <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl border`}>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className={`text-xl font-bold ${textHeading}`}>
+                        {t.revenueTrend}
+                      </h3>
+                      <p className={`text-xs ${textSub}`}>{t.filteredRevenue} <strong className="text-emerald-500">৳{totalFilteredRevenue.toLocaleString()}</strong></p>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+                      {t.revenueGrowth}
+                    </span>
+                  </div>
+
+                  <div className="h-72 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#1E293B" : "#E2E8F0"} />
+                        <XAxis dataKey="name" stroke={isDark ? "#64748B" : "#475569"} fontSize={12} />
+                        <YAxis stroke={isDark ? "#64748B" : "#475569"} fontSize={12} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: isDark ? "#0F172A" : "#FFFFFF",
+                            borderColor: isDark ? "#334155" : "#CBD5E1",
+                            borderRadius: "12px",
+                            color: isDark ? "#FFF" : "#0F172A",
+                            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                          }}
+                        />
+                        <Area type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#revenueGrad)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Buyers List Table */}
+                <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
+                  <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
+                    <h3 className={`text-lg font-bold ${textHeading}`}>
+                      {t.confirmedBuyersTable}
+                    </h3>
+                    <span className={`text-xs ${textSub}`}>{t.totalBuyers} {filteredBuyers.length}</span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                          <th className="py-4 px-4">{t.colStudentParent}</th>
+                          <th className="py-4 px-4">{t.colPhone}</th>
+                          <th className="py-4 px-4">{t.colCourse}</th>
+                          <th className="py-4 px-4">{t.colPayment} (৳)</th>
+                          <th className="py-4 px-4">{t.colTrxId}</th>
+                          <th className="py-4 px-4">{t.colDate}</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
+                        {filteredBuyers.map((b) => (
+                          <tr key={b.id} className="transition-colors">
+                            <td className="py-4 px-4">
+                              <div className={`font-bold ${textHeading} text-sm`}>{b.studentName}</div>
+                              <div className={`text-[11px] ${textSub}`}>{t.parentLabel} {b.parentName}</div>
+                            </td>
+                            <td className="py-4 px-4 font-mono text-emerald-500 font-bold">{b.phone}</td>
+                            <td className={`py-4 px-4 font-semibold ${textHeading}`}>{b.course}</td>
+                            <td className="py-4 px-4 font-black text-emerald-500">৳{b.amount.toLocaleString()}</td>
+                            <td className="py-4 px-4">
+                              <span className={`font-mono text-amber-500 ${bgSubCard} px-2.5 py-1 rounded-lg border inline-block`}>
+                                {b.trxId}
+                              </span>
+                            </td>
+                            <td className={`py-4 px-4 ${textSub}`}>{b.date}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── SUB-TAB 2: 💸 EXTRA COST REPORT ── */}
+            {salesSubTab === "extraCost" && (() => {
+              const grossSalesTotal = totalFilteredRevenue || 385000;
+              const totalExpensesCalculated = extraCosts.reduce((acc, c) => acc + c.totalExpense * 15, 0); // 15 units avg
+              const netProfitCalculated = grossSalesTotal - totalExpensesCalculated;
+
+              return (
+                <div className="space-y-8 animate-in fade-in duration-300">
+                  {/* Top 3 Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className={`${bgCard} rounded-3xl p-6 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.grossSales}</span>
+                        <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                          <DollarSign className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <h3 className={`text-2xl font-black ${textHeading}`}>
+                        ৳{grossSalesTotal.toLocaleString()}
+                      </h3>
+                      <p className="text-[11px] text-emerald-500 font-semibold mt-1">Confirmed Course Revenue</p>
+                    </div>
+
+                    <div className={`${bgCard} rounded-3xl p-6 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.totalExpenses}</span>
+                        <div className="w-9 h-9 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                          <Receipt className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-black text-amber-500">
+                        ৳{totalExpensesCalculated.toLocaleString()}
+                      </h3>
+                      <p className="text-[11px] text-amber-500 font-semibold mt-1">Printing, Freight & Logistics</p>
+                    </div>
+
+                    <div className={`${bgCard} rounded-3xl p-6 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.netProfit}</span>
+                        <div className="w-9 h-9 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                          <TrendingUp className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-black text-blue-500">
+                        ৳{netProfitCalculated.toLocaleString()}
+                      </h3>
+                      <p className="text-[11px] text-blue-500 font-semibold mt-1">
+                        Margin: {((netProfitCalculated / grossSalesTotal) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Itemized Expenses Table */}
+                  <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
+                    <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
+                      <div>
+                        <h3 className={`text-xl font-bold ${textHeading}`}>
+                          {t.itemizedCostTable}
+                        </h3>
+                        <p className={`text-xs ${textSub}`}>Manage unit production and freight expenses per course.</p>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                            <th className="py-4 px-4">{t.colCourse}</th>
+                            <th className="py-4 px-4">{t.printingCost}</th>
+                            <th className="py-4 px-4">{t.inboundFreight}</th>
+                            <th className="py-4 px-4">{t.courierFee}</th>
+                            <th className="py-4 px-4">{t.totalExpenseCol}</th>
+                            <th className="py-4 px-4">{t.netProfitMargin}</th>
+                            <th className="py-4 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
+                          {extraCosts.map((costItem) => {
+                            const marginPercent = ((costItem.netMargin / costItem.unitPrice) * 100).toFixed(1);
+                            return (
+                              <tr key={costItem.id} className="transition-colors">
+                                <td className={`py-4 px-4 font-bold ${textHeading} text-sm`}>
+                                  {costItem.courseTitle}
+                                  <div className={`text-[11px] ${textSub}`}>Unit Price: ৳{costItem.unitPrice}</div>
+                                </td>
+                                <td className="py-4 px-4 font-semibold text-slate-300">৳{costItem.printingCost}</td>
+                                <td className="py-4 px-4 font-semibold text-slate-300">৳{costItem.inboundFreight}</td>
+                                <td className="py-4 px-4 font-semibold text-slate-300">৳{costItem.courierFee}</td>
+                                <td className="py-4 px-4 font-bold text-amber-500">৳{costItem.totalExpense}</td>
+                                <td className="py-4 px-4 font-extrabold text-emerald-500">
+                                  ৳{costItem.netMargin} <span className="text-[11px] font-normal text-slate-400">({marginPercent}%)</span>
+                                </td>
+                                <td className="py-4 px-4 text-right">
+                                  <button
+                                    onClick={() => handleOpenEditCost(costItem)}
+                                    className="p-2 rounded-xl text-emerald-500 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                                    title="Edit Expenses"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── SUB-TAB 3: 🚚 DELIVERY REPORT ── */}
+            {salesSubTab === "delivery" && (
+              <div className="space-y-8 animate-in fade-in duration-300">
+                {/* Logistics Control Bar */}
+                <div className={`${bgCard} p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4 border`}>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-xs font-bold text-slate-400 mr-1">
+                      {t.deliveryStatus}:
+                    </span>
+                    <div className={`flex ${bgSubCard} p-1 rounded-2xl border flex-wrap`}>
+                      {(["All", "Pending", "Dispatched", "In Transit", "Delivered", "Returned"] as const).map((st) => (
+                        <button
+                          key={st}
+                          onClick={() => setDeliveryStatusFilter(st)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            deliveryStatusFilter === st
+                              ? "bg-emerald-500 text-white shadow-xs"
+                              : "text-slate-400 hover:text-emerald-500"
+                          }`}
+                        >
+                          {st}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="relative w-full sm:w-72">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder={t.searchDelivery}
+                      value={deliverySearchQuery}
+                      onChange={(e) => setDeliverySearchQuery(e.target.value)}
+                      className={`w-full pl-9 pr-3 py-1.5 rounded-xl ${inputStyle} text-xs font-semibold focus:outline-none`}
                     />
-                    <Area type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#revenueGrad)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+                  </div>
+                </div>
 
-            {/* Buyers List Table */}
-            <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
-              <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
-                <h3 className={`text-lg font-bold ${textHeading}`}>
-                  {t.confirmedBuyersTable}
-                </h3>
-                <span className={`text-xs ${textSub}`}>{t.totalBuyers} {filteredBuyers.length}</span>
-              </div>
+                {/* Delivery Logistics Table */}
+                <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
+                  <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
+                    <div>
+                      <h3 className={`text-xl font-bold ${textHeading}`}>
+                        {t.logisticsTrackingTable}
+                      </h3>
+                      <p className={`text-xs ${textSub}`}>Consignment status and student courier dispatches.</p>
+                    </div>
+                    <span className={`text-xs ${textSub}`}>Total: <strong className="text-emerald-500">{filteredDeliveries.length}</strong></span>
+                  </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
-                      <th className="py-4 px-4">{t.colStudentParent}</th>
-                      <th className="py-4 px-4">{t.colPhone}</th>
-                      <th className="py-4 px-4">{t.colCourse}</th>
-                      <th className="py-4 px-4">{t.colPayment} (৳)</th>
-                      <th className="py-4 px-4">{t.colTrxId}</th>
-                      <th className="py-4 px-4">{t.colDate}</th>
-                    </tr>
-                  </thead>
-                  <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
-                    {filteredBuyers.map((b) => (
-                      <tr key={b.id} className="transition-colors">
-                        <td className="py-4 px-4">
-                          <div className={`font-bold ${textHeading} text-sm`}>{b.studentName}</div>
-                          <div className={`text-[11px] ${textSub}`}>{t.parentLabel} {b.parentName}</div>
-                        </td>
-                        <td className="py-4 px-4 font-mono text-emerald-500 font-bold">{b.phone}</td>
-                        <td className={`py-4 px-4 font-semibold ${textHeading}`}>{b.course}</td>
-                        <td className="py-4 px-4 font-black text-emerald-500">৳{b.amount.toLocaleString()}</td>
-                        <td className="py-4 px-4">
-                          <span className={`font-mono text-amber-500 ${bgSubCard} px-2.5 py-1 rounded-lg border inline-block`}>
-                            {b.trxId}
-                          </span>
-                        </td>
-                        <td className={`py-4 px-4 ${textSub}`}>{b.date}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                          <th className="py-4 px-4">{t.colStudentParent}</th>
+                          <th className="py-4 px-4">{t.addressLabel}</th>
+                          <th className="py-4 px-4">{t.courierService}</th>
+                          <th className="py-4 px-4">{t.consignmentId}</th>
+                          <th className="py-4 px-4">{t.colTrxId}</th>
+                          <th className="py-4 px-4">{t.deliveryStatus}</th>
+                          <th className="py-4 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
+                        {filteredDeliveries.map((del) => (
+                          <tr key={del.id} className="transition-colors">
+                            <td className="py-4 px-4">
+                              <div className={`font-bold ${textHeading} text-sm`}>{del.studentName}</div>
+                              <div className="font-mono text-emerald-500 text-xs font-bold mt-0.5">{del.phone}</div>
+                            </td>
+                            <td className={`py-4 px-4 text-xs ${textSub} max-w-xs truncate`}>
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                <span>{del.address}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 font-bold text-blue-400">
+                              <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 px-2.5 py-1 rounded-lg">
+                                {del.courierService}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 font-mono font-bold text-amber-500">{del.consignmentId}</td>
+                            <td className="py-4 px-4 font-mono text-slate-400">{del.trxId}</td>
+                            <td className="py-4 px-4">
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                                  del.deliveryStatus === "Delivered"
+                                    ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
+                                    : del.deliveryStatus === "In Transit"
+                                    ? "bg-purple-500/20 text-purple-500 border-purple-500/30"
+                                    : del.deliveryStatus === "Dispatched"
+                                    ? "bg-blue-500/20 text-blue-500 border-blue-500/30"
+                                    : del.deliveryStatus === "Returned"
+                                    ? "bg-red-500/20 text-red-500 border-red-500/30"
+                                    : "bg-amber-500/20 text-amber-500 border-amber-500/30"
+                                }`}
+                              >
+                                ● {del.deliveryStatus}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-right">
+                              <button
+                                onClick={() => handleOpenUpdateDeliveryStatus(del)}
+                                className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                              >
+                                {t.updateStatusBtn}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -1618,10 +2368,165 @@ export default function Admin() {
         )}
 
         {/* ═══════════════════════════════════════════════════════════════════════════
-           SECTION 3: 🕵️ EMPLOYEE PERFORMANCE VIEW
+           SECTION 3: 🕵️ EMPLOYEE PERFORMANCE & STAFF CREDENTIALS VIEW
         ═══════════════════════════════════════════════════════════════════════════ */}
         {activeTab === "employees" && (
           <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Staff Credentials & Onboarding Management Card */}
+            <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl border space-y-6`}>
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/60 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="w-6 h-6 text-emerald-500" />
+                    <h3 className={`text-xl font-bold ${textHeading}`}>
+                      {t.staffManagementTitle}
+                    </h3>
+                  </div>
+                  <p className={`text-xs ${textSub} mt-1`}>
+                    {t.staffOnboardingSubtitle}
+                  </p>
+                </div>
+              </div>
+
+              {/* Add New Employee Form */}
+              <form onSubmit={handleAddEmployee} className={`${bgSubCard} p-5 rounded-2xl border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end`}>
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.empName} *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. মো. আরিফুল ইসলাম"
+                    value={newStaffForm.name}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, name: e.target.value })}
+                    className={`w-full ${inputStyle} text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.empEmail} *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="emp@learnops.com"
+                    value={newStaffForm.email}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, email: e.target.value })}
+                    className={`w-full ${inputStyle} text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.empPhone}</label>
+                  <input
+                    type="text"
+                    placeholder="01711-XXXXXX"
+                    value={newStaffForm.phone}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, phone: e.target.value })}
+                    className={`w-full ${inputStyle} text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.tempPassword}</label>
+                  <input
+                    type="text"
+                    placeholder="Pass1234!"
+                    value={newStaffForm.tempPassword}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, tempPassword: e.target.value })}
+                    className={`w-full ${inputStyle} text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.empRole}</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={newStaffForm.role}
+                      onChange={(e) => setNewStaffForm({ ...newStaffForm, role: e.target.value as any })}
+                      className={`flex-1 ${inputStyle} text-xs font-bold rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                    >
+                      <option value="Telesales">Telesales</option>
+                      <option value="Teacher">Teacher</option>
+                    </select>
+
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      + Add
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              {/* Staff Roster Table */}
+              <div className="overflow-x-auto rounded-2xl border border-slate-800/60">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                      <th className="py-4 px-4">{t.empName}</th>
+                      <th className="py-4 px-4">{t.empEmail} / {t.empPhone}</th>
+                      <th className="py-4 px-4">{t.empRole}</th>
+                      <th className="py-4 px-4">{t.tempPassword}</th>
+                      <th className="py-4 px-4">Status</th>
+                      <th className="py-4 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
+                    {staffMembers.map((staff) => (
+                      <tr key={staff.id} className="transition-colors">
+                        <td className={`py-4 px-4 font-bold ${textHeading} text-sm`}>{staff.name}</td>
+                        <td className="py-4 px-4">
+                          <div className={`font-semibold ${textHeading}`}>{staff.email}</div>
+                          <div className="font-mono text-emerald-500 text-xs font-bold mt-0.5">{staff.phone}</div>
+                        </td>
+                        <td className="py-4 px-4 font-bold">
+                          <span className={`px-2.5 py-1 rounded-lg text-xs border ${
+                            staff.role === "Telesales" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                          }`}>
+                            {staff.role}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 font-mono text-slate-400">
+                          <span className={`${bgSubCard} px-2.5 py-1 rounded-lg border font-mono text-xs text-amber-400`}>
+                            {staff.tempPassword || "pass1234"}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                            staff.status === "Active" ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" : "bg-red-500/20 text-red-500 border-red-500/30"
+                          }`}>
+                            ● {staff.status}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-right space-x-2">
+                          <button
+                            onClick={() => handleOpenResetPassword(staff)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <KeyRound className="w-3.5 h-3.5" />
+                            <span>{t.resetPassword}</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleToggleStaffStatus(staff.id)}
+                            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                              staff.status === "Active"
+                                ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/30"
+                                : "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/30"
+                            }`}
+                          >
+                            {staff.status === "Active" ? <UserX className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
+                            <span>{staff.status === "Active" ? t.deactivateAccount : t.activateAccount}</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Performance Cards Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {employees.map((emp) => (
                 <div key={emp.id} className={`${bgCard} rounded-3xl p-6 shadow-xl border flex flex-col justify-between`}>
@@ -1934,126 +2839,7 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════════════
-           SECTION 6: 🖼️ WEBSITE CUSTOMIZATION VIEW
-        ═══════════════════════════════════════════════════════════════════════════ */}
-        {activeTab === "customization" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-300">
-            {/* Inputs Form */}
-            <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl border`}>
-              <div className="flex items-center gap-2 mb-6">
-                <ImageIcon className="w-5 h-5 text-emerald-500" />
-                <h3 className={`text-xl font-bold ${textHeading}`}>
-                  {t.customizationTitle}
-                </h3>
-              </div>
 
-              {customizationSavedMessage && (
-                <div className="mb-6 p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-600 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-                  <CheckCircle2 className="w-4 h-4" />
-                  {t.customizationSuccess}
-                </div>
-              )}
-
-              <form onSubmit={handleSaveCustomization} className="space-y-5">
-                <div>
-                  <label className={`block text-xs font-bold ${textHeading} mb-2`}>
-                    {t.heroTitleLabel}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={siteConfig.heroTitle}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, heroTitle: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-xl ${inputStyle} text-sm font-semibold focus:outline-none`}
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-xs font-bold ${textHeading} mb-2`}>
-                    {t.heroSubLabel}
-                  </label>
-                  <textarea
-                    rows={3}
-                    required
-                    value={siteConfig.heroSubtitle}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, heroSubtitle: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-xl ${inputStyle} text-sm focus:outline-none resize-none`}
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-xs font-bold ${textHeading} mb-2`}>
-                    {t.bannerUrlLabel}
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={siteConfig.mainBannerUrl}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, mainBannerUrl: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-xl ${inputStyle} text-sm font-mono text-emerald-500 focus:outline-none`}
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-xs font-bold ${textHeading} mb-2`}>
-                    {t.demoVideoUrlLabel}
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={siteConfig.demoVideoUrl}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, demoVideoUrl: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-xl ${inputStyle} text-sm font-mono text-purple-500 focus:outline-none`}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  {t.saveSiteSettings}
-                </button>
-              </form>
-            </div>
-
-            {/* Live Interactive Preview Card */}
-            <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl border flex flex-col justify-between`}>
-              <div>
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  {t.livePreviewTitle}
-                </div>
-
-                <div className={`rounded-2xl border ${bgSubCard} p-6 space-y-4`}>
-                  <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-500 text-[10px] font-bold px-3 py-1 rounded-full">
-                    {t.guaranteedBadge}
-                  </div>
-                  <h2 className={`text-xl font-bold ${textHeading} leading-tight`}>
-                    {siteConfig.heroTitle}
-                  </h2>
-                  <p className={`text-xs ${textSub} leading-relaxed`}>
-                    {siteConfig.heroSubtitle}
-                  </p>
-
-                  <div className={`relative rounded-xl overflow-hidden aspect-video border ${isDark ? "border-slate-800" : "border-slate-300"}`}>
-                    <img src={siteConfig.mainBannerUrl} alt="Banner Preview" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xl">
-                        <Video className="w-6 h-6" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className={`mt-6 text-xs ${textSub} italic text-center`}>
-                {t.siteReflectNotice}
-              </div>
-            </div>
-          </div>
-        )}
 
       </main>
 
@@ -2163,6 +2949,184 @@ export default function Admin() {
               >
                 {editingCourseId ? t.saveChanges : t.publishCourse}
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── RESET STAFF PASSWORD MODAL ── */}
+      {resetPasswordStaff && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`${bgCard} rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl border space-y-4`}>
+            <button onClick={() => setResetPasswordStaff(null)} className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}>
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-amber-500" />
+              <h3 className={`text-xl font-bold ${textHeading}`}>
+                {t.resetPassTitle}
+              </h3>
+            </div>
+            <p className={`text-xs ${textSub}`}>
+              Setting temporary password for <strong className="text-emerald-500">{resetPasswordStaff.name}</strong> ({resetPasswordStaff.email})
+            </p>
+
+            <form onSubmit={handleSaveResetPassword} className="space-y-4 pt-2">
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.newPasswordLabel}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newTempPasswordInput}
+                  onChange={(e) => setNewTempPasswordInput(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm font-mono text-amber-400 focus:border-amber-500`}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setResetPasswordStaff(null)}
+                  className={`flex-1 py-2.5 rounded-xl border text-xs font-bold ${textSub} cursor-pointer`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-md"
+                >
+                  {t.saveNewPassword}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT EXTRA COST MODAL ── */}
+      {editingCostId && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`${bgCard} rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl border space-y-4`}>
+            <button onClick={() => setEditingCostId(null)} className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}>
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-emerald-500" />
+              <h3 className={`text-xl font-bold ${textHeading}`}>
+                {t.editCostTitle}
+              </h3>
+            </div>
+
+            <form onSubmit={handleSaveExtraCost} className="space-y-4 pt-2">
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.printingCost}</label>
+                <input
+                  type="number"
+                  required
+                  value={editingCostForm.printingCost}
+                  onChange={(e) => setEditingCostForm({ ...editingCostForm, printingCost: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm font-bold focus:border-emerald-500`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.inboundFreight}</label>
+                <input
+                  type="number"
+                  required
+                  value={editingCostForm.inboundFreight}
+                  onChange={(e) => setEditingCostForm({ ...editingCostForm, inboundFreight: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm font-bold focus:border-emerald-500`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.courierFee}</label>
+                <input
+                  type="number"
+                  required
+                  value={editingCostForm.courierFee}
+                  onChange={(e) => setEditingCostForm({ ...editingCostForm, courierFee: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm font-bold focus:border-emerald-500`}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingCostId(null)}
+                  className={`flex-1 py-2.5 rounded-xl border text-xs font-bold ${textSub} cursor-pointer`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-md"
+                >
+                  Save Expenses ✓
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── UPDATE DELIVERY STATUS MODAL ── */}
+      {editingDelivery && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`${bgCard} rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl border space-y-4`}>
+            <button onClick={() => setEditingDelivery(null)} className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}>
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <Truck className="w-5 h-5 text-blue-500" />
+              <h3 className={`text-xl font-bold ${textHeading}`}>
+                {t.modalUpdateDeliveryTitle}
+              </h3>
+            </div>
+            <div className={`text-xs ${textSub} space-y-1`}>
+              <div>Student: <strong className="text-emerald-500">{editingDelivery.studentName}</strong> ({editingDelivery.phone})</div>
+              <div>Consignment ID: <strong className="font-mono text-amber-500">{editingDelivery.consignmentId}</strong></div>
+            </div>
+
+            <form onSubmit={handleSaveDeliveryStatus} className="space-y-4 pt-2">
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.selectNewDeliveryStatus}
+                </label>
+                <select
+                  value={newDeliveryStatus}
+                  onChange={(e) => setNewDeliveryStatus(e.target.value as any)}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-xs font-bold cursor-pointer focus:border-emerald-500`}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Dispatched">Dispatched</option>
+                  <option value="In Transit">In Transit</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Returned">Returned</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingDelivery(null)}
+                  className={`flex-1 py-2.5 rounded-xl border text-xs font-bold ${textSub} cursor-pointer`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-md"
+                >
+                  Update Status ✓
+                </button>
+              </div>
             </form>
           </div>
         </div>
