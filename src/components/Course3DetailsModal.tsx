@@ -11,65 +11,35 @@ import {
   Sparkles,
   Users,
   Award,
-  ExternalLink,
   Star,
   Settings,
-  BookOpen,
-  MessageSquare,
   ArrowRight,
   Globe2,
   Headphones,
 } from "lucide-react";
+import { COURSE_3_DATA, Course3Data } from "../data/coursesData";
 
 /* ── ADMIN EDITABLE DATA INTERFACE FOR COURSE 3 ── */
-export interface Course3DetailsData {
-  courseId: number;
-  courseTitle: string;
-  category: string;
-  badge: string;
-  ageGroup: string;
-  duration: string;
-  totalEnrolled: string;
-  rating: string;
-  price: string;
-  youtubeReviewVideo: string;
-  helplineNumber: string;
-  shortDescription: string;
-  detailedOverviewText: string;
-  programHighlights: string[];
+export interface Course3DetailsData extends Course3Data {
+  totalEnrolled?: string;
+  rating?: string;
+  price?: string;
 }
 
 /* ── DEFAULT ADMIN DATA FOR COURSE 3 ("8 WEEKS ENGLISH SPEAKING (start program)") ── */
 export const DEFAULT_COURSE3_DATA: Course3DetailsData = {
-  courseId: 3,
-  courseTitle: "8 WEEKS ENGLISH SPEAKING (start program)",
-  category: "Spoken English",
-  badge: "ইংরেজি স্পোকেন | বিগিনার-মিড",
-  ageGroup: "৮-১৫ বছর",
-  duration: "৮ সপ্তাহ",
+  ...COURSE_3_DATA,
+  courseTitle: COURSE_3_DATA.title,
   totalEnrolled: "৭৬০ শিক্ষার্থী",
   rating: "4.9 (198 রিভিউ)",
   price: "৳৩,৫০০",
-  youtubeReviewVideo: "https://youtu.be/QEKrbAwiSrs?si=4_DD0DlC3ObPjFzN",
-  helplineNumber: "09611-678344",
-  shortDescription:
-    "শিশুদের জড়তা কাটিয়ে ফ্লুয়েন্টলি ইংরেজিতে কথা বলার আত্মবিশ্বাস তৈরির স্পেশাল স্পোকেন প্রোগ্রাম।",
-  detailedOverviewText:
-    "ইংলিশ স্পোকেনের মূল বাঁধা হলো মুখের জড়তা ও ভয়। এই ৮ সপ্তাহের স্পেশাল স্পোকেন প্রোগ্রামে শিশুরা একদম বেসিক থেকে ফ্লুয়েন্টলি ইংরেজিতে কথা বলা শিখবে।",
-  programHighlights: [
-    "প্রতিদিনের হোমওয়ার্ক",
-    "স্টেপ বাই স্টেপ গাইডলাইন",
-    "গাইড টিচার এর সাহায্য",
-    "লাইভ সাপোর্ট ও মোটিভেশন",
-    "আগে ও পরে লেখার তুলনা",
-  ],
-};
+} as Course3DetailsData & { courseTitle: string };
 
 interface Course3DetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onEnroll?: () => void;
-  initialData?: Course3DetailsData;
+  initialData?: Course3DetailsData & { courseTitle?: string };
 }
 
 export default function Course3DetailsModal({
@@ -79,20 +49,31 @@ export default function Course3DetailsModal({
   initialData = DEFAULT_COURSE3_DATA,
 }: Course3DetailsModalProps) {
   /* ── ADMIN EDITABLE STATE ── */
-  const [data, setData] = useState<Course3DetailsData>(() => {
+  const [data, setData] = useState<Course3DetailsData & { courseTitle: string }>(() => {
     const saved = localStorage.getItem("learnops_course3_admin_data");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          ...DEFAULT_COURSE3_DATA,
+          ...parsed,
+          courseTitle: parsed.courseTitle || parsed.title || DEFAULT_COURSE3_DATA.title,
+        };
       } catch (e) {
-        return initialData;
+        return {
+          ...DEFAULT_COURSE3_DATA,
+          courseTitle: DEFAULT_COURSE3_DATA.title,
+        };
       }
     }
-    return initialData;
+    return {
+      ...DEFAULT_COURSE3_DATA,
+      courseTitle: (initialData as any).courseTitle || initialData.title || DEFAULT_COURSE3_DATA.title,
+    };
   });
 
   const [isAdminEditing, setIsAdminEditing] = useState(false);
-  const [editForm, setEditForm] = useState<Course3DetailsData>(data);
+  const [editForm, setEditForm] = useState<Course3DetailsData & { courseTitle: string }>(data);
   const [copiedHelpline, setCopiedHelpline] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
 
@@ -104,6 +85,7 @@ export default function Course3DetailsModal({
 
   /* Helper to convert YouTube URL to embed format */
   const getYouTubeEmbedUrl = (url: string) => {
+    if (!url) return "https://www.youtube-nocookie.com/embed/QEKrbAwiSrs?autoplay=0&rel=0";
     if (url.includes("embed/")) return url;
     let videoId = "";
     if (url.includes("youtu.be/")) {
@@ -153,6 +135,19 @@ export default function Course3DetailsModal({
 
   const GOOGLE_FORM_URL = "https://forms.gle/4m35pXN861b5E6p96";
 
+  const handleEnrollClick = () => {
+    if (onEnroll) {
+      onEnroll();
+    } else {
+      window.open(GOOGLE_FORM_URL, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  /* Split badge if it contains delimiter */
+  const badgeParts = data.badge.includes("|")
+    ? data.badge.split("|").map((b) => b.trim())
+    : [data.badge];
+
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="relative max-w-4xl w-full bg-card border border-border/80 rounded-3xl overflow-hidden shadow-2xl my-auto max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
@@ -166,13 +161,18 @@ export default function Course3DetailsModal({
                   <Globe2 className="w-3.5 h-3.5" />
                   <span>{data.category}</span>
                 </span>
-                <span className="inline-flex items-center gap-1.5 bg-amber-400/25 text-amber-200 font-extrabold text-xs px-3 py-1 rounded-full border border-amber-300/30">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>{data.badge}</span>
-                </span>
+                {badgeParts.map((part, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1.5 bg-amber-400/25 text-amber-200 font-extrabold text-xs px-3 py-1 rounded-full border border-amber-300/30"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>{part}</span>
+                  </span>
+                ))}
               </div>
               <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                {data.courseTitle}
+                {data.courseTitle || data.title}
               </h2>
             </div>
 
@@ -220,7 +220,7 @@ export default function Course3DetailsModal({
             <div className="bg-blue-500/10 border-2 border-blue-500/40 rounded-3xl p-6 space-y-5">
               <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 font-bold border-b border-blue-500/30 pb-3" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
                 <Edit3 className="w-5 h-5 text-blue-600" />
-                <h3>অ্যাডমিন কন্ট্রোল প্যানেল (কোর্স ৩ ডাটা এডিটর)</h3>
+                <h3>অ্যাডমিন কন্ট্রোল প্যানেল (কোর্স ৩ ডাটা এডিটর - Course ID: 3)</h3>
               </div>
 
               <form onSubmit={handleAdminSave} className="space-y-4 text-xs font-semibold">
@@ -228,16 +228,16 @@ export default function Course3DetailsModal({
                 {/* Title & Category */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-foreground mb-1">কোর্স শিরোনাম:</label>
+                    <label className="block text-foreground mb-1">কোর্স শিরোনাম (Title):</label>
                     <input
                       type="text"
-                      value={editForm.courseTitle}
-                      onChange={(e) => setEditForm({ ...editForm, courseTitle: e.target.value })}
+                      value={editForm.courseTitle || editForm.title}
+                      onChange={(e) => setEditForm({ ...editForm, courseTitle: e.target.value, title: e.target.value })}
                       className="w-full p-2.5 rounded-xl bg-background border border-border text-foreground font-bold"
                     />
                   </div>
                   <div>
-                    <label className="block text-foreground mb-1">ক্যাটাগরি:</label>
+                    <label className="block text-foreground mb-1">ক্যাটাগরি (Category):</label>
                     <input
                       type="text"
                       value={editForm.category}
@@ -250,7 +250,7 @@ export default function Course3DetailsModal({
                 {/* Badge & Age Group */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-foreground mb-1">ব্যাজ/লেবেল:</label>
+                    <label className="block text-foreground mb-1">ব্যাজ/লেবেল (Badge):</label>
                     <input
                       type="text"
                       value={editForm.badge}
@@ -259,7 +259,7 @@ export default function Course3DetailsModal({
                     />
                   </div>
                   <div>
-                    <label className="block text-foreground mb-1">বয়সসীমা:</label>
+                    <label className="block text-foreground mb-1">বয়সসীমা (Age Group):</label>
                     <input
                       type="text"
                       value={editForm.ageGroup}
@@ -272,7 +272,7 @@ export default function Course3DetailsModal({
                 {/* Duration & Price */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-foreground mb-1">কোর্স মেয়াদ:</label>
+                    <label className="block text-foreground mb-1">কোর্স মেয়াদ (Duration):</label>
                     <input
                       type="text"
                       value={editForm.duration}
@@ -281,10 +281,10 @@ export default function Course3DetailsModal({
                     />
                   </div>
                   <div>
-                    <label className="block text-foreground mb-1">কোর্স ফি:</label>
+                    <label className="block text-foreground mb-1">কোর্স ফি (Price):</label>
                     <input
                       type="text"
-                      value={editForm.price}
+                      value={editForm.price || "৳৩,৫০০"}
                       onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
                       className="w-full p-2.5 rounded-xl bg-background border border-border text-foreground font-bold"
                     />
@@ -293,7 +293,7 @@ export default function Course3DetailsModal({
 
                 {/* YouTube Review Video Link */}
                 <div>
-                  <label className="block text-foreground mb-1">ইউটিউব রিভিউ ভিডিও লিংক:</label>
+                  <label className="block text-foreground mb-1">ইউটিউব রিভিউ ভিডিও লিংক (YouTube Review Video):</label>
                   <input
                     type="text"
                     value={editForm.youtubeReviewVideo}
@@ -304,7 +304,7 @@ export default function Course3DetailsModal({
 
                 {/* Helpline Number */}
                 <div>
-                  <label className="block text-foreground mb-1">হেল্পলাইন নম্বর:</label>
+                  <label className="block text-foreground mb-1">হেল্পলাইন নম্বর (Helpline Number):</label>
                   <input
                     type="text"
                     value={editForm.helplineNumber}
@@ -338,7 +338,7 @@ export default function Course3DetailsModal({
                 {/* Program Highlights */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-foreground">প্রোগ্রামে যা যা থাকবে (Highlights):</label>
+                    <label className="text-foreground">প্রোগ্রামে যা যা থাকবে (Program Highlights):</label>
                     <button
                       type="button"
                       onClick={handleAddHighlight}
@@ -394,11 +394,11 @@ export default function Course3DetailsModal({
                   </span>
                   <span className="inline-flex items-center gap-1.5 bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-bold text-xs px-3 py-1 rounded-full">
                     <Award className="w-4 h-4" />
-                    <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{data.totalEnrolled}</span>
+                    <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{data.totalEnrolled || "৭৬০ শিক্ষার্থী"}</span>
                   </span>
                   <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-xs px-3 py-1 rounded-full">
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <span>{data.rating}</span>
+                    <span>{data.rating || "4.9 (198 রিভিউ)"}</span>
                   </span>
                 </div>
 
@@ -421,7 +421,7 @@ export default function Course3DetailsModal({
                 </div>
                 <div className="text-center px-3">
                   <span className="text-lg font-extrabold text-indigo-600 block" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    {data.price}
+                    {data.price || "৳৩,৫০০"}
                   </span>
                   <span className="text-[10px] text-muted-foreground">কোর্স ফি</span>
                 </div>
@@ -444,7 +444,7 @@ export default function Course3DetailsModal({
                 >
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span className="text-xs sm:text-sm font-bold" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    ✅ {feature}
+                    ✅ {feature.startsWith("✅") ? feature.replace(/^✅\s*/, "") : feature}
                   </span>
                 </div>
               ))}
@@ -535,16 +535,14 @@ export default function Course3DetailsModal({
                   <span>{copiedHelpline ? "কপি হয়েছে" : "📞 হেল্পলাইন: " + data.helplineNumber}</span>
                 </button>
 
-                <a
-                  href={GOOGLE_FORM_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={handleEnrollClick}
                   className="bg-white hover:bg-blue-50 text-blue-900 font-extrabold px-6 py-3.5 rounded-2xl text-sm transition-all shadow-lg hover:scale-105 cursor-pointer flex items-center gap-2"
                   style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                 >
-                  <span>🚀 এনরোল করুন ({data.price})</span>
+                  <span>🚀 এনরোল করুন ({data.price || "৳৩,৫০০"})</span>
                   <ArrowRight className="w-4 h-4 text-blue-700" />
-                </a>
+                </button>
               </div>
 
             </div>
