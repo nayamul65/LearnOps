@@ -79,4 +79,48 @@ export const COURSE_4_DATA: Course4Data = {
   ],
 };
 
+/* ── COURSE 5 DATA INTERFACE & OBJECT ── */
+export interface Course5Data {
+  courseId: number;
+  title: string;
+  category: string;
+  badges: string[];
+  description: string;
+  detailedOverviewText: string;
+  ageGroup: string;
+  duration: string;
+  enrolledStudents: string;
+  rating: string;
+  price: string;
+  youtubeReviewUrl: string;
+  helpline: string;
+  programHighlights: string[];
+}
+
+export const COURSE_5_DATA: Course5Data = {
+  courseId: 5,
+  title: "কুরআন সালাত ও আদব শিক্ষা",
+  category: "Islamic Studies",
+  badges: ["ইসলামিক শিক্ষা", "বিগিনার"],
+  description:
+    "মাখরাজ ও তাজবীদ সহ কুরআন তিলাওয়াত, দৈনন্দিন সালাতের নিয়ম এবং ইসলামিক আদব-কায়দা শিক্ষা।",
+  detailedOverviewText:
+    "মাখরাজ ও তাজবীদ সহ কুরআন তিলাওয়াত, দৈনন্দিন সালাতের নিয়ম এবং ইসলামিক আদব-কায়দা শিক্ষার বিশেষ কোর্স। সঠিক উচ্চারণ, সালাতের সঠিক আহকাম ও দৈনন্দিন শিষ্টাচার চর্চায় অভিজ্ঞ মেন্টরদের তত্ত্বাবধানে গাইডলাইন দেওয়া হয়।",
+  ageGroup: "৬-৬৫ বছর",
+  duration: "৩ মাস",
+  enrolledStudents: "৫২০ শিক্ষার্থী",
+  rating: "5 (143 রিভিউ)",
+  price: "৳৩,০০০",
+  youtubeReviewUrl: "https://youtu.be/kiwCdNcVks4?si=RzmhEd969uDPweWV",
+  helpline: "09611-678344",
+  programHighlights: [
+    "✅ প্রতিদিনের তিলাওয়াত ও অনুশীলন",
+    "✅ মাখরাজ ও তাজবীদের প্র্যাকটিক্যাল গাইডলাইন",
+    "✅ অভিজ্ঞ গাইড টিচারের সাহায্য",
+    "✅ লাইভ সাপোর্ট ও মাসআলা-মাসায়েল সমাধান",
+    "✅ সঠিক উচ্চারণ ও আদব-কায়দা চর্চা",
+  ],
+};
+
 export default COURSE_3_DATA;
+
