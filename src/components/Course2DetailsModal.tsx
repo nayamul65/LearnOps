@@ -106,15 +106,22 @@ export default function Course2DetailsModal({
 
   /* Helper to convert YouTube URL to embed format */
   const getYouTubeEmbedUrl = (url: string) => {
-    if (url.includes("embed/")) return url;
+    if (!url) return "https://www.youtube.com/embed/bHm2XTgFCuM";
     let videoId = "";
-    if (url.includes("youtu.be/")) {
-      videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
-    } else if (url.includes("v=")) {
-      videoId = url.split("v=")[1]?.split("&")[0] || "";
+    const trimmed = url.trim();
+    if (trimmed.length === 11 && !trimmed.includes("/") && !trimmed.includes("?")) {
+      videoId = trimmed;
+    } else {
+      if (trimmed.includes("youtu.be/")) {
+        videoId = trimmed.split("youtu.be/")[1]?.split("?")[0]?.split("&")[0] || "";
+      } else if (trimmed.includes("v=")) {
+        videoId = trimmed.split("v=")[1]?.split("&")[0]?.split("?")[0] || "";
+      } else if (trimmed.includes("embed/")) {
+        videoId = trimmed.split("embed/")[1]?.split("?")[0]?.split("&")[0] || "";
+      }
     }
     return videoId
-      ? `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`
+      ? `https://www.youtube.com/embed/${videoId}`
       : "https://www.youtube.com/embed/bHm2XTgFCuM";
   };
 
@@ -426,7 +433,7 @@ export default function Course2DetailsModal({
               <div className="bg-muted/60 px-5 py-3 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-2 text-red-600 font-bold text-xs sm:text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
                   <Youtube className="w-5 h-5 fill-red-600 text-white" />
-                  <span>🎥 ডেমো ভিডিও ক্লাস (YouTube Demo Player)</span>
+                  <span>🎥 কোর্স রিভিউ ভিডিও (Course Review Video)</span>
                 </div>
                 <span className="text-[11px] text-muted-foreground">এইচডি ভিডিও</span>
               </div>

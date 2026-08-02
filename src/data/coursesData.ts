@@ -110,7 +110,7 @@ export const COURSE_5_DATA: Course5Data = {
   duration: "৩ মাস",
   enrolledStudents: "৫২০ শিক্ষার্থী",
   rating: "5 (143 রিভিউ)",
-  price: "৳৩,০০০",
+  price: "৳২,৫০০",
   youtubeReviewUrl: "https://youtu.be/kiwCdNcVks4?si=RzmhEd969uDPweWV",
   helpline: "09611-678344",
   programHighlights: [
