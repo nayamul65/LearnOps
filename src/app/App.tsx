@@ -76,26 +76,79 @@ type Page = "home" | "courses" | "course-detail" | "login" | "dashboard" | "shaf
    COURSE DATA
    We export this so that CourseDetailPage can import it.
 ══════════════════════════════════════════ */
-export const ALL_COURSES = [
+export interface Course {
+  id: number | string;
+  title: string;
+  titleEN?: string;
+  titleTag?: string;
+  tagColor?: string;
+  category?: string;
+  categoryBengali?: string;
+  ageMin?: number;
+  ageMax?: number;
+  ageLabel?: string;
+  ageGroup?: string;
+  ageGroupEN?: string;
+  duration?: string;
+  durationEN?: string;
+  durationMonths?: number;
+  price?: number | string;
+  priceEN?: number | string;
+  priceLabel?: string;
+  priceNum?: number;
+  rating?: number;
+  reviews?: number;
+  students?: number | string;
+  studentsEN?: number | string;
+  level?: string;
+  levelEN?: string;
+  levelColor?: string;
+  desc?: string;
+  description?: string;
+  descriptionEN?: string;
+  features?: string[];
+  instructor?: string;
+  badge?: string;
+  heroImg?: string;
+  img?: string;
+  teacherImg?: string;
+  teacherTitle?: string;
+  teacherExp?: string;
+  teacherStudents?: string;
+  teacherRating?: number;
+  teacherBio?: string;
+  [key: string]: any; // Allows dynamic access to translation properties
+}
+
+export const ALL_COURSES: Course[] = [
   {
     id: 1,
     title: "২৫ দিনে সুন্দর হাতের লেখা",
+    titleEN: "Beautiful Handwriting in 25 Days",
+    category: "Handwriting",
+    categoryBengali: "বাংলা হাতের লেখা",
     titleTag: "সবচেয়ে জনপ্রিয়",
     tagColor: "bg-amber-500",
     ageMin: 6, ageMax: 12,
     ageLabel: "৬–১২ বছর",
+    ageGroupEN: "6-12 Years",
     duration: "২৫ দিন",
+    durationEN: "25 Days",
     durationMonths: 1,
     price: 2500,
     priceLabel: "৳২,৫০০",
+    priceEN: "৳2,500",
     rating: 4.9,
     reviews: 312,
     students: "১,২৪০",
+    studentsEN: "1,240",
     img: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=600&h=400&fit=crop&auto=format",
     heroImg: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=1400&h=700&fit=crop&auto=format",
     level: "সব স্তর",
+    levelEN: "All Levels",
     levelColor: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300",
     desc: "স্বল্প সময়ে বর্ণমালা গঠন, লাইনের সোজা ভাব এবং দ্রুত ও সুন্দর হাতের লেখার বিশেষ টেকনিক।",
+    descriptionEN: "Special techniques for alphabet formation, straight lines, and fast, beautiful handwriting in a short time.",
     features: ["বর্ণমালা গঠন টেকনিক", "লাইনে সোজা লেখার কৌশল", "দ্রুত লেখার প্র্যাকটিস শিট", "মেন্টর ফিডব্যাক সেশন"],
     instructor: "ফারহানা বেগম",
     badge: "✍️",
@@ -109,22 +162,31 @@ export const ALL_COURSES = [
   {
     id: 2,
     title: "মাত্র ৩০ দিনে ছোট থেকে সুন্দর হাতের লেখা",
+    titleEN: "Beautiful Handwriting for Kids in 30 Days",
+    category: "Handwriting",
+    categoryBengali: "হাতের লেখা বেসিক",
     titleTag: "সেরা বিক্রিত",
     tagColor: "bg-emerald-500",
     ageMin: 4, ageMax: 7,
     ageLabel: "৪–৭ বছর",
+    ageGroupEN: "4-7 Years",
     duration: "৩০ দিন",
+    durationEN: "30 Days",
     durationMonths: 1,
     price: 2000,
     priceLabel: "৳২,০০০",
+    priceEN: "৳2,000",
     rating: 4.8,
     reviews: 284,
     students: "৯৮০",
+    studentsEN: "980",
     img: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&h=400&fit=crop&auto=format",
     heroImg: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1400&h=700&fit=crop&auto=format",
     level: "বিগিনার",
+    levelEN: "Beginner",
     levelColor: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300",
     desc: "ছোট বাচ্চাদের পেন্সিল গ্রিপ, স্টক প্র্যাকটিস এবং বর্ণমালার নিখুঁত আকৃতি শেখানোর বেসিক কোর্স।",
+    descriptionEN: "Basic course to teach pencil grip, stroke practice, and perfect alphabet shapes for young kids.",
     features: ["পেন্সিল গ্রিপ কারেকশন", "বেসিক বর্ণমালা গঠন", "রঙিন ক্যালিগ্রাফি চার্ট", "লাইভ প্যারেন্টিং সেশন"],
     instructor: "রাহেলা খাতুন",
     badge: "👦",
@@ -138,22 +200,31 @@ export const ALL_COURSES = [
   {
     id: 3,
     title: "8 WEEKS ENGLISH SPEAKING (start program)",
+    titleEN: "8 WEEKS ENGLISH SPEAKING (start program)",
+    category: "English",
+    categoryBengali: "ইংরেজি স্পোকেন",
     titleTag: "নতুন",
     tagColor: "bg-blue-500",
     ageMin: 8, ageMax: 15,
     ageLabel: "৮–১৫ বছর",
+    ageGroupEN: "8-15 Years",
     duration: "৮ সপ্তাহ",
+    durationEN: "8 Weeks",
     durationMonths: 2,
     price: 3500,
     priceLabel: "৳৩,৫০০",
+    priceEN: "৳3,500",
     rating: 4.9,
     reviews: 198,
     students: "৭৬০",
+    studentsEN: "760",
     img: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=600&h=400&fit=crop&auto=format",
     heroImg: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=1400&h=700&fit=crop&auto=format",
     level: "বিগিনার-মিড",
+    levelEN: "Beginner-Mid",
     levelColor: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
     desc: "শিশুদের জড়তা কাটিয়ে ফ্লুয়েন্টলি ইংরেজিতে কথা বলার আত্মবিশ্বাস তৈরির স্পেশাল স্পোকেন প্রোগ্রাম।",
+    descriptionEN: "Special spoken program to build children's confidence in speaking English fluently by overcoming hesitation.",
     features: ["স্পোকেন প্র্যাকটিস সেশন", "ভীতি কাটানোর কৌশল", "দৈনন্দিন কথোপকথন ভোকাবুলারি", "পাবলিক স্পিকিং গেম"],
     instructor: "মো. আরিফুল ইসলাম",
     badge: "🗣️",
@@ -167,22 +238,31 @@ export const ALL_COURSES = [
   {
     id: 4,
     title: "READING & SPELLING DEVELOPMENT with PHONICS",
+    titleEN: "READING & SPELLING DEVELOPMENT with PHONICS",
+    category: "Phonics",
+    categoryBengali: "ফোনিক্স ও উচ্চারণ",
     titleTag: "সব স্তর",
     tagColor: "bg-purple-500",
     ageMin: 5, ageMax: 10,
     ageLabel: "৫–১০ বছর",
+    ageGroupEN: "5-10 Years",
     duration: "২ মাস",
+    durationEN: "2 Months",
     durationMonths: 2,
     price: 2800,
     priceLabel: "৳২,৮০০",
+    priceEN: "৳2,800",
     rating: 4.8,
     reviews: 221,
     students: "৮৩০",
+    studentsEN: "830",
     img: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&h=400&fit=crop&auto=format",
     heroImg: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1400&h=700&fit=crop&auto=format",
     level: "সব স্তর",
+    levelEN: "All Levels",
     levelColor: "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300",
     desc: "ফোনিক্স সাউন্ডের মাধ্যমে ইংরেজি সঠিকভাবে পড়া, বানান শেখা এবং উচ্চারণের জড়তা দূর করার কোর্স।",
+    descriptionEN: "Course to correctly read English, learn spelling, and remove pronunciation hesitation through phonics sounds.",
     features: ["ফোনিক্স সাউন্ডস লেসন", "বানান মনে রাখার শর্টকাট", "রিডিং ফ্লুয়েন্সি টেস্ট", "উચ્চারণ সংশোধনী সেশন"],
     instructor: "সুমাইয়া আক্তার",
     badge: "📖",

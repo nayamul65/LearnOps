@@ -69,3 +69,38 @@ export interface AdminAnalytics {
   conversionRate: number;
   monthlyGrowth: number;
 }
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'Telesales' | 'Teacher' | 'Admin';
+  status: 'Active' | 'Deactivated';
+  tempPassword?: string;
+  createdAt?: string;
+}
+
+export interface CourseExtraCost {
+  id: string;
+  courseTitle: string;
+  printingCost: number;
+  inboundFreight: number;
+  courierFee: number;
+  totalExpense: number;
+  unitPrice: number;
+  netMargin: number;
+}
+
+export interface DeliveryRecord {
+  id: string;
+  studentName: string;
+  phone: string;
+  address: string;
+  courierService: 'Steadfast' | 'Pathao' | 'Paperfly';
+  consignmentId: string;
+  trxId: string;
+  deliveryStatus: 'Pending' | 'Dispatched' | 'In Transit' | 'Delivered' | 'Returned';
+  date: string;
+}
+

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   TrendingUp,
   BarChart3,
+  BarChart2,
   Users,
   BookOpen,
   Image as ImageIcon,
@@ -34,6 +35,17 @@ import {
   FileText,
   UserPlus,
   Filter,
+  Sun,
+  Moon,
+  Globe,
+  Truck,
+  Receipt,
+  KeyRound,
+  UserX,
+  Package,
+  MapPin,
+  ShieldAlert,
+  Lock,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -46,7 +58,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { supabase, Lead, UserProfile } from "../lib/supabase";
+import { supabase, Lead, UserProfile, StaffMember, CourseExtraCost, DeliveryRecord } from "../lib/supabase";
 import { useLanguage } from "../app/context/LanguageContext";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -92,6 +104,7 @@ export interface StudentRosterItem {
 
 export interface BatchItem {
   id: string;
+  courseId?: string | number;
   name: string;
   courseTitle: string;
   headTeacher: string;
@@ -279,6 +292,7 @@ const INITIAL_LEADS: Lead[] = [
 const INITIAL_BATCHES: BatchItem[] = [
   {
     id: "batch-101",
+    courseId: "c-101",
     name: "ব্যাচ ০৪ (বিকাল ৪:০০ টা)",
     courseTitle: "২৫ দিনে সুন্দর হাতের লেখা",
     headTeacher: "ফারহানা বেগম",
@@ -294,6 +308,7 @@ const INITIAL_BATCHES: BatchItem[] = [
   },
   {
     id: "batch-102",
+    courseId: "c-102",
     name: "ব্যাচ ০২ (সকাল ১০:০০ টা)",
     courseTitle: "মাত্র ৩০ দিনে ছোটদের হ্যান্ডরাইটিং",
     headTeacher: "রাহেলা খাতুন",
@@ -305,37 +320,525 @@ const INITIAL_BATCHES: BatchItem[] = [
       { id: "std-8", name: "জায়ান করিম", parentName: "রেজাউল করিম", rollNo: "03", attendancePercentage: 96, avgExamScore: 92, grade: "A+", status: "Active" },
     ],
   },
+  {
+    id: "batch-103",
+    courseId: "c-103",
+    name: "ব্যাচ ০১ (রাত ৮:০০ টা)",
+    courseTitle: "8 WEEKS ENGLISH SPEAKING (start program)",
+    headTeacher: "মো. আরিফুল ইসলাম",
+    totalStudents: 4,
+    schedule: "শনিবার-সোম-বুধবার (রাত ৮:০০)",
+    roster: [
+      { id: "std-9", name: "রাফসান জামান", parentName: "আরিফ জামান", rollNo: "01", attendancePercentage: 95, avgExamScore: 91, grade: "A+", status: "Active" },
+      { id: "std-10", name: "মেহজাবিন মেহনাজ", parentName: "মেহেদী হাসান", rollNo: "02", attendancePercentage: 88, avgExamScore: 85, grade: "A", status: "Active" },
+      { id: "std-11", name: "সামিউল ইসলাম", parentName: "শহিদুল ইসলাম", rollNo: "03", attendancePercentage: 92, avgExamScore: 89, grade: "A+", status: "Active" },
+      { id: "std-12", name: "অনন্যা চৌধুরী", parentName: "কবীর চৌধুরী", rollNo: "04", attendancePercentage: 98, avgExamScore: 96, grade: "A+", status: "Active" },
+    ],
+  },
 ];
 
-const WEEKLY_CHART = [
-  { name: "Sat", revenue: 12000, sales: 5 },
-  { name: "Sun", revenue: 18500, sales: 7 },
-  { name: "Mon", revenue: 15000, sales: 6 },
-  { name: "Tue", revenue: 22000, sales: 9 },
-  { name: "Wed", revenue: 28000, sales: 11 },
-  { name: "Thu", revenue: 24500, sales: 10 },
-  { name: "Fri", revenue: 32000, sales: 13 },
+const INITIAL_STAFF: StaffMember[] = [
+  {
+    id: "staff-1",
+    name: "আরিফুল ইসলাম",
+    email: "ariful@learnops.com",
+    phone: "01711-223344",
+    role: "Telesales",
+    status: "Active",
+    tempPassword: "pass1234password",
+    createdAt: "2026-07-01",
+  },
+  {
+    id: "staff-2",
+    name: "ফারহানা বেগম",
+    email: "farhana@learnops.com",
+    phone: "01822-334455",
+    role: "Teacher",
+    status: "Active",
+    tempPassword: "pass1234password",
+    createdAt: "2026-07-05",
+  },
+  {
+    id: "staff-3",
+    name: "রাহেলা খাতুন",
+    email: "rahela@learnops.com",
+    phone: "01933-445566",
+    role: "Teacher",
+    status: "Active",
+    tempPassword: "pass1234password",
+    createdAt: "2026-07-10",
+  },
+  {
+    id: "staff-4",
+    name: "সুমাইয়া আক্তার",
+    email: "sumaiya@learnops.com",
+    phone: "01644-556677",
+    role: "Telesales",
+    status: "Active",
+    tempPassword: "pass1234password",
+    createdAt: "2026-07-12",
+  },
 ];
 
-const MONTHLY_CHART = [
-  { name: "Week 1", revenue: 85000, sales: 34 },
-  { name: "Week 2", revenue: 110000, sales: 45 },
-  { name: "Week 3", revenue: 145000, sales: 58 },
-  { name: "Week 4", revenue: 175000, sales: 70 },
+const INITIAL_EXTRA_COSTS: CourseExtraCost[] = [
+  {
+    id: "cost-1",
+    courseTitle: "২৫ দিনে সুন্দর হাতের লেখা",
+    printingCost: 350,
+    inboundFreight: 80,
+    courierFee: 120,
+    totalExpense: 550,
+    unitPrice: 2500,
+    netMargin: 1950,
+  },
+  {
+    id: "cost-2",
+    courseTitle: "মাত্র ৩০ দিনে ছোটদের হ্যান্ডরাইটিং",
+    printingCost: 300,
+    inboundFreight: 70,
+    courierFee: 110,
+    totalExpense: 480,
+    unitPrice: 2000,
+    netMargin: 1520,
+  },
+  {
+    id: "cost-3",
+    courseTitle: "8 WEEKS ENGLISH SPEAKING (start program)",
+    printingCost: 450,
+    inboundFreight: 100,
+    courierFee: 130,
+    totalExpense: 680,
+    unitPrice: 3500,
+    netMargin: 2820,
+  },
 ];
 
-const YEARLY_CHART = [
-  { name: "Q1", revenue: 350000, sales: 140 },
-  { name: "Q2", revenue: 480000, sales: 190 },
-  { name: "Q3", revenue: 620000, sales: 250 },
-  { name: "Q4", revenue: 850000, sales: 340 },
+const INITIAL_DELIVERIES: DeliveryRecord[] = [
+  {
+    id: "del-101",
+    studentName: "আরাফ হোসেন",
+    phone: "01711-223344",
+    address: "হাউজ ১২, রোড ৫, ধানমন্ডি, ঢাকা",
+    courierService: "Steadfast",
+    consignmentId: "STEAD-890123",
+    trxId: "BK892310X",
+    deliveryStatus: "Delivered",
+    date: "2026-07-25",
+  },
+  {
+    id: "del-102",
+    studentName: "তাহিয়া রহমান",
+    phone: "01822-334455",
+    address: "ব্লক সি, আফতাবনগর, ঢাকা",
+    courierService: "Pathao",
+    consignmentId: "PATHAO-445129",
+    trxId: "BK991204P",
+    deliveryStatus: "In Transit",
+    date: "2026-07-26",
+  },
+  {
+    id: "del-103",
+    studentName: "সামিন চৌধুরী",
+    phone: "01933-445566",
+    address: "১৫ জিইসি সার্কেল, চট্টগ্রাম",
+    courierService: "Steadfast",
+    consignmentId: "STEAD-901244",
+    trxId: "NG901234Y",
+    deliveryStatus: "Dispatched",
+    date: "2026-07-27",
+  },
+  {
+    id: "del-104",
+    studentName: "মারুফ হাসান",
+    phone: "01555-112233",
+    address: "জিন্দাবাজার, সিলেট",
+    courierService: "Paperfly",
+    consignmentId: "PFLY-332910",
+    trxId: "BK773341Z",
+    deliveryStatus: "Pending",
+    date: "2026-07-27",
+  },
 ];
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CENTRALIZED PURE TRANSLATIONS DICTIONARY
+═══════════════════════════════════════════════════════════════════════════ */
+
+const adminTranslations = {
+  en: {
+    brandName: "LearnOps Admin",
+    supabaseConnected: "Supabase Connected",
+    refreshDb: "Refresh DB Data",
+    salesAnalytics: "Sales Analytics",
+    salesDesc: "Revenue & Graphs",
+    leadPipeline: "Lead Pipeline",
+    leadDesc: "Source & Claim Status",
+    employeePerf: "Employee Performance",
+    employeeDesc: "Telesales Metrics",
+    teacherBatches: "Teacher & Batches",
+    teacherDesc: "Head Mentors & Roster",
+    courseCms: "Course CMS",
+    cmsDesc: "Create & Edit",
+
+    // Top headers
+    badgeSales: "Revenue Graphs & Buyers List",
+    badgeLeads: "Inbound Lead Source & Claim Tracking",
+    badgeEmployees: "Telesales Representative Conversion",
+    badgeBatches: "Head Teacher & Student Rosters",
+    badgeCourses: "Live Course Catalog Management",
+
+    titleSales: "Sales Analytics & Buyers History",
+    titleLeads: "Inbound Lead Tracking & Assignment",
+    titleEmployees: "Sales Representative Performance",
+    titleBatches: "Head Teacher & Student Rosters",
+    titleCourses: "Course CMS Portal",
+
+    syncing: "Supabase Syncing...",
+    addNewCourse: "Add New Course",
+
+    // Sales Sub-Tabs
+    overallSalesTab: "Overall Sales Report",
+    extraCostTab: "Extra Cost Report",
+    deliveryTab: "Delivery Report",
+
+    // Extra Cost Report
+    grossSales: "Gross Sales",
+    totalExpenses: "Total Product & Courier Expenses",
+    netProfit: "Net Profit",
+    itemizedCostTable: "Itemized Course & Product Expenses",
+    printingCost: "Unit Printing Cost (৳)",
+    inboundFreight: "Inbound Freight (৳)",
+    courierFee: "Unit Courier Fee (৳)",
+    totalExpenseCol: "Total Expense (৳)",
+    netProfitMargin: "Net Profit Margin",
+    editCostTitle: "Edit Course Expenses",
+
+    // Delivery Report
+    logisticsTrackingTable: "Logistics & Consignment Tracking",
+    searchDelivery: "Search by Consignment ID or Phone...",
+    courierService: "Courier Service",
+    consignmentId: "Consignment ID / Tracking Code",
+    deliveryStatus: "Delivery Status",
+    updateStatusBtn: "Update Status",
+    modalUpdateDeliveryTitle: "Update Delivery Consignment Status",
+    selectNewDeliveryStatus: "Select New Delivery Status:",
+    addressLabel: "Delivery Address:",
+
+    // Staff Management
+    staffManagementTitle: "Staff Credentials & Account Onboarding",
+    staffOnboardingSubtitle: "Add new employees, manage credentials, and toggle account activation status.",
+    addNewEmployee: "Add New Employee",
+    empName: "Employee Name",
+    empEmail: "Email Address",
+    empPhone: "Phone Number",
+    tempPassword: "Temporary Password",
+    empRole: "Role",
+    resetPassword: "Reset Password",
+    deactivateAccount: "Deactivate Account",
+    activateAccount: "Activate Account",
+    saveEmployee: "Create Employee Account ✓",
+    resetPassTitle: "Reset Staff Temporary Password",
+    newPasswordLabel: "New Temporary Password:",
+    saveNewPassword: "Save Password ✓",
+
+    // Sales Tab
+    timePeriodLabel: "Time Period:",
+    periodWeekly: "Weekly",
+    periodMonthly: "Monthly",
+    periodYearly: "Yearly",
+    selectYear: "Year:",
+    selectMonth: "Month:",
+    selectWeek: "Week:",
+    courseFilterLabel: "Course Filter:",
+    allCourses: "All Courses",
+    revenueTrend: "Revenue & Sales Trend",
+    filteredRevenue: "Filtered Revenue:",
+    revenueGrowth: "+22.4% Revenue Growth",
+    confirmedBuyersTable: "Confirmed Buyers List",
+    totalBuyers: "Total Buyers:",
+    colStudentParent: "Student & Parent",
+    colPhone: "Phone Number",
+    colCourse: "Course",
+    colPayment: "Payment",
+    colTrxId: "Transaction ID",
+    colDate: "Date",
+    parentLabel: "Parent:",
+
+    months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    weeks: ["Week 1", "Week 2", "Week 3", "Week 4"],
+
+    // Leads Tab
+    sourceFilterLabel: "Source Filter:",
+    allSources: "All Sources",
+    sourceAds: "Ads",
+    sourceForms: "Google Forms",
+    sourceDms: "Social DMs",
+    claimStatusLabel: "Claim Status:",
+    claimAll: "All",
+    claimUnassigned: "Unassigned",
+    claimAssigned: "Assigned",
+    searchPlaceholder: "Search by name or phone...",
+    inboundLeadPipeline: "Inbound Lead Tracking Pipeline",
+    displayedLeads: "Displayed Leads:",
+    colStudentPhone: "Student & Phone",
+    colInterestedCourse: "Interested Course",
+    colLeadSource: "Lead Source",
+    colClaimedRep: "Claimed Rep",
+    colLeadStatus: "Lead Status",
+    colActionPayment: "Payment",
+    unassignedOption: "Unassigned (No Representative)",
+    statusNew: "New",
+    statusInProgress: "In Progress",
+    statusClaimed: "Claimed",
+    statusCalled: "Called",
+    statusInterested: "Interested",
+    statusConverted: "Converted",
+    statusRejected: "Rejected",
+    duePayment: "Pending",
+
+    // Employee Tab
+    salesCount: "sales",
+    totalCalls: "Total Call Notes:",
+    dmConversion: "Social DM Conversion:",
+    adConversion: "Ad Lead Conversion:",
+    revenueLabel: "Revenue:",
+    employeeLeaderboard: "Telesales Representative Leaderboard",
+    colEmpName: "Employee Name",
+    colPositionRole: "Position / Role",
+    colPortalActivity: "Portal Activity",
+    colLoggedCalls: "Logged Calls",
+    colConvertedSales: "Converted Sales",
+    colDmVsAd: "Social DM vs Ad Lead",
+    callsCount: "calls",
+
+    // Teacher & Batches Tab
+    headTeacherTitle: "Course Head Teacher Assignment",
+    headTeacherSubtitle: "Click any course card to filter its active batches below. Select the head instructor for each course.",
+    currentHeadTeacher: "Head Teacher:",
+    activeBatchesTitle: "Active Batches & Student Roster",
+    filteredCourseBadge: "Filtered Course:",
+    selectedBadge: "Selected",
+    instructorLabel: "Instructor:",
+    scheduleLabel: "Schedule:",
+    studentsCount: "students",
+    expandRosterTitle: "Full Student Roster & Academic Performance Marks",
+    attendanceLabel: "Attendance:",
+    avgScoreLabel: "Avg Exam Score:",
+    rollNoLabel: "Roll #",
+    noBatchesFound: "No active batches found for this course.",
+
+    // Course CMS Tab
+    durationLabel: "Duration:",
+    googleFormLabel: "Google Form:",
+    editCourseBtn: "Edit Course",
+    deleteCourseConfirm: "Are you sure you want to delete this course?",
+    modalEditTitle: "Edit Course",
+    modalCreateTitle: "Create New Course",
+    fieldTitle: "Course Title *",
+    fieldPrice: "Course Fee *",
+    fieldDuration: "Duration",
+    fieldInstructor: "Head Instructor",
+    fieldGoogleForm: "Google Form URL",
+    fieldImageUrl: "Image URL",
+    fieldDescription: "Course Description",
+    saveChanges: "Save Changes ✓",
+    publishCourse: "Publish Course ✓",
+
+  },
+  bn: {
+    brandName: "লার্নঅপস অ্যাডমিন",
+    supabaseConnected: "সুভাবেস কানেক্টেড",
+    refreshDb: "ডাটা রিফ্রেশ করুন",
+    salesAnalytics: "সেলস অ্যানালিটিক্স",
+    salesDesc: "রেভিনিউ ও গ্রাফ",
+    leadPipeline: "লিড পাইপলাইন",
+    leadDesc: "সোর্স ও ক্লেইম স্ট্যাটাস",
+    employeePerf: "এমপ্লয়ি পারফরম্যান্স",
+    employeeDesc: "টেলিসেলস মেট্রিক্স",
+    teacherBatches: "শিক্ষক ও ব্যাচ",
+    teacherDesc: "হেড মেন্টর ও রোস্টার",
+    courseCms: "কোর্স সিএমএস",
+    cmsDesc: "তৈরি ও সম্পাদনা",
+
+    // Top headers
+    badgeSales: "রেভিনিউ গ্রাফ এবং বায়ার্স তালিকা",
+    badgeLeads: "ইনবাউন্ড লিড সোর্স ও ক্লেইম ট্র্যাকিং",
+    badgeEmployees: "টেলিসেলস রিপ্রেজেন্টেটিভ কনভার্সন",
+    badgeBatches: "হেড টিচার ও স্টুডেন্ট রোস্টার",
+    badgeCourses: "লাইভ কোর্স ক্যাটালগ ম্যানেজমেন্ট",
+
+    titleSales: "সেলস অ্যানালিটিক্স ও বায়ার্স হিস্ট্রি",
+    titleLeads: "ইনবাউন্ড লিড ট্র্যাকিং ও অ্যাসাইনমেন্ট",
+    titleEmployees: "সেলস রিপ্রেজেন্টেটিভ পারফরম্যান্স",
+    titleBatches: "হেড টিচার ও ব্যাচ স্টুডেন্ট রোস্টার",
+    titleCourses: "কোর্স সিএমএস পোর্টাল",
+
+    syncing: "সুভাবেস সিঙ্ক হচ্ছে...",
+    addNewCourse: "নতুন কোর্স যোগ করুন",
+
+    // Sales Sub-Tabs
+    overallSalesTab: "📊 সার্বিক সেলস রিপোর্ট",
+    extraCostTab: "💸 অতিরিক্ত খরচ রিপোর্ট",
+    deliveryTab: "🚚 ডেলিভারি ট্র্যাকিং রিপোর্ট",
+
+    // Extra Cost Report
+    grossSales: "মোট গ্রস সেলস",
+    totalExpenses: "মোট খরচ ও কুরিয়ার ফি",
+    netProfit: "নিট প্রফিট",
+    itemizedCostTable: "আইটেমাইজড কোর্স ও প্রোডাক্ট খরচ তালিকা",
+    printingCost: "ছাপা খরচ (৳)",
+    inboundFreight: "ইনবাউন্ড ফ্রেইট (৳)",
+    courierFee: "কুরিয়ার ফি (৳)",
+    totalExpenseCol: "মোট খরচ (৳)",
+    netProfitMargin: "নিট প্রফিট মার্জিন",
+    editCostTitle: "কোর্স খরচ পরিবর্তন করুন",
+
+    // Delivery Report
+    logisticsTrackingTable: "লজিস্টিকস ও কন্সাইনমেন্ট ট্র্যাকিং",
+    searchDelivery: "কন্সাইনমেন্ট আইডি বা ফোন দিয়ে খুঁজুন...",
+    courierService: "কুরিয়ার সার্ভিস",
+    consignmentId: "কন্সাইনমেন্ট আইডি / ট্র্যাকিং কোড",
+    deliveryStatus: "ডেলিভারি স্ট্যাটাস",
+    updateStatusBtn: "স্ট্যাটাস আপডেট",
+    modalUpdateDeliveryTitle: "ডেলিভারি কন্সাইনমেন্ট স্ট্যাটাস আপডেট",
+    selectNewDeliveryStatus: "নতুন ডেলিভারি স্ট্যাটাস নির্বাচন করুন:",
+    addressLabel: "ডেলিভারি ঠিকানা:",
+
+    // Staff Management
+    staffManagementTitle: "স্টাফ অ্যাকাউন্ট ও ক্রেডেনশিয়াল ম্যানেজমেন্ট",
+    staffOnboardingSubtitle: "নতুন এমপ্লয়ি যুক্ত করুন, পাসওয়ার্ড রিসেট এবং একাউন্ট অ্যাক্টিভ/ডিঅ্যাক্টিভেট করুন।",
+    addNewEmployee: "নতুন এমপ্লয়ি যোগ করুন",
+    empName: "এমপ্লয়ির নাম",
+    empEmail: "ইমেইল এড্রেস",
+    empPhone: "ফোন নম্বর",
+    tempPassword: "টেম্পোরারি পাসওয়ার্ড",
+    empRole: "দায়িত্ব/রোল",
+    resetPassword: "পাসওয়ার্ড রিসেট",
+    deactivateAccount: "ডিঅ্যাক্টিভেট",
+    activateAccount: "অ্যাক্টিভেট",
+    saveEmployee: "এমপ্লয়ি অ্যাকাউন্ট তৈরি করুন ✓",
+    resetPassTitle: "স্টাফ টেম্পোরারি পাসওয়ার্ড রিসেট",
+    newPasswordLabel: "নতুন টেম্পোরারি পাসওয়ার্ড:",
+    saveNewPassword: "পাসওয়ার্ড সেভ করুন ✓",
+
+    // Sales Tab
+    timePeriodLabel: "সময়কাল নির্বাচন:",
+    periodWeekly: "সাপ্তাহিক",
+    periodMonthly: "মাসিক",
+    periodYearly: "বার্ষিক",
+    selectYear: "বছর:",
+    selectMonth: "মাস:",
+    selectWeek: "সপ্তাহ:",
+    courseFilterLabel: "কোর্স ফিল্টার:",
+    allCourses: "সব কোর্স",
+    revenueTrend: "রেভিনিউ ও সেলস ট্রেন্ড",
+    filteredRevenue: "ফিল্টারকৃত রেভিনিউ:",
+    revenueGrowth: "+২২.৪% রেভিনিউ বৃদ্ধি",
+    confirmedBuyersTable: "কনফার্মড বায়ার্স তালিকা",
+    totalBuyers: "মোট বায়ার:",
+    colStudentParent: "শিক্ষার্থী ও অভিভাবক",
+    colPhone: "ফোন নম্বর",
+    colCourse: "কোর্স",
+    colPayment: "পেমেন্ট",
+    colTrxId: "ট্রানজেকশন আইডি",
+    colDate: "তারিখ",
+    parentLabel: "অভিভাবক:",
+
+    months: ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"],
+    weeks: ["সপ্তাহ ১", "সপ্তাহ ২", "সপ্তাহ ৩", "সপ্তাহ ৪"],
+
+    // Leads Tab
+    sourceFilterLabel: "সোর্স ফিল্টার:",
+    allSources: "সব সোর্স",
+    sourceAds: "বিজ্ঞাপন",
+    sourceForms: "গুগল ফর্ম",
+    sourceDms: "ডাইরেক্ট মেসেজ",
+    claimStatusLabel: "ক্লেইম স্ট্যাটাস:",
+    claimAll: "সব",
+    claimUnassigned: "আনঅ্যাসাইন্ড",
+    claimAssigned: "অ্যাসাইন্ড",
+    searchPlaceholder: "নাম বা ফোন দিয়ে খুঁজুন...",
+    inboundLeadPipeline: "ইনবাউন্ড লিড ট্র্যাকিং পাইপলাইন",
+    displayedLeads: "প্রদর্শিত লিড:",
+    colStudentPhone: "শিক্ষার্থী ও ফোন",
+    colInterestedCourse: "আগ্রহী কোর্স",
+    colLeadSource: "লিড সোর্স",
+    colClaimedRep: "ক্লেইমড রিপ্রেজেন্টেটিভ",
+    colLeadStatus: "লিড স্ট্যাটাস",
+    colActionPayment: "পেমেন্ট",
+    unassignedOption: "আনঅ্যাসাইন্ড (কোন প্রতিনিধি নয়)",
+    statusNew: "নতুন",
+    statusInProgress: "চলতি যোগাযোগ",
+    statusClaimed: "ক্লেইমড",
+    statusCalled: "কথা হয়েছে",
+    statusInterested: "আগ্রহী",
+    statusConverted: "পেমেন্ট সম্পন্ন",
+    statusRejected: "বাতিল",
+    duePayment: "বকেয়া",
+
+    // Employee Tab
+    salesCount: "টি সেলস",
+    totalCalls: "মোট কল নোটস:",
+    dmConversion: "সোশ্যাল ডিএম কনভার্সন:",
+    adConversion: "এড লিড কনভার্সন:",
+    revenueLabel: "রেভিনিউ:",
+    employeeLeaderboard: "টেলিসেলস রিপ্রেজেন্টেটিভস বিস্তারিত লিডারবোর্ড",
+    colEmpName: "কর্মকর্তার নাম",
+    colPositionRole: "পজিশন / রোল",
+    colPortalActivity: "পোর্টালে সক্রিয়তা",
+    colLoggedCalls: "লগকৃত কল",
+    colConvertedSales: "কনভার্টেড সেলস",
+    colDmVsAd: "সোশ্যাল ডিএম বনাম এড লিড",
+    callsCount: "টি কল",
+
+    // Teacher & Batches Tab
+    headTeacherTitle: "কোর্সের প্রধান শিক্ষক নির্বাচন",
+    headTeacherSubtitle: "যেকোনো কোর্স কার্ডে ক্লিক করে উক্ত কোর্সের ব্যাচসমূহ নিচে ফিল্টার করে দেখুন। প্রতিটি কোর্সের হেড ইনস্ট্রাক্টর ড্রপডাউন থেকে নির্বাচন করুন।",
+    currentHeadTeacher: "বর্তমান হেড টিচার:",
+    activeBatchesTitle: "অ্যাক্টিভ ব্যাচসমূহ ও স্টুডেন্ট পারফরম্যান্স রোস্টার",
+    filteredCourseBadge: "ফিল্টারকৃত কোর্স:",
+    selectedBadge: "সিলেক্টেড",
+    instructorLabel: "ইনস্ট্রাক্টর:",
+    scheduleLabel: "সময়সূচি:",
+    studentsCount: "জন শিক্ষার্থী",
+    expandRosterTitle: "ফুল স্টুডেন্ট রোস্টার ও একাডেমি পারফরম্যান্স মার্কস",
+    attendanceLabel: "উপস্থিতি:",
+    avgScoreLabel: "গড় এক্সাম মার্কস:",
+    rollNoLabel: "রোল #",
+    noBatchesFound: "এই কোর্সের জন্য কোনো অ্যাক্টিভ ব্যাচ পাওয়া যায়নি।",
+
+    // Course CMS Tab
+    durationLabel: "মেয়াদ:",
+    googleFormLabel: "গুগল ফর্ম:",
+    editCourseBtn: "সম্পাদনা",
+    deleteCourseConfirm: "আপনি কি নিশ্চিত যে এই কোর্সটি মুছে ফেলতে চান?",
+    modalEditTitle: "কোর্স এডিট করুন",
+    modalCreateTitle: "নতুন কোর্স তৈরি করুন",
+    fieldTitle: "কোর্সের শিরোনাম *",
+    fieldPrice: "কোর্স ফি (টাকা) *",
+    fieldDuration: "মেয়াদ",
+    fieldInstructor: "প্রধান ইনস্ট্রাক্টর",
+    fieldGoogleForm: "গুগল ফর্ম লিংক",
+    fieldImageUrl: "ইমেজ URL",
+    fieldDescription: "কোর্স বিবরণ",
+    saveChanges: "পরিবর্তন সেভ করুন ✓",
+    publishCourse: "কোর্স পাবলিশ করুন ✓",
+
+  },
+};
 
 export default function Admin() {
-  const { t, isEnglish } = useLanguage();
-  
+  const { lang: contextLang, setLang: contextSetLang } = useLanguage();
+  const lang = contextLang === "EN" ? "en" : "bn";
+  const setLang = (newLang: "en" | "bn") => contextSetLang(newLang === "en" ? "EN" : "BN");
+  const t = adminTranslations[lang];
+
+  // Theme Mode State (Dark / Light)
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
   // Navigation Sidebar & Loading States
-  const [activeTab, setActiveTab] = useState<"sales" | "leads" | "employees" | "batches" | "courses" | "customization">("sales");
+  const [activeTab, setActiveTab] = useState<"sales" | "leads" | "employees" | "batches" | "courses">("sales");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -343,12 +846,20 @@ export default function Admin() {
   const [courses, setCourses] = useState<CMSCourse[]>(INITIAL_COURSES);
   const [employees, setEmployees] = useState<EmployeePerf[]>(INITIAL_EMPLOYEES);
   const [batches, setBatches] = useState<BatchItem[]>(INITIAL_BATCHES);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | number | null>("c-101");
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>("batch-101");
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
 
-  // ── SALES ANALYTICS FILTERS ──
+  // ── DYNAMIC YEAR GENERATOR ──
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 2024 + 2 }, (_, i) => (2024 + i).toString());
+
+  // ── SALES ANALYTICS FILTERS & DYNAMIC DATE DROPDOWNS ──
   const [salesTimePeriod, setSalesTimePeriod] = useState<"Weekly" | "Monthly" | "Yearly">("Weekly");
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+  const [selectedMonth, setSelectedMonth] = useState<string>("6"); // July (0-indexed 6)
+  const [selectedWeek, setSelectedWeek] = useState<string>("Week 1");
   const [salesCourseFilter, setSalesCourseFilter] = useState<string>("All");
 
   // ── LEAD MANAGEMENT FILTERS ──
@@ -356,14 +867,7 @@ export default function Admin() {
   const [leadClaimFilter, setLeadClaimFilter] = useState<"All" | "Unassigned" | "Assigned">("All");
   const [leadSearchQuery, setLeadSearchQuery] = useState("");
 
-  // ── WEBSITE CUSTOMIZATION STATE ──
-  const [siteConfig, setSiteConfig] = useState({
-    heroTitle: "আপনার সন্তানের হাতের লেখা ও পড়া হোক নিখুঁত ও চমৎকার",
-    heroSubtitle: "অভিজ্ঞ মেন্টরদের সাথে সরাসরি লাইভ ক্লাসে মাত্র ২৫ দিনে হাতের লেখা ও পড়ার জড়তা কাটান।",
-    mainBannerUrl: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=1200&h=600&fit=crop&auto=format",
-    demoVideoUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
-  });
-  const [customizationSavedMessage, setCustomizationSavedMessage] = useState(false);
+
 
   // ── COURSE FORM MODAL STATE ──
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -380,18 +884,98 @@ export default function Admin() {
     googleFormUrl: "https://forms.google.com/demo-enrollment-form",
   });
 
-  // ── SUPABASE LOAD FUNCTION WITH CATCH & CONSOLE.ERROR ──
+  // ── SALES ANALYTICS SUB-TAB STATE ──
+  const [salesSubTab, setSalesSubTab] = useState<"overall" | "extraCost" | "delivery">("overall");
+
+  // ── STAFF MANAGEMENT STATE ──
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>(INITIAL_STAFF);
+  const [newStaffForm, setNewStaffForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    tempPassword: "",
+    role: "Telesales" as "Telesales" | "Teacher",
+  });
+  const [resetPasswordStaff, setResetPasswordStaff] = useState<StaffMember | null>(null);
+  const [newTempPasswordInput, setNewTempPasswordInput] = useState("");
+
+  // ── EXTRA COST REPORT STATE ──
+  const [extraCosts, setExtraCosts] = useState<CourseExtraCost[]>(INITIAL_EXTRA_COSTS);
+  const [editingCostId, setEditingCostId] = useState<string | null>(null);
+  const [editingCostForm, setEditingCostForm] = useState({
+    printingCost: "350",
+    inboundFreight: "80",
+    courierFee: "120",
+  });
+
+  // ── DELIVERY TRACKING REPORT STATE ──
+  const [deliveries, setDeliveries] = useState<DeliveryRecord[]>(INITIAL_DELIVERIES);
+  const [deliverySearchQuery, setDeliverySearchQuery] = useState("");
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<
+    "All" | "Pending" | "Dispatched" | "In Transit" | "Delivered" | "Returned"
+  >("All");
+  const [editingDelivery, setEditingDelivery] = useState<DeliveryRecord | null>(null);
+  const [newDeliveryStatus, setNewDeliveryStatus] = useState<DeliveryRecord["deliveryStatus"]>("Pending");
+
+  // ── SUPABASE LOAD FUNCTION ──
   const fetchSupabaseData = async () => {
     setIsLoading(true);
     try {
-      // 1. Fetch Users (Sales reps)
       const { data: dbUsers, error: usersErr } = await supabase.from("users").select("*");
       if (usersErr) console.error("Error fetching users from Supabase:", usersErr);
       else if (dbUsers && dbUsers.length > 0) {
         setUsersList(dbUsers);
       }
 
-      // 2. Fetch Courses
+      const { data: dbStaff, error: staffErr } = await supabase.from("staff").select("*");
+      if (!staffErr && dbStaff && dbStaff.length > 0) {
+        setStaffMembers(
+          dbStaff.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            email: s.email,
+            phone: s.phone,
+            role: s.role as any,
+            status: s.status as any,
+            tempPassword: s.temp_password || s.tempPassword || "pass1234password",
+            createdAt: s.created_at ? s.created_at.substring(0, 10) : "2026-07-18",
+          }))
+        );
+      }
+
+      const { data: dbCosts, error: costsErr } = await supabase.from("extra_costs").select("*");
+      if (!costsErr && dbCosts && dbCosts.length > 0) {
+        setExtraCosts(
+          dbCosts.map((c: any) => ({
+            id: c.id,
+            courseTitle: c.course_title || c.courseTitle,
+            printingCost: c.printing_cost || c.printingCost || 0,
+            inboundFreight: c.inbound_freight || c.inboundFreight || 0,
+            courierFee: c.courier_fee || c.courierFee || 0,
+            totalExpense: c.total_expense || c.totalExpense || 0,
+            unitPrice: c.unit_price || c.unitPrice || 2500,
+            netMargin: c.net_margin || c.netMargin || 0,
+          }))
+        );
+      }
+
+      const { data: dbDeliveries, error: deliveriesErr } = await supabase.from("deliveries").select("*");
+      if (!deliveriesErr && dbDeliveries && dbDeliveries.length > 0) {
+        setDeliveries(
+          dbDeliveries.map((d: any) => ({
+            id: d.id,
+            studentName: d.student_name || d.studentName,
+            phone: d.phone,
+            address: d.address,
+            courierService: d.courier_service || d.courierService || "Steadfast",
+            consignmentId: d.consignment_id || d.consignmentId,
+            trxId: d.trx_id || d.trxId,
+            deliveryStatus: d.delivery_status || d.deliveryStatus || "Pending",
+            date: d.created_at ? d.created_at.substring(0, 10) : "2026-07-25",
+          }))
+        );
+      }
+
       const { data: dbCourses, error: courseErr } = await supabase.from("courses").select("*");
       if (courseErr) console.error("Error fetching courses from Supabase:", courseErr);
       else if (dbCourses && dbCourses.length > 0) {
@@ -412,13 +996,11 @@ export default function Admin() {
         );
       }
 
-      // 3. Fetch Leads
       const { data: dbLeads, error: leadErr } = await supabase.from("leads").select("*");
       if (leadErr) console.error("Error fetching leads from Supabase:", leadErr);
       else if (dbLeads && dbLeads.length > 0) {
         setLeads(
           dbLeads.map((l: any) => {
-            // Join with users list to map assigned_employee_id
             const matchedUser = dbUsers?.find((u: any) => u.id === l.assigned_employee_id);
             return {
               id: l.id,
@@ -446,26 +1028,241 @@ export default function Admin() {
     }
   };
 
+  // ── STAFF MANAGEMENT HANDLERS ──
+  const handleAddEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStaffForm.name.trim() || !newStaffForm.email.trim()) return;
+
+    const newStaff: StaffMember = {
+      id: `staff-${Date.now()}`,
+      name: newStaffForm.name,
+      email: newStaffForm.email,
+      phone: newStaffForm.phone || "01700-000000",
+      role: newStaffForm.role,
+      status: "Active",
+      tempPassword: newStaffForm.tempPassword || "pass1234password",
+      createdAt: new Date().toISOString().substring(0, 10),
+    };
+
+    setStaffMembers((prev) => [newStaff, ...prev]);
+
+    // Also update employees performance list if missing
+    setEmployees((prev) => [
+      ...prev,
+      {
+        id: newStaff.id,
+        name: newStaff.name,
+        role: newStaff.role === "Telesales" ? "Telesales Representative" : "Course Instructor",
+        status: "Online",
+        totalCalls: 0,
+        convertedSales: 0,
+        revenueGenerated: 0,
+        socialDmConversion: 0,
+        adLeadConversion: 0,
+      },
+    ]);
+
+    try {
+      // 1. Sync to Supabase auth if allowed
+      await supabase.auth.signUp({
+        email: newStaffForm.email,
+        password: newStaffForm.tempPassword || "pass1234password",
+        options: {
+          data: {
+            name: newStaffForm.name,
+            role: newStaffForm.role.toLowerCase(),
+            phone: newStaffForm.phone,
+          },
+        },
+      });
+
+      // 2. Insert into users / profiles / staff table in Supabase
+      const { error: dbErr } = await supabase.from("staff").insert([
+        {
+          name: newStaffForm.name,
+          email: newStaffForm.email,
+          phone: newStaffForm.phone,
+          role: newStaffForm.role,
+          status: "Active",
+          temp_password: newStaffForm.tempPassword || "pass1234password",
+        },
+      ]);
+      if (dbErr) console.warn("Supabase staff table sync (non-fatal):", dbErr.message);
+
+      const { error: userErr } = await supabase.from("users").insert([
+        {
+          name: newStaffForm.name,
+          email: newStaffForm.email,
+          role: newStaffForm.role === "Teacher" ? "teacher" : "sales",
+        },
+      ]);
+      if (userErr) console.warn("Supabase users table sync (non-fatal):", userErr.message);
+    } catch (err) {
+      console.error("Exception adding employee to Supabase:", err);
+    }
+
+    setNewStaffForm({
+      name: "",
+      email: "",
+      phone: "",
+      tempPassword: "",
+      role: "Telesales",
+    });
+  };
+
+  const handleOpenResetPassword = (staff: StaffMember) => {
+    setResetPasswordStaff(staff);
+    setNewTempPasswordInput(staff.tempPassword || "pass1234password");
+  };
+
+  const handleSaveResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPasswordStaff || !newTempPasswordInput.trim()) return;
+
+    setStaffMembers((prev) =>
+      prev.map((s) => (s.id === resetPasswordStaff.id ? { ...s, tempPassword: newTempPasswordInput } : s))
+    );
+
+    try {
+      const { error } = await supabase
+        .from("staff")
+        .update({ temp_password: newTempPasswordInput })
+        .eq("id", resetPasswordStaff.id);
+      if (error) console.warn("Supabase staff password update error:", error.message);
+    } catch (err) {
+      console.error("Exception resetting password:", err);
+    }
+
+    setResetPasswordStaff(null);
+  };
+
+  const handleToggleStaffStatus = async (staffId: string) => {
+    setStaffMembers((prev) =>
+      prev.map((s) => {
+        if (s.id === staffId) {
+          const nextStatus = s.status === "Active" ? "Deactivated" : "Active";
+          try {
+            supabase.from("staff").update({ status: nextStatus }).eq("id", staffId);
+          } catch (err) {
+            console.error("Error toggling staff status:", err);
+          }
+          return { ...s, status: nextStatus };
+        }
+        return s;
+      })
+    );
+  };
+
+  // ── EXTRA COST REPORT HANDLERS ──
+  const handleOpenEditCost = (costItem: CourseExtraCost) => {
+    setEditingCostId(costItem.id);
+    setEditingCostForm({
+      printingCost: String(costItem.printingCost),
+      inboundFreight: String(costItem.inboundFreight),
+      courierFee: String(costItem.courierFee),
+    });
+  };
+
+  const handleSaveExtraCost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCostId) return;
+
+    const pCost = Number(editingCostForm.printingCost) || 0;
+    const fCost = Number(editingCostForm.inboundFreight) || 0;
+    const cCost = Number(editingCostForm.courierFee) || 0;
+    const tot = pCost + fCost + cCost;
+
+    setExtraCosts((prev) =>
+      prev.map((item) => {
+        if (item.id === editingCostId) {
+          const margin = item.unitPrice - tot;
+          try {
+            supabase
+              .from("extra_costs")
+              .update({
+                printing_cost: pCost,
+                inbound_freight: fCost,
+                courier_fee: cCost,
+                total_expense: tot,
+                net_margin: margin,
+              })
+              .eq("id", editingCostId);
+          } catch (err) {
+            console.error("Error syncing extra costs to Supabase:", err);
+          }
+          return {
+            ...item,
+            printingCost: pCost,
+            inboundFreight: fCost,
+            courierFee: cCost,
+            totalExpense: tot,
+            netMargin: margin,
+          };
+        }
+        return item;
+      })
+    );
+
+    setEditingCostId(null);
+  };
+
+  // ── DELIVERY TRACKING HANDLERS ──
+  const handleOpenUpdateDeliveryStatus = (delivery: DeliveryRecord) => {
+    setEditingDelivery(delivery);
+    setNewDeliveryStatus(delivery.deliveryStatus);
+  };
+
+  const handleSaveDeliveryStatus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDelivery) return;
+
+    setDeliveries((prev) =>
+      prev.map((d) => (d.id === editingDelivery.id ? { ...d, deliveryStatus: newDeliveryStatus } : d))
+    );
+
+    try {
+      await supabase
+        .from("deliveries")
+        .update({ delivery_status: newDeliveryStatus })
+        .eq("id", editingDelivery.id);
+    } catch (err) {
+      console.error("Error updating delivery status in Supabase:", err);
+    }
+
+    setEditingDelivery(null);
+  };
+
+  // ── FILTERED DELIVERIES ──
+  const filteredDeliveries = deliveries.filter((d) => {
+    if (deliveryStatusFilter !== "All" && d.deliveryStatus !== deliveryStatusFilter) {
+      return false;
+    }
+    if (deliverySearchQuery.trim()) {
+      const q = deliverySearchQuery.toLowerCase();
+      const matchName = d.studentName.toLowerCase().includes(q);
+      const matchPhone = d.phone.includes(q);
+      const matchCode = d.consignmentId.toLowerCase().includes(q) || d.trxId.toLowerCase().includes(q);
+      return matchName || matchPhone || matchCode;
+    }
+    return true;
+  });
+
+
   useEffect(() => {
     fetchSupabaseData();
   }, []);
 
   // ── FILTERED LEADS PIPELINE ──
   const filteredLeadsPipeline = leads.filter((lead) => {
-    // 1. Source Filter
     if (leadSourceFilter !== "All" && lead.source !== leadSourceFilter) {
       return false;
     }
-
-    // 2. Claim Status Filter
     if (leadClaimFilter === "Unassigned" && lead.claimedBy) {
       return false;
     }
     if (leadClaimFilter === "Assigned" && !lead.claimedBy) {
       return false;
     }
-
-    // 3. Search Query Filter
     if (leadSearchQuery.trim()) {
       const q = leadSearchQuery.toLowerCase();
       const matchName = lead.studentName.toLowerCase().includes(q) || lead.parentName.toLowerCase().includes(q);
@@ -473,11 +1270,10 @@ export default function Admin() {
       const matchCourse = lead.courseInterest.toLowerCase().includes(q);
       return matchName || matchPhone || matchCourse;
     }
-
     return true;
   });
 
-  // ── FILTERED BUYERS (For Sales Analytics) ──
+  // ── FILTERED BUYERS ──
   const buyersList = leads
     .filter((l) => l.status === "Converted" || l.paymentConfirmed)
     .map((l) => ({
@@ -498,16 +1294,53 @@ export default function Admin() {
     return true;
   });
 
-  const chartData =
-    salesTimePeriod === "Weekly"
-      ? WEEKLY_CHART
-      : salesTimePeriod === "Monthly"
-      ? MONTHLY_CHART
-      : YEARLY_CHART;
+  // ── DYNAMIC SALES GRAPH DATA CALCULATION ──
+  const getDynamicChartData = () => {
+    const yrMult = selectedYear === "2026" ? 1.25 : selectedYear === "2025" ? 1.0 : 0.85;
+    const mIdx = parseInt(selectedMonth, 10);
+    const moMult = 0.9 + ((mIdx % 6) * 0.08);
 
+    if (salesTimePeriod === "Weekly") {
+      const wNum = parseInt(selectedWeek.replace(/\D/g, ""), 10) || 1;
+      const baseMult = yrMult * moMult * (0.95 + wNum * 0.06);
+      const days = lang === "en" ? ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"] : ["শনি", "রবি", "সোম", "মঙ্গল", "বুধ", "বৃহঃ", "শুক্র"];
+      const baseRevenues = [12000, 18500, 15000, 22000, 28000, 24500, 32000];
+      const baseSales = [5, 7, 6, 9, 11, 10, 13];
+      return days.map((day, i) => ({
+        name: day,
+        revenue: Math.round(baseRevenues[i] * baseMult),
+        sales: Math.round(baseSales[i] * baseMult),
+      }));
+    }
+
+    if (salesTimePeriod === "Monthly") {
+      const baseMult = yrMult * moMult;
+      const weekLabels = t.weeks;
+      const baseRevenues = [85000, 110000, 145000, 175000];
+      const baseSales = [34, 45, 58, 70];
+      return weekLabels.map((w, i) => ({
+        name: w,
+        revenue: Math.round(baseRevenues[i] * baseMult),
+        sales: Math.round(baseSales[i] * baseMult),
+      }));
+    }
+
+    // Yearly
+    const baseMult = yrMult;
+    const qLabels = lang === "en" ? ["Q1", "Q2", "Q3", "Q4"] : ["কোয়ার্টার ১", "কোয়ার্টার ২", "কোয়ার্টার ৩", "কোয়ার্টার ৪"];
+    const baseRevenues = [350000, 480000, 620000, 850000];
+    const baseSales = [140, 190, 250, 340];
+    return qLabels.map((q, i) => ({
+      name: q,
+      revenue: Math.round(baseRevenues[i] * baseMult),
+      sales: Math.round(baseSales[i] * baseMult),
+    }));
+  };
+
+  const chartData = getDynamicChartData();
   const totalFilteredRevenue = filteredBuyers.reduce((acc, curr) => acc + curr.amount, 0);
 
-  // ── LEAD ACTIONS & REASSIGN HANDLERS ──
+  // ── HANDLERS ──
   const handleUpdateLeadStatus = async (leadId: string, newStatus: Lead["status"]) => {
     setLeads((prev) =>
       prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l))
@@ -536,7 +1369,6 @@ export default function Admin() {
     }
   };
 
-  // ── SET HEAD TEACHER HANDLER ──
   const handleSetHeadTeacher = async (courseId: string | number, teacherName: string) => {
     setCourses((prev) =>
       prev.map((c) => (c.id === courseId ? { ...c, headTeacher: teacherName, instructor: teacherName } : c))
@@ -552,7 +1384,6 @@ export default function Admin() {
     }
   };
 
-  // ── COURSE CMS HANDLERS ──
   const handleOpenCreateCourse = () => {
     setEditingCourseId(null);
     setCourseForm({
@@ -590,7 +1421,6 @@ export default function Admin() {
     if (!courseForm.title.trim()) return;
 
     if (editingCourseId) {
-      // Update local state
       setCourses((prev) =>
         prev.map((c) =>
           c.id === editingCourseId
@@ -609,7 +1439,6 @@ export default function Admin() {
             : c
         )
       );
-      // Supabase Update
       try {
         const { error } = await supabase
           .from("courses")
@@ -630,7 +1459,6 @@ export default function Admin() {
         console.error("Exception updating course:", err);
       }
     } else {
-      // Create local state
       const newCourse: CMSCourse = {
         id: `c-${Date.now()}`,
         title: courseForm.title,
@@ -645,8 +1473,6 @@ export default function Admin() {
         googleFormUrl: courseForm.googleFormUrl,
       };
       setCourses((prev) => [newCourse, ...prev]);
-
-      // Supabase Insert
       try {
         const { error } = await supabase.from("courses").insert([
           {
@@ -666,12 +1492,11 @@ export default function Admin() {
         console.error("Exception creating course:", err);
       }
     }
-
     setIsCourseModalOpen(false);
   };
 
   const handleDeleteCourse = async (id: string | number) => {
-    if (confirm("আপনি কি নিশ্চিত যে এই কোর্সটি মুছে ফেলতে চান?")) {
+    if (confirm(t.deleteCourseConfirm)) {
       setCourses((prev) => prev.filter((c) => c.id !== id));
       try {
         const { error } = await supabase.from("courses").delete().eq("id", id);
@@ -682,55 +1507,112 @@ export default function Admin() {
     }
   };
 
-  // ── SAVE WEBSITE CUSTOMIZATION ──
-  const handleSaveCustomization = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCustomizationSavedMessage(true);
-    setTimeout(() => setCustomizationSavedMessage(false), 3000);
-  };
+  // ── DYNAMIC THEME CLASS HELPER ──
+  const isDark = theme === "dark";
+  const bgMain = isDark ? "bg-slate-950 text-slate-100" : "bg-[#F8FAFC] text-slate-900";
+  const bgSidebar = isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-md";
+  const bgCard = isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-xs text-slate-900";
+  const bgSubCard = isDark ? "bg-slate-950 border-slate-800" : "bg-slate-100 border-slate-200 text-slate-900";
+  const textHeading = isDark ? "text-white" : "text-slate-900";
+  const textSub = isDark ? "text-slate-400" : "text-slate-600";
+  const inputStyle = isDark
+    ? "bg-slate-950 border-slate-800 text-white focus:border-emerald-500"
+    : "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500";
+  const tableHeaderStyle = isDark ? "border-slate-800 bg-slate-950/80 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-700";
+  const tableRowStyle = isDark ? "hover:bg-slate-800/30 divide-slate-800/60" : "hover:bg-slate-50 divide-slate-200";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex overflow-hidden font-sans">
+    <div className={`min-h-screen ${bgMain} flex overflow-hidden font-sans transition-colors duration-200`}>
       
       {/* ═══════════════════════════════════════════════════════════════════════════
-         SLEEK LEFT SIDEBAR NAVIGATION MENU (6 SECTIONS)
+         LEFT SIDEBAR NAVIGATION MENU WITH TOGGLES ROW (FEATURE 1 & FEATURE 3)
       ═══════════════════════════════════════════════════════════════════════════ */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-40 bg-slate-900 border-r border-slate-800 transition-all duration-300 flex flex-col justify-between ${
-          isSidebarCollapsed ? "w-20" : "w-64"
-        }`}
+        className={`fixed top-0 left-0 bottom-0 z-40 ${bgSidebar} border-r transition-all duration-300 flex flex-col justify-between`}
+        style={{ width: isSidebarCollapsed ? "5rem" : "16rem" }}
       >
         <div>
           {/* Brand Header */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
+          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800/60">
             {!isSidebarCollapsed && (
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-black text-white shadow-lg">
                   L
                 </div>
-                <span className="font-extrabold text-base tracking-tight text-white">
-                  Learn<span className="text-emerald-400">Ops</span> Admin
+                <span className={`font-extrabold text-base tracking-tight ${textHeading}`}>
+                  Learn<span className="text-emerald-500">Ops</span> Admin
                 </span>
               </div>
             )}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer mx-auto"
+              className={`p-2 rounded-xl text-slate-400 hover:${textHeading} hover:bg-slate-800/30 transition-colors cursor-pointer mx-auto`}
               title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             >
               {isSidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
             </button>
           </div>
 
+          {/* TOP-LEFT SIDEBAR CONTROL ROW: SINGLE-CLICK LANGUAGE & THEME TOGGLES */}
+          <div className={`px-4 my-3 pb-3 border-b ${isDark ? "border-slate-800/80" : "border-slate-200"}`}>
+            {!isSidebarCollapsed ? (
+              <div className="flex items-center gap-2">
+                {/* 1-Click Language Toggle Button: 🌐 ENG or 🌐 বাংলা */}
+                <button
+                  onClick={() => setLang(lang === "en" ? "bn" : "en")}
+                  className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+                    isDark
+                      ? "bg-slate-950/80 border-slate-800 text-slate-200 hover:text-white hover:border-slate-700"
+                      : "bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200"
+                  }`}
+                  title="Switch Language"
+                >
+                  <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{lang === "en" ? "ENG" : "বাংলা"}</span>
+                </button>
+
+                {/* 1-Click Theme Toggle Button: ☀️ / 🌙 */}
+                <button
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className={`w-9 h-9 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center shadow-2xs ${
+                    isDark
+                      ? "bg-slate-950/80 border-slate-800 text-amber-400 hover:bg-slate-800/60"
+                      : "bg-slate-100 border-slate-300 text-amber-600 hover:bg-slate-200"
+                  }`}
+                  title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                >
+                  {theme === "dark" ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2 py-1">
+                <button
+                  onClick={() => setLang(lang === "en" ? "bn" : "en")}
+                  className={`w-8 h-8 rounded-xl border ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-slate-200 border-slate-300 text-slate-900"} text-xs font-black flex items-center justify-center hover:border-emerald-500 transition-colors cursor-pointer`}
+                  title={`Language: ${lang.toUpperCase()} (Click to switch)`}
+                >
+                  <Globe className="w-4 h-4 text-emerald-500" />
+                </button>
+                <button
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className={`w-8 h-8 rounded-xl border ${isDark ? "bg-slate-800 border-slate-700 text-amber-400" : "bg-slate-200 border-slate-300 text-amber-600"} text-xs flex items-center justify-center hover:border-amber-500 transition-colors cursor-pointer`}
+                  title={`Theme: ${theme.toUpperCase()} (Click to switch)`}
+                >
+                  {theme === "dark" ? <Moon className="w-3.5 h-3.5 text-amber-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Navigation Items */}
-          <nav className="p-3 space-y-1.5 mt-2">
+          <nav className="p-3 space-y-1.5 mt-1">
             {[
-              { id: "sales", label: "📈 Sales Analytics", icon: TrendingUp, desc: "Revenue & Graphs" },
-              { id: "leads", label: "👥 Lead Pipeline", icon: Users, desc: "Source & Claim Status" },
-              { id: "employees", label: "🕵️ Employee Perf.", icon: PhoneCall, desc: "Telesales Metrics" },
-              { id: "batches", label: "👨‍🏫 Teacher & Batches", icon: GraduationCap, desc: "Head Mentors & Roster" },
-              { id: "courses", label: "📚 Course CMS", icon: BookOpen, desc: "Create & Edit" },
-              { id: "customization", label: "🖼️ Customization", icon: ImageIcon, desc: "Hero & Media Links" },
+              { id: "sales", label: t.salesAnalytics, icon: TrendingUp, desc: t.salesDesc },
+              { id: "leads", label: t.leadPipeline, icon: Users, desc: t.leadDesc },
+              { id: "employees", label: t.employeePerf, icon: PhoneCall, desc: t.employeeDesc },
+              { id: "batches", label: t.teacherBatches, icon: GraduationCap, desc: t.teacherDesc },
+              { id: "courses", label: t.courseCms, icon: BookOpen, desc: t.cmsDesc },
+
             ].map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -740,18 +1622,20 @@ export default function Admin() {
                   onClick={() => setActiveTab(item.id as any)}
                   className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     isActive
-                      ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-950/50"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-950/30"
+                      : isDark
+                      ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                   }`}
                   title={isSidebarCollapsed ? item.label : undefined}
                 >
                   <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-white" : "text-slate-400"}`} />
                   {!isSidebarCollapsed && (
                     <div className="text-left leading-tight">
-                      <div className="font-bold text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                      <div className="font-bold text-sm">
                         {item.label}
                       </div>
-                      <div className={`text-[10px] ${isActive ? "text-emerald-100" : "text-slate-500"}`}>
+                      <div className={`text-[10px] ${isActive ? "text-emerald-100" : textSub}`}>
                         {item.desc}
                       </div>
                     </div>
@@ -764,12 +1648,12 @@ export default function Admin() {
 
         {/* Sidebar Footer System Status */}
         {!isSidebarCollapsed && (
-          <div className="p-4 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between">
+          <div className={`p-4 border-t ${isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-slate-50"} flex items-center justify-between`}>
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-semibold text-slate-300">Supabase Connected</span>
+              <span className={`font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>{t.supabaseConnected}</span>
             </div>
-            <button onClick={fetchSupabaseData} className="text-slate-400 hover:text-white" title="Refresh DB Data">
+            <button onClick={fetchSupabaseData} className="text-slate-400 hover:text-emerald-500 cursor-pointer" title={t.refreshDb}>
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-400" : ""}`} />
             </button>
           </div>
@@ -785,34 +1669,32 @@ export default function Admin() {
         } p-6 sm:p-10 pb-20`}
       >
         {/* Header Title Bar */}
-        <header className="flex flex-wrap items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-800">
+        <header className={`flex flex-wrap items-center justify-between gap-4 pb-6 mb-8 border-b ${isDark ? "border-slate-800" : "border-slate-200"}`}>
           <div>
-            <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold px-3 py-1.5 rounded-full mb-2">
+            <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs font-bold px-3 py-1.5 rounded-full mb-2">
               <Sparkles className="w-3.5 h-3.5" />
               <span>
-                {activeTab === "sales" && "Revenue Graphs & Buyers List"}
-                {activeTab === "leads" && "Inbound Lead Source & Claim Tracking"}
-                {activeTab === "employees" && "Telesales Representative Conversion"}
-                {activeTab === "batches" && "Head Teacher & Student Rosters"}
-                {activeTab === "courses" && "Live Course Catalog Management"}
-                {activeTab === "customization" && "Homepage Banner & Demo Video Links"}
+                {activeTab === "sales" && t.badgeSales}
+                {activeTab === "leads" && t.badgeLeads}
+                {activeTab === "employees" && t.badgeEmployees}
+                {activeTab === "batches" && t.badgeBatches}
+                {activeTab === "courses" && t.badgeCourses}
               </span>
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-              {activeTab === "sales" && "📈 সেলস অ্যানালিটিক্স ও বায়ার্স হিস্ট্রি"}
-              {activeTab === "leads" && "👥 ইনবাউন্ড লিড ট্র্যাকিং ও অ্যাসাইনমেন্ট"}
-              {activeTab === "employees" && "🕵️ সেলস রিপ্রেজেন্টেটিভ পারফরম্যান্স"}
-              {activeTab === "batches" && "👨‍🏫 হেড টিচার ও ব্যাচ স্টুডেন্ট রোস্টার"}
-              {activeTab === "courses" && "📚 কোর্স সিএমএস পোর্টাল (Course CMS)"}
-              {activeTab === "customization" && "🖼️ ওয়েবসাইট ব্যানার ও ডেমো ভিডিও সেটিংস"}
+            <h1 className={`text-3xl font-extrabold tracking-tight ${textHeading}`}>
+              {activeTab === "sales" && t.titleSales}
+              {activeTab === "leads" && t.titleLeads}
+              {activeTab === "employees" && t.titleEmployees}
+              {activeTab === "batches" && t.titleBatches}
+              {activeTab === "courses" && t.titleCourses}
             </h1>
           </div>
 
           <div className="flex items-center gap-3">
             {isLoading && (
-              <span className="inline-flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+              <span className="inline-flex items-center gap-2 text-xs text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Supabase Syncing...
+                {t.syncing}
               </span>
             )}
 
@@ -820,137 +1702,471 @@ export default function Admin() {
               <button
                 onClick={handleOpenCreateCourse}
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-5 py-2.5 rounded-2xl shadow-lg transition-all text-xs cursor-pointer"
-                style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
               >
                 <Plus className="w-4 h-4" />
-                নতুন কোর্স যোগ করুন
+                {t.addNewCourse}
               </button>
             )}
           </div>
         </header>
 
         {/* ═══════════════════════════════════════════════════════════════════════════
-           SECTION 1: 📈 SALES ANALYTICS VIEW
+           SECTION 1: 📈 SALES ANALYTICS VIEW WITH 3-TAB SUB-MENU
         ═══════════════════════════════════════════════════════════════════════════ */}
         {activeTab === "sales" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Filter Controls Bar */}
-            <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xs font-bold text-slate-400" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  সময়কাল নির্বাচন:
-                </span>
-                <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800">
-                  {(["Weekly", "Monthly", "Yearly"] as const).map((period) => (
-                    <button
-                      key={period}
-                      onClick={() => setSalesTimePeriod(period)}
-                      className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        salesTimePeriod === period
-                          ? "bg-emerald-500 text-white shadow-sm"
-                          : "text-slate-400 hover:text-white"
-                      }`}
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* 3-Tab Sub-Menu Pills */}
+            <div className={`p-1.5 rounded-2xl ${bgCard} border shadow-md inline-flex flex-wrap gap-2`}>
+              <button
+                onClick={() => setSalesSubTab("overall")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  salesSubTab === "overall"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md"
+                    : "text-slate-400 hover:text-emerald-500"
+                }`}
+              >
+                <BarChart2 className="w-4 h-4" />
+                <span>{t.overallSalesTab}</span>
+              </button>
+
+              <button
+                onClick={() => setSalesSubTab("extraCost")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  salesSubTab === "extraCost"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md"
+                    : "text-slate-400 hover:text-emerald-500"
+                }`}
+              >
+                <Receipt className="w-4 h-4" />
+                <span>{t.extraCostTab}</span>
+              </button>
+
+              <button
+                onClick={() => setSalesSubTab("delivery")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  salesSubTab === "delivery"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md"
+                    : "text-slate-400 hover:text-emerald-500"
+                }`}
+              >
+                <Truck className="w-4 h-4" />
+                <span>{t.deliveryTab}</span>
+              </button>
+            </div>
+
+            {/* ── SUB-TAB 1: 📊 OVERALL SALES REPORT ── */}
+            {salesSubTab === "overall" && (
+              <div className="space-y-8 animate-in fade-in duration-300">
+                {/* Filter Controls Bar with Conditional Date Dropdowns */}
+                <div className={`${bgCard} p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4 border`}>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-xs font-bold text-slate-400">
+                      {t.timePeriodLabel}
+                    </span>
+
+                    {/* Main Period Selector: [ Weekly | Monthly | Yearly ] */}
+                    <div className={`flex ${bgSubCard} p-1 rounded-2xl border`}>
+                      {(["Weekly", "Monthly", "Yearly"] as const).map((period) => (
+                        <button
+                          key={period}
+                          onClick={() => setSalesTimePeriod(period)}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            salesTimePeriod === period
+                              ? "bg-emerald-500 text-white shadow-xs"
+                              : "text-slate-400 hover:text-emerald-500"
+                          }`}
+                        >
+                          {period === "Weekly" ? t.periodWeekly : period === "Monthly" ? t.periodMonthly : t.periodYearly}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* CONDITIONAL GRANULAR DATE DROPDOWNS */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-slate-400">{t.selectYear}</span>
+                      <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(e.target.value)}
+                        className={`${inputStyle} text-xs font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                      >
+                        {years.map((yr) => (
+                          <option key={yr} value={yr}>
+                            {yr}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {(salesTimePeriod === "Monthly" || salesTimePeriod === "Weekly") && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-bold text-slate-400">{t.selectMonth}</span>
+                        <select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(e.target.value)}
+                          className={`${inputStyle} text-xs font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                        >
+                          {t.months.map((m, idx) => (
+                            <option key={idx} value={String(idx)}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {salesTimePeriod === "Weekly" && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-bold text-slate-400">{t.selectWeek}</span>
+                        <select
+                          value={selectedWeek}
+                          onChange={(e) => setSelectedWeek(e.target.value)}
+                          className={`${inputStyle} text-xs font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                        >
+                          {t.weeks.map((w, idx) => (
+                            <option key={idx} value={`Week ${idx + 1}`}>
+                              {w}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Course Filter Dropdown */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-slate-400">
+                      {t.courseFilterLabel}
+                    </span>
+                    <select
+                      value={salesCourseFilter}
+                      onChange={(e) => setSalesCourseFilter(e.target.value)}
+                      className={`${inputStyle} text-xs font-bold rounded-2xl px-4 py-2 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
                     >
-                      {period === "Weekly" ? "সাপ্তাহিক" : period === "Monthly" ? "মাসিক" : "বার্ষিক"} ({period})
-                    </button>
-                  ))}
+                      <option value="All">{t.allCourses}</option>
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.title}>
+                          {c.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Revenue Chart Visualizer */}
+                <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl border`}>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className={`text-xl font-bold ${textHeading}`}>
+                        {t.revenueTrend}
+                      </h3>
+                      <p className={`text-xs ${textSub}`}>{t.filteredRevenue} <strong className="text-emerald-500">৳{totalFilteredRevenue.toLocaleString()}</strong></p>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+                      {t.revenueGrowth}
+                    </span>
+                  </div>
+
+                  <div className="h-72 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#1E293B" : "#E2E8F0"} />
+                        <XAxis dataKey="name" stroke={isDark ? "#64748B" : "#475569"} fontSize={12} />
+                        <YAxis stroke={isDark ? "#64748B" : "#475569"} fontSize={12} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: isDark ? "#0F172A" : "#FFFFFF",
+                            borderColor: isDark ? "#334155" : "#CBD5E1",
+                            borderRadius: "12px",
+                            color: isDark ? "#FFF" : "#0F172A",
+                            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                          }}
+                        />
+                        <Area type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#revenueGrad)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Buyers List Table */}
+                <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
+                  <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
+                    <h3 className={`text-lg font-bold ${textHeading}`}>
+                      {t.confirmedBuyersTable}
+                    </h3>
+                    <span className={`text-xs ${textSub}`}>{t.totalBuyers} {filteredBuyers.length}</span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                          <th className="py-4 px-4">{t.colStudentParent}</th>
+                          <th className="py-4 px-4">{t.colPhone}</th>
+                          <th className="py-4 px-4">{t.colCourse}</th>
+                          <th className="py-4 px-4">{t.colPayment} (৳)</th>
+                          <th className="py-4 px-4">{t.colTrxId}</th>
+                          <th className="py-4 px-4">{t.colDate}</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
+                        {filteredBuyers.map((b) => (
+                          <tr key={b.id} className="transition-colors">
+                            <td className="py-4 px-4">
+                              <div className={`font-bold ${textHeading} text-sm`}>{b.studentName}</div>
+                              <div className={`text-[11px] ${textSub}`}>{t.parentLabel} {b.parentName}</div>
+                            </td>
+                            <td className="py-4 px-4 font-mono text-emerald-500 font-bold">{b.phone}</td>
+                            <td className={`py-4 px-4 font-semibold ${textHeading}`}>{b.course}</td>
+                            <td className="py-4 px-4 font-black text-emerald-500">৳{b.amount.toLocaleString()}</td>
+                            <td className="py-4 px-4">
+                              <span className={`font-mono text-amber-500 ${bgSubCard} px-2.5 py-1 rounded-lg border inline-block`}>
+                                {b.trxId}
+                              </span>
+                            </td>
+                            <td className={`py-4 px-4 ${textSub}`}>{b.date}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
+            )}
 
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-slate-400" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  কোর্স ফিল্টার:
-                </span>
-                <select
-                  value={salesCourseFilter}
-                  onChange={(e) => setSalesCourseFilter(e.target.value)}
-                  className="bg-slate-950 border border-slate-700 text-xs font-bold text-white rounded-2xl px-4 py-2 focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                  style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-                >
-                  <option value="All">সব কোর্স (All Courses)</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.title}>
-                      {c.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+            {/* ── SUB-TAB 2: 💸 EXTRA COST REPORT ── */}
+            {salesSubTab === "extraCost" && (() => {
+              const grossSalesTotal = totalFilteredRevenue || 385000;
+              const totalExpensesCalculated = extraCosts.reduce((acc, c) => acc + c.totalExpense * 15, 0); // 15 units avg
+              const netProfitCalculated = grossSalesTotal - totalExpensesCalculated;
 
-            {/* Colorful Revenue Chart Visualizer */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    রেভিনিউ ও সেলস ট্রেন্ড ({salesTimePeriod})
-                  </h3>
-                  <p className="text-xs text-slate-400">ফিল্টারকৃত রেভিনিউ: <strong className="text-emerald-400">৳{totalFilteredRevenue.toLocaleString()}</strong></p>
+              return (
+                <div className="space-y-8 animate-in fade-in duration-300">
+                  {/* Top 3 Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className={`${bgCard} rounded-3xl p-6 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.grossSales}</span>
+                        <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                          <DollarSign className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <h3 className={`text-2xl font-black ${textHeading}`}>
+                        ৳{grossSalesTotal.toLocaleString()}
+                      </h3>
+                      <p className="text-[11px] text-emerald-500 font-semibold mt-1">Confirmed Course Revenue</p>
+                    </div>
+
+                    <div className={`${bgCard} rounded-3xl p-6 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.totalExpenses}</span>
+                        <div className="w-9 h-9 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                          <Receipt className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-black text-amber-500">
+                        ৳{totalExpensesCalculated.toLocaleString()}
+                      </h3>
+                      <p className="text-[11px] text-amber-500 font-semibold mt-1">Printing, Freight & Logistics</p>
+                    </div>
+
+                    <div className={`${bgCard} rounded-3xl p-6 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.netProfit}</span>
+                        <div className="w-9 h-9 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                          <TrendingUp className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-black text-blue-500">
+                        ৳{netProfitCalculated.toLocaleString()}
+                      </h3>
+                      <p className="text-[11px] text-blue-500 font-semibold mt-1">
+                        Margin: {((netProfitCalculated / grossSalesTotal) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Itemized Expenses Table */}
+                  <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
+                    <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
+                      <div>
+                        <h3 className={`text-xl font-bold ${textHeading}`}>
+                          {t.itemizedCostTable}
+                        </h3>
+                        <p className={`text-xs ${textSub}`}>Manage unit production and freight expenses per course.</p>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                            <th className="py-4 px-4">{t.colCourse}</th>
+                            <th className="py-4 px-4">{t.printingCost}</th>
+                            <th className="py-4 px-4">{t.inboundFreight}</th>
+                            <th className="py-4 px-4">{t.courierFee}</th>
+                            <th className="py-4 px-4">{t.totalExpenseCol}</th>
+                            <th className="py-4 px-4">{t.netProfitMargin}</th>
+                            <th className="py-4 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
+                          {extraCosts.map((costItem) => {
+                            const marginPercent = ((costItem.netMargin / costItem.unitPrice) * 100).toFixed(1);
+                            return (
+                              <tr key={costItem.id} className="transition-colors">
+                                <td className={`py-4 px-4 font-bold ${textHeading} text-sm`}>
+                                  {costItem.courseTitle}
+                                  <div className={`text-[11px] ${textSub}`}>Unit Price: ৳{costItem.unitPrice}</div>
+                                </td>
+                                <td className="py-4 px-4 font-semibold text-slate-300">৳{costItem.printingCost}</td>
+                                <td className="py-4 px-4 font-semibold text-slate-300">৳{costItem.inboundFreight}</td>
+                                <td className="py-4 px-4 font-semibold text-slate-300">৳{costItem.courierFee}</td>
+                                <td className="py-4 px-4 font-bold text-amber-500">৳{costItem.totalExpense}</td>
+                                <td className="py-4 px-4 font-extrabold text-emerald-500">
+                                  ৳{costItem.netMargin} <span className="text-[11px] font-normal text-slate-400">({marginPercent}%)</span>
+                                </td>
+                                <td className="py-4 px-4 text-right">
+                                  <button
+                                    onClick={() => handleOpenEditCost(costItem)}
+                                    className="p-2 rounded-xl text-emerald-500 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                                    title="Edit Expenses"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
-                  +২২.৪% রেভিনিউ বৃদ্ধি
-                </span>
-              </div>
+              );
+            })()}
 
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-                    <XAxis dataKey="name" stroke="#64748B" fontSize={12} />
-                    <YAxis stroke="#64748B" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: "#0F172A", borderColor: "#334155", borderRadius: "12px", color: "#FFF" }}
+            {/* ── SUB-TAB 3: 🚚 DELIVERY REPORT ── */}
+            {salesSubTab === "delivery" && (
+              <div className="space-y-8 animate-in fade-in duration-300">
+                {/* Logistics Control Bar */}
+                <div className={`${bgCard} p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4 border`}>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-xs font-bold text-slate-400 mr-1">
+                      {t.deliveryStatus}:
+                    </span>
+                    <div className={`flex ${bgSubCard} p-1 rounded-2xl border flex-wrap`}>
+                      {(["All", "Pending", "Dispatched", "In Transit", "Delivered", "Returned"] as const).map((st) => (
+                        <button
+                          key={st}
+                          onClick={() => setDeliveryStatusFilter(st)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            deliveryStatusFilter === st
+                              ? "bg-emerald-500 text-white shadow-xs"
+                              : "text-slate-400 hover:text-emerald-500"
+                          }`}
+                        >
+                          {st}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="relative w-full sm:w-72">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder={t.searchDelivery}
+                      value={deliverySearchQuery}
+                      onChange={(e) => setDeliverySearchQuery(e.target.value)}
+                      className={`w-full pl-9 pr-3 py-1.5 rounded-xl ${inputStyle} text-xs font-semibold focus:outline-none`}
                     />
-                    <Area type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#revenueGrad)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+                  </div>
+                </div>
 
-            {/* Buyers List Table */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-              <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  কনফার্মড বায়ার্স তালিকা (Buyers List Table)
-                </h3>
-                <span className="text-xs text-slate-400">মোট বায়ার: {filteredBuyers.length} জন</span>
-              </div>
+                {/* Delivery Logistics Table */}
+                <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
+                  <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
+                    <div>
+                      <h3 className={`text-xl font-bold ${textHeading}`}>
+                        {t.logisticsTrackingTable}
+                      </h3>
+                      <p className={`text-xs ${textSub}`}>Consignment status and student courier dispatches.</p>
+                    </div>
+                    <span className={`text-xs ${textSub}`}>Total: <strong className="text-emerald-500">{filteredDeliveries.length}</strong></span>
+                  </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-800 bg-slate-950/80 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      <th className="py-4 px-4">শিক্ষার্থী ও অভিভাবক</th>
-                      <th className="py-4 px-4">ফোন নম্বর</th>
-                      <th className="py-4 px-4">কোর্স</th>
-                      <th className="py-4 px-4">পেমেন্ট (৳)</th>
-                      <th className="py-4 px-4">Transaction ID</th>
-                      <th className="py-4 px-4">তারিখ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-xs font-medium">
-                    {filteredBuyers.map((b) => (
-                      <tr key={b.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-4 px-4">
-                          <div className="font-bold text-white text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{b.studentName}</div>
-                          <div className="text-[11px] text-slate-400" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>অভিভাবক: {b.parentName}</div>
-                        </td>
-                        <td className="py-4 px-4 font-mono text-emerald-400 font-bold">{b.phone}</td>
-                        <td className="py-4 px-4 font-semibold text-slate-200" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{b.course}</td>
-                        <td className="py-4 px-4 font-black text-emerald-400">৳{b.amount.toLocaleString()}</td>
-                        <td className="py-4 px-4 font-mono text-amber-400 bg-slate-950 px-2 py-1 rounded-lg inline-block my-3">{b.trxId}</td>
-                        <td className="py-4 px-4 text-slate-400">{b.date}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                          <th className="py-4 px-4">{t.colStudentParent}</th>
+                          <th className="py-4 px-4">{t.addressLabel}</th>
+                          <th className="py-4 px-4">{t.courierService}</th>
+                          <th className="py-4 px-4">{t.consignmentId}</th>
+                          <th className="py-4 px-4">{t.colTrxId}</th>
+                          <th className="py-4 px-4">{t.deliveryStatus}</th>
+                          <th className="py-4 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
+                        {filteredDeliveries.map((del) => (
+                          <tr key={del.id} className="transition-colors">
+                            <td className="py-4 px-4">
+                              <div className={`font-bold ${textHeading} text-sm`}>{del.studentName}</div>
+                              <div className="font-mono text-emerald-500 text-xs font-bold mt-0.5">{del.phone}</div>
+                            </td>
+                            <td className={`py-4 px-4 text-xs ${textSub} max-w-xs truncate`}>
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                <span>{del.address}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 font-bold text-blue-400">
+                              <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 px-2.5 py-1 rounded-lg">
+                                {del.courierService}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 font-mono font-bold text-amber-500">{del.consignmentId}</td>
+                            <td className="py-4 px-4 font-mono text-slate-400">{del.trxId}</td>
+                            <td className="py-4 px-4">
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                                  del.deliveryStatus === "Delivered"
+                                    ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
+                                    : del.deliveryStatus === "In Transit"
+                                    ? "bg-purple-500/20 text-purple-500 border-purple-500/30"
+                                    : del.deliveryStatus === "Dispatched"
+                                    ? "bg-blue-500/20 text-blue-500 border-blue-500/30"
+                                    : del.deliveryStatus === "Returned"
+                                    ? "bg-red-500/20 text-red-500 border-red-500/30"
+                                    : "bg-amber-500/20 text-amber-500 border-amber-500/30"
+                                }`}
+                              >
+                                ● {del.deliveryStatus}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-right">
+                              <button
+                                onClick={() => handleOpenUpdateDeliveryStatus(del)}
+                                className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                              >
+                                {t.updateStatusBtn}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -960,17 +2176,16 @@ export default function Admin() {
         {activeTab === "leads" && (
           <div className="space-y-8 animate-in fade-in duration-300">
             {/* Filter Bar: Lead Source & Claim Status Toggles */}
-            <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4">
-              {/* Source Filters */}
+            <div className={`${bgCard} p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4 border`}>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 mr-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  সোর্স ফিল্টার:
+                <span className="text-xs font-bold text-slate-400 mr-1">
+                  {t.sourceFilterLabel}
                 </span>
                 {[
-                  { id: "All", label: "সব সোর্স", icon: Filter },
-                  { id: "Ad Click", label: "Ads (Ad Click)", icon: Megaphone },
-                  { id: "Google Form", label: "Google Forms", icon: FileText },
-                  { id: "Social DM", label: "DMs (Social DM)", icon: MessageCircle },
+                  { id: "All", label: t.allSources, icon: Filter },
+                  { id: "Ad Click", label: t.sourceAds, icon: Megaphone },
+                  { id: "Google Form", label: t.sourceForms, icon: FileText },
+                  { id: "Social DM", label: t.sourceDms, icon: MessageCircle },
                 ].map((s) => {
                   const SIcon = s.icon;
                   return (
@@ -980,9 +2195,8 @@ export default function Admin() {
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         leadSourceFilter === s.id
                           ? "bg-emerald-500 text-white shadow-xs"
-                          : "bg-slate-950 text-slate-400 hover:text-white border border-slate-800"
+                          : `${bgSubCard} border`
                       }`}
-                      style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                     >
                       <SIcon className="w-3.5 h-3.5" />
                       {s.label}
@@ -991,12 +2205,11 @@ export default function Admin() {
                 })}
               </div>
 
-              {/* Claim Status Filters & Search */}
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xs font-bold text-slate-400" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  লকড স্ট্যাটাস:
+                <span className="text-xs font-bold text-slate-400">
+                  {t.claimStatusLabel}
                 </span>
-                <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800">
+                <div className={`flex ${bgSubCard} p-1 rounded-2xl border`}>
                   {(["All", "Unassigned", "Assigned"] as const).map((claimState) => (
                     <button
                       key={claimState}
@@ -1004,10 +2217,10 @@ export default function Admin() {
                       className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         leadClaimFilter === claimState
                           ? "bg-blue-600 text-white shadow-xs"
-                          : "text-slate-400 hover:text-white"
+                          : "text-slate-400 hover:text-blue-500"
                       }`}
                     >
-                      {claimState === "All" ? "সব" : claimState === "Unassigned" ? "Unassigned (ফ্রি)" : "Assigned (লকড)"}
+                      {claimState === "All" ? t.claimAll : claimState === "Unassigned" ? t.claimUnassigned : t.claimAssigned}
                     </button>
                   ))}
                 </div>
@@ -1016,98 +2229,91 @@ export default function Admin() {
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type="text"
-                    placeholder="নাম বা ফোন দিয়ে খুঁজুন..."
+                    placeholder={t.searchPlaceholder}
                     value={leadSearchQuery}
                     onChange={(e) => setLeadSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
-                    style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                    className={`w-full pl-9 pr-3 py-1.5 rounded-xl ${inputStyle} text-xs font-semibold focus:outline-none`}
                   />
                 </div>
               </div>
             </div>
 
             {/* Inbound Lead Tracking Table */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-              <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  ইনবাউন্ড লিড পাইপলাইন (Inbound Lead Tracking Pipeline)
+            <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
+              <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
+                <h3 className={`text-xl font-bold ${textHeading}`}>
+                  {t.inboundLeadPipeline}
                 </h3>
-                <span className="text-xs text-slate-400">প্রদর্শিত লিড: <strong className="text-emerald-400">{filteredLeadsPipeline.length}</strong> জন</span>
+                <span className={`text-xs ${textSub}`}>{t.displayedLeads} <strong className="text-emerald-500">{filteredLeadsPipeline.length}</strong></span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-800 bg-slate-950/80 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      <th className="py-4 px-4">শিক্ষার্থী ও ফোন</th>
-                      <th className="py-4 px-4">আগ্রহী কোর্স</th>
-                      <th className="py-4 px-4">Lead Source (সোর্স)</th>
-                      <th className="py-4 px-4">Claimed Rep (assigned_employee_id)</th>
-                      <th className="py-4 px-4">Lead Status (অ্যাকশন)</th>
-                      <th className="py-4 px-4 text-right">পেমেন্ট</th>
+                    <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                      <th className="py-4 px-4">{t.colStudentPhone}</th>
+                      <th className="py-4 px-4">{t.colInterestedCourse}</th>
+                      <th className="py-4 px-4">{t.colLeadSource}</th>
+                      <th className="py-4 px-4">{t.colClaimedRep}</th>
+                      <th className="py-4 px-4">{t.colLeadStatus}</th>
+                      <th className="py-4 px-4 text-right">{t.colActionPayment}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-xs font-medium">
+                  <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
                     {filteredLeadsPipeline.map((lead) => (
-                      <tr key={lead.id} className="hover:bg-slate-800/30 transition-colors">
-                        {/* Student Name & Phone */}
+                      <tr key={lead.id} className="transition-colors">
                         <td className="py-4 px-4">
-                          <div className="font-bold text-white text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                          <div className={`font-bold ${textHeading} text-sm`}>
                             {lead.studentName}
                           </div>
-                          <div className="text-[11px] text-slate-400" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                            অভিভাবক: {lead.parentName}
+                          <div className={`text-[11px] ${textSub}`}>
+                            {t.parentLabel} {lead.parentName}
                           </div>
-                          <div className="font-mono text-emerald-400 font-bold text-xs mt-0.5">
+                          <div className="font-mono text-emerald-500 font-bold text-xs mt-0.5">
                             <a href={`tel:${lead.phone}`} className="hover:underline">{lead.phone}</a>
                           </div>
                         </td>
 
-                        {/* Interested Course */}
-                        <td className="py-4 px-4 font-semibold text-slate-200" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                        <td className={`py-4 px-4 font-semibold ${textHeading}`}>
                           {lead.courseInterest}
                         </td>
 
-                        {/* Lead Source Column */}
                         <td className="py-4 px-4">
                           <span
                             className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border ${
                               lead.source === "Ad Click"
-                                ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                                ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
                                 : lead.source === "Google Form"
-                                ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
-                                : "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                                ? "bg-blue-500/10 text-blue-500 border-blue-500/30"
+                                : "bg-purple-500/10 text-purple-500 border-purple-500/30"
                             }`}
                           >
                             {lead.source === "Ad Click" && <Megaphone className="w-3.5 h-3.5" />}
                             {lead.source === "Google Form" && <FileText className="w-3.5 h-3.5" />}
                             {lead.source === "Social DM" && <MessageCircle className="w-3.5 h-3.5" />}
-                            {lead.source || "Ad Click"}
+                            {lead.source === "Ad Click" ? t.sourceAds : lead.source === "Google Form" ? t.sourceForms : t.sourceDms}
                           </span>
                         </td>
 
-                        {/* Claimed Status Column & Reassign Dropdown */}
                         <td className="py-4 px-4">
                           <div className="space-y-1">
                             {lead.claimedBy ? (
-                              <div className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                              <div className="text-xs font-bold text-emerald-500 flex items-center gap-1">
                                 <UserCheck className="w-3.5 h-3.5" />
                                 {lead.claimedBy}
                               </div>
                             ) : (
-                              <div className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md inline-block">
-                                Unassigned (ফ্রি)
+                              <div className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md inline-block">
+                                {t.claimUnassigned}
                               </div>
                             )}
 
-                            {/* Dropdown to Reassign */}
                             <select
                               value={lead.claimedBy || "Unassigned"}
                               onChange={(e) => handleReassignLeadRep(lead.id, e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-700 text-[11px] font-bold text-white rounded-xl px-2.5 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer mt-1"
-                              style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                              className={`w-full ${inputStyle} text-[11px] font-bold rounded-xl px-2.5 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer mt-1`}
                             >
-                              <option value="Unassigned">Unassigned (কোন প্রতিনিধি নয়)</option>
+                              <option value="Unassigned">{t.unassignedOption}</option>
                               {employees.map((emp) => (
                                 <option key={emp.id} value={emp.name}>
                                   {emp.name} ({emp.role})
@@ -1117,42 +2323,39 @@ export default function Admin() {
                           </div>
                         </td>
 
-                        {/* Lead Action & Status Update Dropdown */}
                         <td className="py-4 px-4">
                           <select
                             value={lead.status}
                             onChange={(e) => handleUpdateLeadStatus(lead.id, e.target.value as Lead["status"])}
                             className={`text-xs font-bold rounded-xl px-3 py-2 border cursor-pointer ${
                               lead.status === "Converted"
-                                ? "bg-emerald-950 text-emerald-300 border-emerald-500"
+                                ? "bg-emerald-500/20 text-emerald-600 border-emerald-500"
                                 : lead.status === "In Progress" || lead.status === "Interested"
-                                ? "bg-purple-950 text-purple-300 border-purple-500"
+                                ? "bg-purple-500/20 text-purple-600 border-purple-500"
                                 : lead.status === "Claimed" || lead.status === "Called"
-                                ? "bg-blue-950 text-blue-300 border-blue-500"
+                                ? "bg-blue-500/20 text-blue-600 border-blue-500"
                                 : lead.status === "Rejected"
-                                ? "bg-red-950 text-red-300 border-red-500"
-                                : "bg-slate-950 text-slate-300 border-slate-700"
+                                ? "bg-red-500/20 text-red-600 border-red-500"
+                                : "bg-slate-500/20 text-slate-600 border-slate-500"
                             }`}
-                            style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                           >
-                            <option value="New">New (নতুন)</option>
-                            <option value="In Progress">In Progress (চলতি যোগাযোগ)</option>
-                            <option value="Claimed">Claimed (লকড)</option>
-                            <option value="Called">Called (কথা হয়েছে)</option>
-                            <option value="Interested">Interested (আগ্রহী)</option>
-                            <option value="Converted">Converted (পেমেন্ট সম্পন্ন)</option>
-                            <option value="Rejected">Rejected (বাতিল)</option>
+                            <option value="New">{t.statusNew}</option>
+                            <option value="In Progress">{t.statusInProgress}</option>
+                            <option value="Claimed">{t.statusClaimed}</option>
+                            <option value="Called">{t.statusCalled}</option>
+                            <option value="Interested">{t.statusInterested}</option>
+                            <option value="Converted">{t.statusConverted}</option>
+                            <option value="Rejected">{t.statusRejected}</option>
                           </select>
                         </td>
 
-                        {/* Payment Confirmation */}
                         <td className="py-4 px-4 text-right font-bold">
                           {lead.paymentConfirmed ? (
-                            <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                            <span className="text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30">
                               ৳{lead.paymentAmount} ✓
                             </span>
                           ) : (
-                            <span className="text-slate-500">বকেয়া</span>
+                            <span className="text-slate-400">{t.duePayment}</span>
                           )}
                         </td>
                       </tr>
@@ -1165,93 +2368,247 @@ export default function Admin() {
         )}
 
         {/* ═══════════════════════════════════════════════════════════════════════════
-           SECTION 3: 🕵️ EMPLOYEE PERFORMANCE VIEW
+           SECTION 3: 🕵️ EMPLOYEE PERFORMANCE & STAFF CREDENTIALS VIEW
         ═══════════════════════════════════════════════════════════════════════════ */}
         {activeTab === "employees" && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Employee Performance Metric Cards */}
+            {/* Staff Credentials & Onboarding Management Card */}
+            <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl border space-y-6`}>
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/60 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="w-6 h-6 text-emerald-500" />
+                    <h3 className={`text-xl font-bold ${textHeading}`}>
+                      {t.staffManagementTitle}
+                    </h3>
+                  </div>
+                  <p className={`text-xs ${textSub} mt-1`}>
+                    {t.staffOnboardingSubtitle}
+                  </p>
+                </div>
+              </div>
+
+              {/* Add New Employee Form */}
+              <form onSubmit={handleAddEmployee} className={`${bgSubCard} p-5 rounded-2xl border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end`}>
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.empName} *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. মো. আরিফুল ইসলাম"
+                    value={newStaffForm.name}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, name: e.target.value })}
+                    className={`w-full ${inputStyle} text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.empEmail} *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="emp@learnops.com"
+                    value={newStaffForm.email}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, email: e.target.value })}
+                    className={`w-full ${inputStyle} text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.empPhone}</label>
+                  <input
+                    type="text"
+                    placeholder="01711-XXXXXX"
+                    value={newStaffForm.phone}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, phone: e.target.value })}
+                    className={`w-full ${inputStyle} text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.tempPassword}</label>
+                  <input
+                    type="text"
+                    placeholder="Pass1234!"
+                    value={newStaffForm.tempPassword}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, tempPassword: e.target.value })}
+                    className={`w-full ${inputStyle} text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.empRole}</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={newStaffForm.role}
+                      onChange={(e) => setNewStaffForm({ ...newStaffForm, role: e.target.value as any })}
+                      className={`flex-1 ${inputStyle} text-xs font-bold rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                    >
+                      <option value="Telesales">Telesales</option>
+                      <option value="Teacher">Teacher</option>
+                    </select>
+
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      + Add
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              {/* Staff Roster Table */}
+              <div className="overflow-x-auto rounded-2xl border border-slate-800/60">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                      <th className="py-4 px-4">{t.empName}</th>
+                      <th className="py-4 px-4">{t.empEmail} / {t.empPhone}</th>
+                      <th className="py-4 px-4">{t.empRole}</th>
+                      <th className="py-4 px-4">{t.tempPassword}</th>
+                      <th className="py-4 px-4">Status</th>
+                      <th className="py-4 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
+                    {staffMembers.map((staff) => (
+                      <tr key={staff.id} className="transition-colors">
+                        <td className={`py-4 px-4 font-bold ${textHeading} text-sm`}>{staff.name}</td>
+                        <td className="py-4 px-4">
+                          <div className={`font-semibold ${textHeading}`}>{staff.email}</div>
+                          <div className="font-mono text-emerald-500 text-xs font-bold mt-0.5">{staff.phone}</div>
+                        </td>
+                        <td className="py-4 px-4 font-bold">
+                          <span className={`px-2.5 py-1 rounded-lg text-xs border ${
+                            staff.role === "Telesales" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                          }`}>
+                            {staff.role}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 font-mono text-slate-400">
+                          <span className={`${bgSubCard} px-2.5 py-1 rounded-lg border font-mono text-xs text-amber-400`}>
+                            {staff.tempPassword || "pass1234"}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                            staff.status === "Active" ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" : "bg-red-500/20 text-red-500 border-red-500/30"
+                          }`}>
+                            ● {staff.status}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-right space-x-2">
+                          <button
+                            onClick={() => handleOpenResetPassword(staff)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <KeyRound className="w-3.5 h-3.5" />
+                            <span>{t.resetPassword}</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleToggleStaffStatus(staff.id)}
+                            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                              staff.status === "Active"
+                                ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/30"
+                                : "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/30"
+                            }`}
+                          >
+                            {staff.status === "Active" ? <UserX className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
+                            <span>{staff.status === "Active" ? t.deactivateAccount : t.activateAccount}</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Performance Cards Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {employees.map((emp) => (
-                <div key={emp.id} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+                <div key={emp.id} className={`${bgCard} rounded-3xl p-6 shadow-xl border flex flex-col justify-between`}>
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
                         emp.status === "Online"
-                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                          ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
                           : emp.status === "Idle"
-                          ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                          : "bg-slate-800 text-slate-400 border-slate-700"
+                          ? "bg-amber-500/20 text-amber-500 border-amber-500/30"
+                          : "bg-slate-500/20 text-slate-500 border-slate-500/30"
                       }`}>
                         ● {emp.status}
                       </span>
-                      <span className="text-xs font-bold text-slate-400">{emp.convertedSales}টি সেলস</span>
+                      <span className="text-xs font-bold text-slate-400">{emp.convertedSales}{t.salesCount}</span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-white mb-0.5" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                    <h3 className={`text-lg font-bold ${textHeading} mb-0.5`}>
                       {emp.name}
                     </h3>
-                    <p className="text-xs text-slate-400 mb-4">{emp.role}</p>
+                    <p className={`text-xs ${textSub} mb-4`}>{emp.role}</p>
 
-                    <div className="space-y-2 text-xs bg-slate-950 p-3 rounded-2xl border border-slate-800/80">
+                    <div className={`space-y-2 text-xs ${bgSubCard} p-3 rounded-2xl border`}>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">মোট কল নোটস:</span>
-                        <span className="font-bold text-white">{emp.totalCalls}টি</span>
+                        <span className={textSub}>{t.totalCalls}</span>
+                        <span className={`font-bold ${textHeading}`}>{emp.totalCalls}{t.callsCount}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Social DM কনভার্সন:</span>
-                        <span className="font-bold text-emerald-400">{emp.socialDmConversion}%</span>
+                        <span className={textSub}>{t.dmConversion}</span>
+                        <span className="font-bold text-emerald-500">{emp.socialDmConversion}%</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Ad Lead কনভার্সন:</span>
-                        <span className="font-bold text-blue-400">{emp.adLeadConversion}%</span>
+                        <span className={textSub}>{t.adConversion}</span>
+                        <span className="font-bold text-blue-500">{emp.adLeadConversion}%</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
-                    <span className="text-slate-400">রেভিনিউ:</span>
-                    <span className="font-extrabold text-amber-400 text-sm">৳{emp.revenueGenerated.toLocaleString()}</span>
+                  <div className={`mt-4 pt-3 border-t ${isDark ? "border-slate-800" : "border-slate-200"} flex justify-between items-center text-xs`}>
+                    <span className={textSub}>{t.revenueLabel}</span>
+                    <span className="font-extrabold text-amber-500 text-sm">৳{emp.revenueGenerated.toLocaleString()}</span>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Performance Table */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-              <div className="p-6 border-b border-slate-800">
-                <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  টেলিসেলস রিপ্রেজেন্টেটিভস বিস্তারিত লিডারবোর্ড (Employee Performance Table)
+            <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
+              <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+                <h3 className={`text-xl font-bold ${textHeading}`}>
+                  {t.employeeLeaderboard}
                 </h3>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-800 bg-slate-950/80 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      <th className="py-4 px-4">কর্মকর্তার নাম</th>
-                      <th className="py-4 px-4">পজিশন / রোল</th>
-                      <th className="py-4 px-4">পোর্টালে সক্রিয়তা</th>
-                      <th className="py-4 px-4">লগকৃত কল (call_notes)</th>
-                      <th className="py-4 px-4">কনভার্টেড সেলস</th>
-                      <th className="py-4 px-4">Social DM vs Ad Lead</th>
+                    <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                      <th className="py-4 px-4">{t.colEmpName}</th>
+                      <th className="py-4 px-4">{t.colPositionRole}</th>
+                      <th className="py-4 px-4">{t.colPortalActivity}</th>
+                      <th className="py-4 px-4">{t.colLoggedCalls}</th>
+                      <th className="py-4 px-4">{t.colConvertedSales}</th>
+                      <th className="py-4 px-4">{t.colDmVsAd}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-xs font-medium">
+                  <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
                     {employees.map((emp) => (
-                      <tr key={emp.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-4 px-4 font-bold text-white text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>{emp.name}</td>
-                        <td className="py-4 px-4 text-slate-400">{emp.role}</td>
+                      <tr key={emp.id} className="transition-colors">
+                        <td className={`py-4 px-4 font-bold ${textHeading} text-sm`}>{emp.name}</td>
+                        <td className={`py-4 px-4 ${textSub}`}>{emp.role}</td>
                         <td className="py-4 px-4">
                           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                            emp.status === "Online" ? "text-emerald-400 bg-emerald-500/10" : "text-amber-400 bg-amber-500/10"
+                            emp.status === "Online" ? "text-emerald-500 bg-emerald-500/10" : "text-amber-500 bg-amber-500/10"
                           }`}>
                             ● {emp.status}
                           </span>
                         </td>
-                        <td className="py-4 px-4 font-bold text-blue-400">{emp.totalCalls}টি কল</td>
-                        <td className="py-4 px-4 font-bold text-emerald-400">{emp.convertedSales}টি সেলস (৳{emp.revenueGenerated.toLocaleString()})</td>
-                        <td className="py-4 px-4 text-slate-300">
-                          DM: <strong className="text-emerald-400">{emp.socialDmConversion}%</strong> | Ad: <strong className="text-blue-400">{emp.adLeadConversion}%</strong>
+                        <td className="py-4 px-4 font-bold text-blue-500">{emp.totalCalls}{t.callsCount}</td>
+                        <td className="py-4 px-4 font-bold text-emerald-500">{emp.convertedSales}{t.salesCount} (৳{emp.revenueGenerated.toLocaleString()})</td>
+                        <td className={`py-4 px-4 ${textSub}`}>
+                          DM: <strong className="text-emerald-500">{emp.socialDmConversion}%</strong> | Ad: <strong className="text-blue-500">{emp.adLeadConversion}%</strong>
                         </td>
                       </tr>
                     ))}
@@ -1263,117 +2620,164 @@ export default function Admin() {
         )}
 
         {/* ═══════════════════════════════════════════════════════════════════════════
-           SECTION 4: 👨‍🏫 TEACHER & BATCH MANAGEMENT VIEW
+           SECTION 4: 👨‍🏫 TEACHER & BATCH MANAGEMENT VIEW (DRILLDOWN FEATURE 5)
         ═══════════════════════════════════════════════════════════════════════════ */}
-        {activeTab === "batches" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Set Head Teacher for Courses Card */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
-              <div className="flex items-center gap-2 mb-4">
-                <GraduationCap className="w-6 h-6 text-amber-400" />
-                <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  কোর্সের প্রধান শিক্ষক নির্বাচন (Set Head Teacher)
-                </h3>
-              </div>
-              <p className="text-xs text-slate-400 mb-6" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                প্রতিটি কোর্সের হেড ইনস্ট্রাক্টর ড্রপডাউন থেকে নির্বাচন করুন। এটি সঙ্গে সঙ্গে ডাটাবেজে সংরক্ষিত হবে।
-              </p>
+        {activeTab === "batches" && (() => {
+          const selectedCourse = courses.find((c) => String(c.id) === String(selectedCourseId)) || courses[0];
+          const filteredBatches = batches.filter((b) => {
+            if (!selectedCourse) return true;
+            if (b.courseId !== undefined) return String(b.courseId) === String(selectedCourse.id);
+            return b.courseTitle === selectedCourse.title;
+          });
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {courses.map((course) => (
-                  <div key={course.id} className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
-                    <div className="font-bold text-sm text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                      {course.title}
-                    </div>
-                    <div className="text-xs text-emerald-400">বর্তমান হেড টিচার: {course.headTeacher || course.instructor}</div>
-                    
-                    <select
-                      value={course.headTeacher || course.instructor}
-                      onChange={(e) => handleSetHeadTeacher(course.id, e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 text-xs font-bold text-white rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer"
-                      style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-                    >
-                      <option value="রাহেলা খাতুন">রাহেলা খাতুন (হ্যান্ডরাইটিং বিশেষজ্ঞ)</option>
-                      <option value="ফারহানা বেগম">ফারহানা বেগম (হস্তলিখন মেন্টর)</option>
-                      <option value="মো. আরিফুল ইসলাম">মো. আরিফুল ইসলাম (স্পোকেন ট্রেইনার)</option>
-                      <option value="সুমাইয়া আক্তার">সুমাইয়া আক্তার (ভাষা শিক্ষা বিশেষজ্ঞ)</option>
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
+          return (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              {/* Step 1 & 2: Course Cards Overview with glowing active border */}
+              <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl border`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <GraduationCap className="w-6 h-6 text-amber-500" />
+                  <h3 className={`text-xl font-bold ${textHeading}`}>
+                    {t.headTeacherTitle}
+                  </h3>
+                </div>
+                <p className={`text-xs ${textSub} mb-6`}>
+                  {t.headTeacherSubtitle}
+                </p>
 
-            {/* Expandable Batches List */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
-              <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                অ্যাক্টিভ ব্যাচসমূহ ও স্টুডেন্ট পারফরম্যান্স রোস্টার (Expandable Batches List)
-              </h3>
-
-              <div className="space-y-4">
-                {batches.map((batch) => {
-                  const isExpanded = expandedBatchId === batch.id;
-                  return (
-                    <div key={batch.id} className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/60">
-                      {/* Batch Header */}
-                      <button
-                        onClick={() => setExpandedBatchId(isExpanded ? null : batch.id)}
-                        className="w-full p-5 flex items-center justify-between bg-slate-900 hover:bg-slate-800/80 transition-colors text-left cursor-pointer"
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {courses.map((course) => {
+                    const isSelected = selectedCourse && String(course.id) === String(selectedCourse.id);
+                    return (
+                      <div
+                        key={course.id}
+                        onClick={() => setSelectedCourseId(course.id)}
+                        className={`p-5 rounded-2xl cursor-pointer transition-all space-y-3 ${
+                          isSelected
+                            ? isDark
+                              ? "bg-slate-900 border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.35)] ring-2 ring-emerald-500/40"
+                              : "bg-emerald-50/50 border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.25)] ring-2 ring-emerald-500/40"
+                            : `${bgSubCard} border hover:border-emerald-500/50`
+                        }`}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm">
-                            <Building className="w-5 h-5" />
+                        <div className="flex items-center justify-between">
+                          <div className={`font-bold text-sm ${textHeading}`}>
+                            {course.title}
                           </div>
-                          <div>
-                            <h4 className="font-bold text-base text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                              {batch.name} - <span className="text-emerald-400">{batch.courseTitle}</span>
-                            </h4>
-                            <p className="text-xs text-slate-400">হেড ইনস্ট্রাক্টর: {batch.headTeacher} | সময়সূচি: {batch.schedule}</p>
-                          </div>
+                          {isSelected && (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 border border-emerald-500/40">
+                              {t.selectedBadge}
+                            </span>
+                          )}
                         </div>
+                        <div className="text-xs text-emerald-500 font-semibold">{t.currentHeadTeacher} {course.headTeacher || course.instructor}</div>
 
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            {batch.totalStudents} জন শিক্ষার্থী
-                          </span>
-                          {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-                        </div>
-                      </button>
+                        <select
+                          value={course.headTeacher || course.instructor}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleSetHeadTeacher(course.id, e.target.value);
+                          }}
+                          className={`w-full ${inputStyle} text-xs font-bold rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                        >
+                          <option value="রাহেলা খাতুন">রাহেলা খাতুন (হ্যান্ডরাইটিং বিশেষজ্ঞ)</option>
+                          <option value="ফারহানা বেগম">ফারহানা বেগম (হস্তলিখন মেন্টর)</option>
+                          <option value="মো. আরিফুল ইসলাম">মো. আরিফুল ইসলাম (স্পোকেন ট্রেইনার)</option>
+                          <option value="সুমাইয়া আক্তার">সুমাইয়া আক্তার (ভাষা শিক্ষা বিশেষজ্ঞ)</option>
+                        </select>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                      {/* Expandable Student Roster */}
-                      {isExpanded && (
-                        <div className="p-6 border-t border-slate-800 bg-slate-950 space-y-4">
-                          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                            ফুল স্টুডেন্ট রোস্টার ও একাডেমি পারফরম্যান্স মার্কস
-                          </div>
+              {/* Step 2 & 3: Filtered Batches List & Expandable Student Roster */}
+              <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl space-y-6 border`}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className={`text-xl font-bold ${textHeading}`}>
+                    {t.activeBatchesTitle}
+                  </h3>
+                  {selectedCourse && (
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+                      {t.filteredCourseBadge} {selectedCourse.title}
+                    </span>
+                  )}
+                </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {batch.roster.map((std) => (
-                              <div key={std.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs font-bold text-amber-400">Roll #{std.rollNo}</span>
-                                  <span className="text-xs font-black text-emerald-400">{std.grade}</span>
-                                </div>
-                                <h5 className="font-bold text-white text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                                  {std.name}
-                                </h5>
-                                <p className="text-[11px] text-slate-400">অভিভাবক: {std.parentName}</p>
-
-                                <div className="pt-2 border-t border-slate-800 flex justify-between text-xs font-semibold">
-                                  <span>উপস্থিতি: <strong className="text-emerald-400">{std.attendancePercentage}%</strong></span>
-                                  <span>গড় এক্সাম মার্কস: <strong className="text-purple-400">{std.avgExamScore}/১০০</strong></span>
-                                </div>
+                <div className="space-y-4">
+                  {filteredBatches.length > 0 ? (
+                    filteredBatches.map((batch) => {
+                      const isExpanded = expandedBatchId === batch.id;
+                      return (
+                        <div key={batch.id} className={`border rounded-2xl overflow-hidden ${bgSubCard}`}>
+                          {/* Batch Header Card */}
+                          <button
+                            onClick={() => setExpandedBatchId(isExpanded ? null : batch.id)}
+                            className={`w-full p-5 flex items-center justify-between ${
+                              isDark ? "bg-slate-900 hover:bg-slate-800/80" : "bg-white hover:bg-slate-50"
+                            } transition-colors text-left cursor-pointer`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-sm">
+                                <Building className="w-5 h-5" />
                               </div>
-                            ))}
-                          </div>
+                              <div>
+                                <h4 className={`font-bold text-base ${textHeading}`}>
+                                  {batch.name} - <span className="text-emerald-500">{batch.courseTitle}</span>
+                                </h4>
+                                <p className={`text-xs ${textSub}`}>{t.instructorLabel} {batch.headTeacher} | {t.scheduleLabel} {batch.schedule}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                {batch.totalStudents} {t.studentsCount}
+                              </span>
+                              {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                            </div>
+                          </button>
+
+                          {/* Step 3: Expandable Student Roster & Performance Reports */}
+                          {isExpanded && (
+                            <div className={`p-6 border-t ${isDark ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-slate-50"} space-y-4`}>
+                              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                {t.expandRosterTitle}
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {batch.roster.map((std) => (
+                                  <div key={std.id} className={`${bgCard} border rounded-2xl p-4 space-y-2`}>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-bold text-amber-500">{t.rollNoLabel}{std.rollNo}</span>
+                                      <span className="text-xs font-black text-emerald-500">{std.grade}</span>
+                                    </div>
+                                    <h5 className={`font-bold ${textHeading} text-sm`}>
+                                      {std.name}
+                                    </h5>
+                                    <p className={`text-[11px] ${textSub}`}>{t.parentLabel} {std.parentName}</p>
+
+                                    <div className={`pt-2 border-t ${isDark ? "border-slate-800" : "border-slate-200"} flex justify-between text-xs font-semibold`}>
+                                      <span>{t.attendanceLabel} <strong className="text-emerald-500">{std.attendancePercentage}%</strong></span>
+                                      <span>{t.avgScoreLabel} <strong className="text-purple-500">{std.avgExamScore}/100</strong></span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      );
+                    })
+                  ) : (
+                    <div className={`p-8 text-center rounded-2xl border ${bgSubCard} ${textSub} text-sm`}>
+                      {t.noBatchesFound}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ═══════════════════════════════════════════════════════════════════════════
            SECTION 5: 📚 COURSE CMS VIEW
@@ -1382,7 +2786,7 @@ export default function Admin() {
           <div className="space-y-8 animate-in fade-in duration-300">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses.map((course) => (
-                <div key={course.id} className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl flex flex-col justify-between group hover:border-slate-700 transition-all">
+                <div key={course.id} className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border flex flex-col justify-between group transition-all`}>
                   <div>
                     <div className="relative h-44 overflow-hidden">
                       <img src={course.imageUrl} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -1395,36 +2799,35 @@ export default function Admin() {
                     </div>
 
                     <div className="p-6 space-y-3">
-                      <h3 className="text-lg font-bold text-white leading-snug" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                      <h3 className={`text-lg font-bold ${textHeading} leading-snug`}>
                         {course.title}
                       </h3>
-                      <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                      <p className={`text-xs ${textSub} line-clamp-2 leading-relaxed`}>
                         {course.description}
                       </p>
                       
-                      <div className="text-[11px] text-slate-400 font-mono truncate">
-                        Google Form: <span className="text-emerald-400">{course.googleFormUrl}</span>
+                      <div className={`text-[11px] ${textSub} font-mono truncate`}>
+                        {t.googleFormLabel} <span className="text-emerald-500">{course.googleFormUrl}</span>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
-                        <span>মেয়াদ: <strong className="text-white">{course.duration}</strong></span>
-                        <span>ইনস্ট্রাক্টর: <strong className="text-emerald-400">{course.instructor}</strong></span>
+                      <div className={`flex items-center justify-between text-xs ${textSub} pt-2 border-t ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+                        <span>{t.durationLabel} <strong className={textHeading}>{course.duration}</strong></span>
+                        <span>{t.instructorLabel} <strong className="text-emerald-500">{course.instructor}</strong></span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-slate-950/60 border-t border-slate-800 flex gap-2">
+                  <div className={`p-4 ${bgSubCard} border-t flex gap-2`}>
                     <button
                       onClick={() => handleOpenEditCourse(course)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer"
-                      style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer"
                     >
-                      <Edit2 className="w-3.5 h-3.5 text-blue-400" />
-                      সম্পাদনা (Edit)
+                      <Edit2 className="w-3.5 h-3.5" />
+                      {t.editCourseBtn}
                     </button>
                     <button
                       onClick={() => handleDeleteCourse(course.id)}
-                      className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all cursor-pointer"
+                      className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-all cursor-pointer"
                       title="Delete Course"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1436,243 +2839,294 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════════════════
-           SECTION 6: 🖼️ WEBSITE CUSTOMIZATION VIEW
-        ═══════════════════════════════════════════════════════════════════════════ */}
-        {activeTab === "customization" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in duration-300">
-            {/* Inputs Form */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
-              <div className="flex items-center gap-2 mb-6">
-                <ImageIcon className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  হোমপেজ লাইভ হিরো ও মিডিয়া সেটিংস
-                </h3>
-              </div>
 
-              {customizationSavedMessage && (
-                <div className="mb-6 p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-                  <CheckCircle2 className="w-4 h-4" />
-                  ওয়েবসাইট সেটিংস সফলভাবে আপডেট করা হয়েছে!
-                </div>
-              )}
-
-              <form onSubmit={handleSaveCustomization} className="space-y-5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-2" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    ১. হোমপেজ হিরো শিরোনাম (Homepage Hero Title)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={siteConfig.heroTitle}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, heroTitle: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-sm font-semibold text-white focus:outline-none focus:border-emerald-500"
-                    style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-2" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    ২. হিরো সাব-টাইটেল (Hero Subtitle)
-                  </label>
-                  <textarea
-                    rows={3}
-                    required
-                    value={siteConfig.heroSubtitle}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, heroSubtitle: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 resize-none"
-                    style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-2" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    ৩. মেইন ব্যানার ইমেজ URL (Main Banner Image URL)
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={siteConfig.mainBannerUrl}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, mainBannerUrl: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-sm font-mono text-emerald-400 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-2" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    ৪. ডেমো ক্লাস ভিডিও URL (Demo Video Link)
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={siteConfig.demoVideoUrl}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, demoVideoUrl: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-sm font-mono text-purple-400 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm cursor-pointer"
-                  style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-                >
-                  <Save className="w-4 h-4" />
-                  ওয়েবসাইট সেটিংস পরিবর্তন সেভ করুন ✓
-                </button>
-              </form>
-            </div>
-
-            {/* Live Interactive Preview Card */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between">
-              <div>
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  লাইভ ওয়েবসাইট প্রিভিউ (Live Site Preview)
-                </div>
-
-                <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-950 p-6 space-y-4">
-                  <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-3 py-1 rounded-full">
-                    গ্যারান্টিযুক্ত শিখণ
-                  </div>
-                  <h2 className="text-xl font-bold text-white leading-tight" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    {siteConfig.heroTitle}
-                  </h2>
-                  <p className="text-xs text-slate-400 leading-relaxed" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    {siteConfig.heroSubtitle}
-                  </p>
-
-                  <div className="relative rounded-xl overflow-hidden aspect-video border border-slate-800">
-                    <img src={siteConfig.mainBannerUrl} alt="Banner Preview" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xl">
-                        <Video className="w-6 h-6" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 text-xs text-slate-500 italic text-center">
-                এই আপডেটগুলো সঙ্গে সঙ্গে প্ল্যাটফর্মের ফ্রন্টেন্ডে রিফ্লেক্ট করবে।
-              </div>
-            </div>
-          </div>
-        )}
 
       </main>
 
       {/* ── CREATE / EDIT COURSE MODAL ── */}
       {isCourseModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 relative shadow-2xl overflow-y-auto max-h-[90vh]">
-            <button onClick={() => setIsCourseModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer">
+          <div className={`${bgCard} rounded-3xl max-w-lg w-full p-6 sm:p-8 relative shadow-2xl overflow-y-auto max-h-[90vh] border`}>
+            <button onClick={() => setIsCourseModalOpen(false)} className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}>
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-2xl font-bold text-white mb-4" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-              {editingCourseId ? "কোর্স এডিট করুন (Edit Course)" : "নতুন কোর্স তৈরি করুন (CMS)"}
+            <h3 className={`text-2xl font-bold ${textHeading} mb-4`}>
+              {editingCourseId ? t.modalEditTitle : t.modalCreateTitle}
             </h3>
 
             <form onSubmit={handleSaveCourse} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  কোর্সের শিরোনাম *
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.fieldTitle}
                 </label>
                 <input
                   type="text"
                   required
                   value={courseForm.title}
                   onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:border-emerald-500"
-                  style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm focus:border-emerald-500`}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    কোর্স ফি (টাকা) *
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                    {t.fieldPrice}
                   </label>
                   <input
                     type="number"
                     required
                     value={courseForm.price}
                     onChange={(e) => setCourseForm({ ...courseForm, price: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm font-bold text-emerald-400 focus:border-emerald-500"
+                    className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm font-bold text-emerald-500 focus:border-emerald-500`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                    মেয়াদ
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                    {t.fieldDuration}
                   </label>
                   <input
                     type="text"
                     value={courseForm.duration}
                     onChange={(e) => setCourseForm({ ...courseForm, duration: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:border-emerald-500"
-                    style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                    className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm focus:border-emerald-500`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  প্রধান ইনস্ট্রাক্টর
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.fieldInstructor}
                 </label>
                 <input
                   type="text"
                   value={courseForm.instructor}
                   onChange={(e) => setCourseForm({ ...courseForm, instructor: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:border-emerald-500"
-                  style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm focus:border-emerald-500`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  গুগল ফর্ম লিংক (Google Form URL)
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.fieldGoogleForm}
                 </label>
                 <input
                   type="url"
                   value={courseForm.googleFormUrl}
                   onChange={(e) => setCourseForm({ ...courseForm, googleFormUrl: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-emerald-400 focus:border-emerald-500"
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-xs font-mono text-emerald-500 focus:border-emerald-500`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  ইমেজ URL
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.fieldImageUrl}
                 </label>
                 <input
                   type="url"
                   value={courseForm.imageUrl}
                   onChange={(e) => setCourseForm({ ...courseForm, imageUrl: e.target.value })}
-                  className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300 focus:border-emerald-500"
+                  className={`w-full px-4 py-2 rounded-xl ${inputStyle} text-xs font-mono focus:border-emerald-500`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                  কোর্স বিবরণ
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.fieldDescription}
                 </label>
                 <textarea
                   rows={3}
                   value={courseForm.description}
                   onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:border-emerald-500 resize-none"
-                  style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm focus:border-emerald-500 resize-none`}
                 />
               </div>
 
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3.5 rounded-xl transition-all text-sm cursor-pointer shadow-md"
-                style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
               >
-                {editingCourseId ? "পরিবর্তন সেভ করুন ✓" : "কোর্স পাবলিশ করুন ✓"}
+                {editingCourseId ? t.saveChanges : t.publishCourse}
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── RESET STAFF PASSWORD MODAL ── */}
+      {resetPasswordStaff && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`${bgCard} rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl border space-y-4`}>
+            <button onClick={() => setResetPasswordStaff(null)} className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}>
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-amber-500" />
+              <h3 className={`text-xl font-bold ${textHeading}`}>
+                {t.resetPassTitle}
+              </h3>
+            </div>
+            <p className={`text-xs ${textSub}`}>
+              Setting temporary password for <strong className="text-emerald-500">{resetPasswordStaff.name}</strong> ({resetPasswordStaff.email})
+            </p>
+
+            <form onSubmit={handleSaveResetPassword} className="space-y-4 pt-2">
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.newPasswordLabel}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newTempPasswordInput}
+                  onChange={(e) => setNewTempPasswordInput(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm font-mono text-amber-400 focus:border-amber-500`}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setResetPasswordStaff(null)}
+                  className={`flex-1 py-2.5 rounded-xl border text-xs font-bold ${textSub} cursor-pointer`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-md"
+                >
+                  {t.saveNewPassword}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT EXTRA COST MODAL ── */}
+      {editingCostId && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`${bgCard} rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl border space-y-4`}>
+            <button onClick={() => setEditingCostId(null)} className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}>
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-emerald-500" />
+              <h3 className={`text-xl font-bold ${textHeading}`}>
+                {t.editCostTitle}
+              </h3>
+            </div>
+
+            <form onSubmit={handleSaveExtraCost} className="space-y-4 pt-2">
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.printingCost}</label>
+                <input
+                  type="number"
+                  required
+                  value={editingCostForm.printingCost}
+                  onChange={(e) => setEditingCostForm({ ...editingCostForm, printingCost: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm font-bold focus:border-emerald-500`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.inboundFreight}</label>
+                <input
+                  type="number"
+                  required
+                  value={editingCostForm.inboundFreight}
+                  onChange={(e) => setEditingCostForm({ ...editingCostForm, inboundFreight: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm font-bold focus:border-emerald-500`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>{t.courierFee}</label>
+                <input
+                  type="number"
+                  required
+                  value={editingCostForm.courierFee}
+                  onChange={(e) => setEditingCostForm({ ...editingCostForm, courierFee: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm font-bold focus:border-emerald-500`}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingCostId(null)}
+                  className={`flex-1 py-2.5 rounded-xl border text-xs font-bold ${textSub} cursor-pointer`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-md"
+                >
+                  Save Expenses ✓
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── UPDATE DELIVERY STATUS MODAL ── */}
+      {editingDelivery && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`${bgCard} rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl border space-y-4`}>
+            <button onClick={() => setEditingDelivery(null)} className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}>
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <Truck className="w-5 h-5 text-blue-500" />
+              <h3 className={`text-xl font-bold ${textHeading}`}>
+                {t.modalUpdateDeliveryTitle}
+              </h3>
+            </div>
+            <div className={`text-xs ${textSub} space-y-1`}>
+              <div>Student: <strong className="text-emerald-500">{editingDelivery.studentName}</strong> ({editingDelivery.phone})</div>
+              <div>Consignment ID: <strong className="font-mono text-amber-500">{editingDelivery.consignmentId}</strong></div>
+            </div>
+
+            <form onSubmit={handleSaveDeliveryStatus} className="space-y-4 pt-2">
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.selectNewDeliveryStatus}
+                </label>
+                <select
+                  value={newDeliveryStatus}
+                  onChange={(e) => setNewDeliveryStatus(e.target.value as any)}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-xs font-bold cursor-pointer focus:border-emerald-500`}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Dispatched">Dispatched</option>
+                  <option value="In Transit">In Transit</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Returned">Returned</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingDelivery(null)}
+                  className={`flex-1 py-2.5 rounded-xl border text-xs font-bold ${textSub} cursor-pointer`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-md"
+                >
+                  Update Status ✓
+                </button>
+              </div>
             </form>
           </div>
         </div>

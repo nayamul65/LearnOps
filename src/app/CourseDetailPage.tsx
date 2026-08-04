@@ -17,11 +17,15 @@ import {
   PlayCircle,
   ChevronRight,
   ArrowLeft,
+  ArrowRight,
   MessageCircle,
   Quote,
 } from "lucide-react";
-import { ALL_COURSES } from "./App";
+import { ALL_COURSES, Course } from "./App";
 import { GOOGLE_FORM_URL } from "./CourseListPage";
+import Course1DetailsModal from "../components/Course1DetailsModal";
+import Course2DetailsModal from "../components/Course2DetailsModal";
+import { Button } from "./components/ui/button";
 
 function StarRating({ rating, size = "md" }: { rating: number; size?: "sm" | "md" }) {
   const cls = size === "sm" ? "w-3 h-3" : "w-4 h-4";
@@ -39,7 +43,7 @@ function StarRating({ rating, size = "md" }: { rating: number; size?: "sm" | "md
   );
 }
 
-const getLearnItems = (category: string, isEnglish: boolean) => {
+const getLearnItems = (category: string = "", isEnglish: boolean) => {
   if (category.includes("Handwriting")) {
     return isEnglish
       ? [
@@ -199,8 +203,30 @@ export default function CourseDetailPage({ dark, toggleDark, lang = "BN" }: Cour
   const navigate = useNavigate();
   const [activeMonth, setActiveMonth] = useState(0);
 
+  if (Number(id) === 1) {
+    return (
+      <div className="min-h-screen bg-background pt-16">
+        <Course1DetailsModal
+          isOpen={true}
+          onClose={() => navigate("/courses")}
+        />
+      </div>
+    );
+  }
+
+  if (Number(id) === 2) {
+    return (
+      <div className="min-h-screen bg-background pt-16">
+        <Course2DetailsModal
+          isOpen={true}
+          onClose={() => navigate("/courses")}
+        />
+      </div>
+    );
+  }
+
   const isEnglish = lang === "EN";
-  const course = ALL_COURSES.find((c) => c.id === Number(id)) ?? ALL_COURSES[0];
+  const course: Course = ALL_COURSES.find((c) => c.id === Number(id)) ?? ALL_COURSES[0];
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -220,7 +246,7 @@ export default function CourseDetailPage({ dark, toggleDark, lang = "BN" }: Cour
     return isEnglish ? (templatesEN[i] ?? { title: `Month ${i + 1}`, topics: [] }) : (templatesBN[i] ?? { title: `মাস ${i + 1}`, topics: [] });
   });
 
-  const learnItems = getLearnItems(course.category, isEnglish);
+  const learnItems = getLearnItems(course.category || "", isEnglish);
   const includes = getIncludes(isEnglish);
   const testimonials = getTestimonials(isEnglish);
 

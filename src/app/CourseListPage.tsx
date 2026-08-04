@@ -19,37 +19,42 @@ import { ImageWithFallback } from "./components/figma/ImageWithFallback";
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
 import { useLanguage } from "./context/LanguageContext";
+import Course1DetailsModal from "../components/Course1DetailsModal";
+import Course2DetailsModal from "../components/Course2DetailsModal";
+import Course3DetailsModal from "../components/Course3DetailsModal";
+import Course4DetailsModal from "../components/Course4DetailsModal";
 
 export const GOOGLE_FORM_URL = "https://forms.google.com/demo-enrollment-form";
 
 export interface Course {
-  id: number;
+  id: number | string;
   title: string;
-  titleEN: string;
-  category: string;
-  categoryBengali: string;
-  ageGroup: string;
-  ageGroupEN: string;
-  duration: string;
-  durationEN: string;
-  price: string;
-  priceEN: string;
-  priceNum: number;
-  description: string;
-  descriptionEN: string;
-  rating: number;
-  reviews: number;
-  students: string;
-  studentsEN: string;
-  img: string;
-  badge: string;
-  gradient: string;
-  bgLight: string;
-  textAccent: string;
-  borderAccent: string;
-  ringAccent: string;
-  level: string;
-  levelEN: string;
+  titleEN?: string;
+  category?: string;
+  categoryBengali?: string;
+  ageGroup?: string;
+  ageGroupEN?: string;
+  duration?: string;
+  durationEN?: string;
+  price?: string | number;
+  priceEN?: string | number;
+  priceNum?: number;
+  description?: string;
+  descriptionEN?: string;
+  rating?: number;
+  reviews?: number;
+  students?: string | number;
+  studentsEN?: string | number;
+  img?: string;
+  badge?: string;
+  gradient?: string;
+  bgLight?: string;
+  textAccent?: string;
+  borderAccent?: string;
+  ringAccent?: string;
+  level?: string;
+  levelEN?: string;
+  [key: string]: any;
 }
 
 export const COURSES: Course[] = [
@@ -213,6 +218,10 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [demoCourse, setDemoCourse] = useState<Course | null>(null);
+  const [course1ModalOpen, setCourse1ModalOpen] = useState(false);
+  const [course2ModalOpen, setCourse2ModalOpen] = useState(false);
+  const [course3ModalOpen, setCourse3ModalOpen] = useState(false);
+  const [course4ModalOpen, setCourse4ModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const categories = ["All", "Handwriting", "English", "Language", "Islamic"];
@@ -589,7 +598,19 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
                       <div className="flex gap-3">
                         <Button
                           variant="outline"
-                          onClick={() => navigate(`/course/${course.id}`)}
+                          onClick={() => {
+                            if (course.id === 1) {
+                              setCourse1ModalOpen(true);
+                            } else if (course.id === 2) {
+                              setCourse2ModalOpen(true);
+                            } else if (course.id === 3) {
+                              setCourse3ModalOpen(true);
+                            } else if (course.id === 4) {
+                              setCourse4ModalOpen(true);
+                            } else {
+                              navigate(`/course/${course.id}`);
+                            }
+                          }}
                           style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                           className="flex-1 text-xs font-bold rounded-2xl border-border py-5 text-foreground hover:bg-muted transition-all cursor-pointer"
                         >
@@ -661,6 +682,30 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
           </div>
         </div>
       )}
+
+      {/* ── COURSE 1 DETAILS MODAL ── */}
+      <Course1DetailsModal
+        isOpen={course1ModalOpen}
+        onClose={() => setCourse1ModalOpen(false)}
+      />
+
+      {/* ── COURSE 2 DETAILS MODAL ── */}
+      <Course2DetailsModal
+        isOpen={course2ModalOpen}
+        onClose={() => setCourse2ModalOpen(false)}
+      />
+
+      {/* ── COURSE 3 DETAILS MODAL ── */}
+      <Course3DetailsModal
+        isOpen={course3ModalOpen}
+        onClose={() => setCourse3ModalOpen(false)}
+      />
+
+      {/* ── COURSE 4 DETAILS MODAL ── */}
+      <Course4DetailsModal
+        isOpen={course4ModalOpen}
+        onClose={() => setCourse4ModalOpen(false)}
+      />
     </div>
   );
 }
