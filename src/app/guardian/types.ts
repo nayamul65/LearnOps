@@ -8,6 +8,7 @@ export type GuardianTab =
   | "settings";
 
 export interface StudentProfile {
+  studentId: string;
   studentName: string;
   studentNameEN: string;
   avatar: string;
@@ -26,6 +27,7 @@ export interface StudentProfile {
   totalStars: number;
   teacherName: string;
   teacherTitle: string;
+  teacherPhone: string;
   teacherAvatar: string;
   teacherRemarks: string;
   teacherRemarksEN: string;
@@ -59,7 +61,11 @@ export interface HomeworkSubmission {
   status: "Pending" | "Submitted" | "Graded";
   score?: number;
   maxScore?: number;
+  grade?: string;
   feedback?: string;
+  teacherSummary?: string;
+  teacherInspection?: string;
+  reviewDate?: string;
   previewUrl?: string;
 }
 
