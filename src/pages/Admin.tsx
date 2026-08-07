@@ -111,7 +111,7 @@ const INITIAL_COURSES: CMSCourse[] = [
     category: "হাতের লেখা",
     description: "স্বল্প সময়ে বর্ণমালা গঠন, লাইনের সোজা ভাব এবং দ্রুত ও সুন্দর হাতের লেখার বিশেষ টেকনিক।",
     imageUrl: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=600&h=400&fit=crop&auto=format",
-    demoVideoUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+    demoVideoUrl: "https://www.youtube-nocookie.com/embed/kiwCdNcVks4",
     googleFormUrl: "https://forms.google.com/demo-enrollment-form",
   },
   {
@@ -124,7 +124,7 @@ const INITIAL_COURSES: CMSCourse[] = [
     category: "হাতের লেখা",
     description: "ছোট বাচ্চাদের পেন্সিল গ্রিপ, স্টক প্র্যাকটিস এবং বর্ণমালার নিখুঁত আকৃতি শেখানোর কোর্স।",
     imageUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&h=400&fit=crop&auto=format",
-    demoVideoUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+    demoVideoUrl: "https://www.youtube-nocookie.com/embed/kiwCdNcVks4",
     googleFormUrl: "https://forms.google.com/demo-enrollment-form",
   },
   {
@@ -137,7 +137,7 @@ const INITIAL_COURSES: CMSCourse[] = [
     category: "ইংরেজি স্পোকেন",
     description: "শিশুদের জড়তা কাটিয়ে ফ্লুয়েন্টলি ইংরেজিতে কথা বলার আত্মবিশ্বাস তৈরির প্রোগ্রাম।",
     imageUrl: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=600&h=400&fit=crop&auto=format",
-    demoVideoUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+    demoVideoUrl: "https://www.youtube-nocookie.com/embed/QEKrbAwiSrs",
     googleFormUrl: "https://forms.google.com/demo-enrollment-form",
   },
 ];
@@ -361,7 +361,7 @@ export default function Admin() {
     heroTitle: "আপনার সন্তানের হাতের লেখা ও পড়া হোক নিখুঁত ও চমৎকার",
     heroSubtitle: "অভিজ্ঞ মেন্টরদের সাথে সরাসরি লাইভ ক্লাসে মাত্র ২৫ দিনে হাতের লেখা ও পড়ার জড়তা কাটান।",
     mainBannerUrl: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=1200&h=600&fit=crop&auto=format",
-    demoVideoUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+    demoVideoUrl: "https://www.youtube-nocookie.com/embed/kiwCdNcVks4",
   });
   const [customizationSavedMessage, setCustomizationSavedMessage] = useState(false);
 
@@ -376,7 +376,7 @@ export default function Admin() {
     category: "হাতের লেখা",
     description: "",
     imageUrl: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=600&h=400&fit=crop&auto=format",
-    demoVideoUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+    demoVideoUrl: "https://www.youtube-nocookie.com/embed/kiwCdNcVks4",
     googleFormUrl: "https://forms.google.com/demo-enrollment-form",
   });
 
@@ -563,7 +563,7 @@ export default function Admin() {
       category: "হাতের লেখা",
       description: "",
       imageUrl: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=600&h=400&fit=crop&auto=format",
-      demoVideoUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+      demoVideoUrl: "https://www.youtube-nocookie.com/embed/kiwCdNcVks4",
       googleFormUrl: "https://forms.google.com/demo-enrollment-form",
     });
     setIsCourseModalOpen(true);

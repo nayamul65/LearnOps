@@ -1,5 +1,30 @@
 /* ── COURSES DATA FILE (Isolated for Course ID 3 & Course ID 4) ── */
 
+export interface Course1Data {
+  courseId: number;
+  youtubeReviewUrl: string;
+  facebookReviewUrl: string;
+}
+
+export const COURSE_1_DATA: Course1Data = {
+  courseId: 1,
+  youtubeReviewUrl: "https://www.youtube.com/embed/E_WC6BxHIpE",
+  facebookReviewUrl: "https://www.facebook.com/share/v/1BfVKfj9RU/",
+};
+
+export interface Course2Data {
+  courseId: number;
+  youtubeReviewUrl: string;
+  facebookReviewUrl: string;
+}
+
+export const COURSE_2_DATA: Course2Data = {
+  courseId: 2,
+  youtubeReviewUrl: "https://www.youtube.com/embed/yyrri08vako",
+  facebookReviewUrl: "https://www.facebook.com/share/v/1Z4MDLLRzJ/",
+};
+
+
 export interface Course3Data {
   courseId: number;
   title: string;
@@ -8,6 +33,7 @@ export interface Course3Data {
   ageGroup: string;
   duration: string;
   youtubeReviewVideo: string;
+  youtubeReviewUrl?: string;
   helplineNumber: string;
   shortDescription: string;
   detailedOverviewText: string;
@@ -22,6 +48,7 @@ export const COURSE_3_DATA: Course3Data = {
   ageGroup: "৮-১৫ বছর",
   duration: "৮ সপ্তাহ",
   youtubeReviewVideo: "https://youtu.be/QEKrbAwiSrs?si=4_DD0DlC3ObPjFzN",
+  youtubeReviewUrl: "https://www.youtube.com/embed/QEKrbAwiSrs",
   helplineNumber: "09611-678344",
   shortDescription:
     "শিশুদের জড়তা কাটিয়ে ফ্লুয়েন্টলি ইংরেজিতে কথা বলার আত্মবিশ্বাস তৈরির স্পেশাল স্পোকেন প্রোগ্রাম।",
@@ -68,7 +95,7 @@ export const COURSE_4_DATA: Course4Data = {
   enrolledStudents: "৮৩০ শিক্ষার্থী",
   rating: "4.8 (221 রিভিউ)",
   price: "৳২,৮০০",
-  youtubeReviewUrl: "https://youtu.be/QEKrbAwiSrs?si=4_DD0DlC3ObPjFzN",
+  youtubeReviewUrl: "https://www.youtube.com/embed/QEKrbAwiSrs",
   helpline: "09611-678344",
   programHighlights: [
     "প্রতিদিনের হোমওয়ার্ক",
@@ -111,7 +138,7 @@ export const COURSE_5_DATA: Course5Data = {
   enrolledStudents: "৫২০ শিক্ষার্থী",
   rating: "5 (143 রিভিউ)",
   price: "৳২,৫০০",
-  youtubeReviewUrl: "https://youtu.be/kiwCdNcVks4?si=RzmhEd969uDPweWV",
+  youtubeReviewUrl: "https://www.youtube.com/embed/kiwCdNcVks4",
   helpline: "09611-678344",
   programHighlights: [
     "✅ প্রতিদিনের তিলাওয়াত ও অনুশীলন",

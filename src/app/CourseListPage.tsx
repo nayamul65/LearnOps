@@ -24,7 +24,25 @@ import Course2DetailsModal from "../components/Course2DetailsModal";
 import Course3DetailsModal from "../components/Course3DetailsModal";
 import Course4DetailsModal from "../components/Course4DetailsModal";
 
-export const GOOGLE_FORM_URL = "https://forms.google.com/demo-enrollment-form";
+export const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScfUbFTmOUymZ1QDIq7hF3TllwPWphLrCixclCQJ8_WSKHVBw/viewform?sfnsn=wa";
+
+const COURSE_YOUTUBE_URLS: Record<number, string> = {
+  1: "https://www.youtube.com/embed/kiwCdNcVks4",
+  2: "https://www.youtube.com/embed/kiwCdNcVks4",
+  3: "https://www.youtube.com/embed/QEKrbAwiSrs",
+  4: "https://www.youtube.com/embed/QEKrbAwiSrs",
+  5: "https://www.youtube.com/embed/kiwCdNcVks4",
+};
+
+const getYouTubeEmbedUrl = (url?: string) => {
+  if (!url) return "https://www.youtube.com/embed/kiwCdNcVks4";
+  if (url.includes("embed/")) return url;
+  
+  const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  const videoId = videoIdMatch ? videoIdMatch[1] : null;
+  
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : "https://www.youtube.com/embed/kiwCdNcVks4";
+};
 
 export interface Course {
   id: number;
@@ -657,7 +675,12 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
             <div className="relative aspect-video rounded-2xl overflow-hidden bg-black mb-4 border border-border">
               <iframe
                 className="w-full h-full"
-                src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0"
+                src={getYouTubeEmbedUrl(
+                  demoCourse.youtubeReviewUrl ||
+                  demoCourse.youtubeReviewVideo ||
+                  demoCourse.youtubeDemoLink ||
+                  COURSE_YOUTUBE_URLS[demoCourse.id]
+                )}
                 title="Demo Class Video"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -686,24 +709,28 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
       <Course1DetailsModal
         isOpen={course1ModalOpen}
         onClose={() => setCourse1ModalOpen(false)}
+        onEnroll={() => window.open(GOOGLE_FORM_URL, "_blank", "noopener,noreferrer")}
       />
 
       {/* ── COURSE 2 DETAILS MODAL ── */}
       <Course2DetailsModal
         isOpen={course2ModalOpen}
         onClose={() => setCourse2ModalOpen(false)}
+        onEnroll={() => window.open(GOOGLE_FORM_URL, "_blank", "noopener,noreferrer")}
       />
 
       {/* ── COURSE 3 DETAILS MODAL ── */}
       <Course3DetailsModal
         isOpen={course3ModalOpen}
         onClose={() => setCourse3ModalOpen(false)}
+        onEnroll={() => window.open(GOOGLE_FORM_URL, "_blank", "noopener,noreferrer")}
       />
 
       {/* ── COURSE 4 DETAILS MODAL ── */}
       <Course4DetailsModal
         isOpen={course4ModalOpen}
         onClose={() => setCourse4ModalOpen(false)}
+        onEnroll={() => window.open(GOOGLE_FORM_URL, "_blank", "noopener,noreferrer")}
       />
     </div>
   );

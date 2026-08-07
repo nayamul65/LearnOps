@@ -82,24 +82,14 @@ export default function Course4DetailsModal({
   if (!isOpen) return null;
 
   /* Helper to convert YouTube URL to embed format */
-  const getYouTubeEmbedUrl = (url: string) => {
+  const getYouTubeEmbedUrl = (url?: string) => {
     if (!url) return "https://www.youtube.com/embed/QEKrbAwiSrs";
-    let videoId = "";
-    const trimmed = url.trim();
-    if (trimmed.length === 11 && !trimmed.includes("/") && !trimmed.includes("?")) {
-      videoId = trimmed;
-    } else {
-      if (trimmed.includes("youtu.be/")) {
-        videoId = trimmed.split("youtu.be/")[1]?.split("?")[0]?.split("&")[0] || "";
-      } else if (trimmed.includes("v=")) {
-        videoId = trimmed.split("v=")[1]?.split("&")[0]?.split("?")[0] || "";
-      } else if (trimmed.includes("embed/")) {
-        videoId = trimmed.split("embed/")[1]?.split("?")[0]?.split("&")[0] || "";
-      }
-    }
-    return videoId
-      ? `https://www.youtube.com/embed/${videoId}`
-      : "https://www.youtube.com/embed/QEKrbAwiSrs";
+    if (url.includes("embed/")) return url;
+    
+    const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    const videoId = videoIdMatch ? videoIdMatch[1] : null;
+    
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : "https://www.youtube.com/embed/QEKrbAwiSrs";
   };
 
   const handleAdminSave = (e: React.FormEvent) => {

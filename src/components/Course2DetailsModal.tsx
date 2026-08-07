@@ -51,7 +51,7 @@ export const DEFAULT_COURSE2_DATA: Course2DetailsData = {
   totalEnrolled: "৯৮০ শিক্ষার্থী",
   rating: "4.8 (284 রিভিউ)",
   price: "৳২,০০০",
-  youtubeDemoLink: "https://youtu.be/bHm2XTgFCuM?si=lI8WKgN8Q5N2XTTk",
+  youtubeDemoLink: "https://www.youtube.com/embed/kiwCdNcVks4",
   facebookPastBatchVideo: "https://www.facebook.com/share/v/198fBxFSwJ/",
   helplineNumber: "09611-678344",
   shortDescription:
@@ -105,24 +105,14 @@ export default function Course2DetailsModal({
   if (!isOpen) return null;
 
   /* Helper to convert YouTube URL to embed format */
-  const getYouTubeEmbedUrl = (url: string) => {
-    if (!url) return "https://www.youtube.com/embed/bHm2XTgFCuM";
-    let videoId = "";
-    const trimmed = url.trim();
-    if (trimmed.length === 11 && !trimmed.includes("/") && !trimmed.includes("?")) {
-      videoId = trimmed;
-    } else {
-      if (trimmed.includes("youtu.be/")) {
-        videoId = trimmed.split("youtu.be/")[1]?.split("?")[0]?.split("&")[0] || "";
-      } else if (trimmed.includes("v=")) {
-        videoId = trimmed.split("v=")[1]?.split("&")[0]?.split("?")[0] || "";
-      } else if (trimmed.includes("embed/")) {
-        videoId = trimmed.split("embed/")[1]?.split("?")[0]?.split("&")[0] || "";
-      }
-    }
-    return videoId
-      ? `https://www.youtube.com/embed/${videoId}`
-      : "https://www.youtube.com/embed/bHm2XTgFCuM";
+  const getYouTubeEmbedUrl = (url?: string) => {
+    if (!url) return "https://www.youtube.com/embed/kiwCdNcVks4";
+    if (url.includes("embed/")) return url;
+    
+    const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    const videoId = videoIdMatch ? videoIdMatch[1] : null;
+    
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : "https://www.youtube.com/embed/kiwCdNcVks4";
   };
 
   const handleAdminSave = (e: React.FormEvent) => {
