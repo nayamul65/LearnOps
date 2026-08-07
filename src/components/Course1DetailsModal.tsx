@@ -42,7 +42,7 @@ export const DEFAULT_COURSE1_DATA: Course1DetailsData = {
   courseId: 1,
   courseTitle: "২৫ দিনে সুন্দর হাতের লেখা",
   totalEnrolled: "৬,২৪০+",
-  youtubeDemoLink: "https://youtu.be/E_WC6BxHIpE",
+  youtubeDemoLink: "https://www.youtube.com/embed/E_WC6BxHIpE",
   facebookVideoLink: "https://www.facebook.com/share/v/1859syYPUS/",
   helplineNumber: "09611-678344",
   promoText:
@@ -474,7 +474,7 @@ export default function Course1DetailsModal({
                 </button>
 
                 <button
-                  onClick={onEnroll ? onEnroll : onClose}
+                  onClick={onEnroll ? onEnroll : () => window.open("https://docs.google.com/forms/d/e/1FAIpQLScfUbFTmOUymZ1QDIq7hF3TllwPWphLrCixclCQJ8_WSKHVBw/viewform?sfnsn=wa", "_blank", "noopener,noreferrer")}
                   className="bg-white hover:bg-amber-50 text-amber-900 font-extrabold px-6 py-3.5 rounded-2xl text-sm transition-all shadow-lg hover:scale-105 cursor-pointer flex items-center gap-2"
                   style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                 >
