@@ -3,6 +3,8 @@ import {
   AchievementBadge,
   HomeworkSubmission,
   NotificationItem,
+  WorkGalleryItem,
+  BillingInvoice,
 } from "./types";
 
 // Target next class time 1 hour and 45 minutes from current date for live countdown testing
@@ -169,3 +171,56 @@ export const mockNotifications: NotificationItem[] = [
     linkTab: "dashboard",
   },
 ];
+
+export const mockWorkGallery: WorkGalleryItem[] = [
+  {
+    id: "wg-1",
+    title: "কোর্সের ১ম দিন বনাম ১৫তম দিনের তুলনা",
+    titleEN: "Day 1 vs Day 15 Handwriting Comparison",
+    date: "১৫ আগস্ট, ২০২৬",
+    score: 92,
+    beforeImg: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&h=350&fit=crop",
+    afterImg: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=500&h=350&fit=crop",
+    remarks: "মাত্রার সোজাভাব ও অক্ষরের আকার পূর্বের তুলনায় অনেক সুন্দর হয়েছে।",
+    remarksEN: "Line alignment and letter sizing improved significantly.",
+  },
+];
+
+export const mockInvoices: BillingInvoice[] = [
+  {
+    id: "inv-101",
+    invoiceNo: "INV-2026-0881",
+    courseName: "২৫ দিনে সুন্দর হাতের লেখা (ব্যাচ ০৪)",
+    method: "bKash Auto-Pay",
+    date: "০১ আগস্ট, ২০২৬",
+    amount: "৳২,৫০০",
+    status: "Paid",
+  },
+];
+
+export const mockWeeklyPracticeData = [
+  { day: "সোম", dayEN: "Mon", minutes: 25 },
+  { day: "মঙ্গল", dayEN: "Tue", minutes: 30 },
+  { day: "বুধ", dayEN: "Wed", minutes: 20 },
+  { day: "বৃহঃ", dayEN: "Thu", minutes: 35 },
+  { day: "শুক্র", dayEN: "Fri", minutes: 40 },
+  { day: "শনি", dayEN: "Sat", minutes: 15 },
+  { day: "রবি", dayEN: "Sun", minutes: 25 },
+];
+
+export const mockMonthlyProgressData = [
+  { week: "সপ্তাহ ১", weekEN: "Wk 1", score: 65, speed: 15 },
+  { week: "সপ্তাহ ২", weekEN: "Wk 2", score: 75, speed: 18 },
+  { week: "সপ্তাহ ৩", weekEN: "Wk 3", score: 85, speed: 22 },
+  { week: "সপ্তাহ ৪", weekEN: "Wk 4", score: 92, speed: 25 },
+];
+
+export const mockSkillRadarData = [
+  { skill: "মাত্রা সোজা", skillEN: "Line Straightness", score: 90 },
+  { skill: "অক্ষরের আকার", skillEN: "Letter Size", score: 85 },
+  { skill: "পেন্সিল গ্রিপ", skillEN: "Pencil Grip", score: 88 },
+  { skill: "লেখার গতি", skillEN: "Writing Speed", score: 82 },
+  { skill: "শব্দের দূরত্ব", skillEN: "Word Spacing", score: 86 },
+  { skill: "পরিচ্ছন্নতা", skillEN: "Neatness", score: 92 },
+];
+

@@ -2,7 +2,9 @@ export type GuardianTab =
   | "dashboard"
   | "live-classes"
   | "homework-upload"
+  | "progress-gallery"
   | "messages"
+  | "billing"
   | "settings";
 
 export interface StudentProfile {
@@ -77,4 +79,26 @@ export interface NotificationItem {
   timestamp: string;
   read: boolean;
   linkTab?: GuardianTab;
+}
+
+export interface WorkGalleryItem {
+  id: string;
+  title: string;
+  titleEN: string;
+  date: string;
+  score: number;
+  beforeImg: string;
+  afterImg: string;
+  remarks: string;
+  remarksEN: string;
+}
+
+export interface BillingInvoice {
+  id: string;
+  invoiceNo: string;
+  courseName: string;
+  method: string;
+  date: string;
+  amount: string;
+  status: "Paid" | "Pending";
 }
