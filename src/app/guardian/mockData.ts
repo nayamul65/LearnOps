@@ -3,15 +3,14 @@ import {
   AchievementBadge,
   HomeworkSubmission,
   NotificationItem,
-  WorkGalleryItem,
-  BillingInvoice,
 } from "./types";
 
 // Target next class time 1 hour and 45 minutes from current date for live countdown testing
 const targetCountdownDate = new Date(Date.now() + (1 * 3600 + 45 * 60 + 20) * 1000).toISOString();
 
 export const mockStudentData: StudentProfile = {
-  studentId: "#৮৮২৪",
+  studentId: "std-1",
+  parentId: "parent-8824",
   studentName: "আরাফ হোসেন",
   studentNameEN: "Araf Hossain",
   avatar: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=150&h=150&fit=crop&crop=faces",
@@ -34,8 +33,6 @@ export const mockStudentData: StudentProfile = {
   teacherAvatar: "https://images.unsplash.com/photo-1619852182277-79aa23f82c8e?w=150&h=150&fit=crop&crop=faces",
   teacherRemarks: "আরাফের হাতের লেখা এখন অনেক পরিচ্ছন্ন ও বর্ণমালার মাত্রা সোজা। প্রতিদিন ১৫ মিনিট রেগুলার প্র্যাকটিস ধরে রাখতে হবে। পেন্সিল গ্রিপে দারুণ উন্নতি চোখে পড়ছে!",
   teacherRemarksEN: "Araf's handwriting is now clean with straight alignment. Please keep up 15 mins daily practice. Great improvement observed in pencil grip!",
-  voiceNoteUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  voiceNoteDuration: "01:15",
   upcomingClassTime: "আজ বিকাল ৪:০০ টা (লাইভ জুম ক্লাস)",
   upcomingClassTimeEN: "Today at 4:00 PM (Live Zoom Class)",
   nextClassDateISO: targetCountdownDate,
@@ -92,6 +89,7 @@ export const mockBadges: AchievementBadge[] = [
 export const mockHomeworkList: HomeworkSubmission[] = [
   {
     id: "hw-1",
+    studentId: "std-1",
     title: "লেসন ১২: স্বরবর্ণ যুক্তাক্ষর প্র্যাকটিস",
     titleEN: "Lesson 12: Vowel Conjunction Practice",
     lessonNo: 12,
@@ -100,6 +98,7 @@ export const mockHomeworkList: HomeworkSubmission[] = [
   },
   {
     id: "hw-2",
+    studentId: "std-1",
     title: "লেসন ১১: ক থেকে ঙ নিখুঁত মাত্রা অনুশীলনী",
     titleEN: "Lesson 11: Perfect Line Alignment (Ka to Nga)",
     lessonNo: 11,
@@ -117,6 +116,7 @@ export const mockHomeworkList: HomeworkSubmission[] = [
   },
   {
     id: "hw-3",
+    studentId: "std-1",
     title: "লেসন ১০: দ্রুত বাক্য লিখন ও পেন্সিল গ্রিপ টেস্ট",
     titleEN: "Lesson 10: Fast Sentence Writing & Pencil Grip Test",
     lessonNo: 10,
@@ -160,75 +160,12 @@ export const mockNotifications: NotificationItem[] = [
   {
     id: "notif-3",
     type: "feedback",
-    title: "নতুন টিচার ফিডব্যাক ও ভয়েস নোট",
-    titleEN: "Teacher Feedback & Voice Note",
-    message: "লেসন ১১ হোমওয়ার্কের ওপর শিক্ষক একটি ভয়েস নির্দেশিকা দিয়েছেন।",
-    messageEN: "Teacher left a voice note feedback on Lesson 11 homework.",
+    title: "নতুন টিচার ফিডব্যাক",
+    titleEN: "Teacher Feedback",
+    message: "লেসন ১১ হোমওয়ার্কের ওপর শিক্ষক পরিদর্শনের বিবরণ দিয়েছেন।",
+    messageEN: "Teacher left feedback on Lesson 11 homework.",
     timestamp: "গতকাল",
     read: true,
     linkTab: "dashboard",
-  },
-];
-
-export const mockWeeklyPracticeData = [
-  { day: "সোম", dayEN: "Mon", minutes: 20 },
-  { day: "মঙ্গল", dayEN: "Tue", minutes: 25 },
-  { day: "বুধ", dayEN: "Wed", minutes: 15 },
-  { day: "বৃহঃ", dayEN: "Thu", minutes: 30 },
-  { day: "শুক্র", dayEN: "Fri", minutes: 40 },
-  { day: "শনি", dayEN: "Sat", minutes: 35 },
-  { day: "রবি", dayEN: "Sun", minutes: 25 },
-];
-
-export const mockMonthlyProgressData = [
-  { week: "সপ্তাহ ১", weekEN: "Wk 1", score: 68, speed: 60 },
-  { week: "সপ্তাহ ২", weekEN: "Wk 2", score: 75, speed: 70 },
-  { week: "সপ্তাহ ৩", weekEN: "Wk 3", score: 84, speed: 80 },
-  { week: "সপ্তাহ ৪", weekEN: "Wk 4", score: 92, speed: 88 },
-];
-
-export const mockSkillRadarData = [
-  { skill: "বর্ণমালা আকৃতি", skillEN: "Letter Shape", score: 94 },
-  { skill: "লাইন সোজা", skillEN: "Line Straight", score: 90 },
-  { skill: "পেন্সিল গ্রিপ", skillEN: "Pencil Grip", score: 92 },
-  { skill: "লেখার গতি", skillEN: "Writing Speed", score: 88 },
-  { skill: "পরিচ্ছন্নতা", skillEN: "Neatness", score: 95 },
-  { skill: "নিয়মিত চর্চা", skillEN: "Consistency", score: 94 },
-];
-
-export const mockWorkGallery: WorkGalleryItem[] = [
-  {
-    id: "work-1",
-    title: "সপ্তাহ ৪ প্রগ্রেস তুলনা",
-    titleEN: "Week 4 Progress Comparison",
-    date: "০৫ আগস্ট, ২০২৬",
-    score: 95,
-    beforeImg: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&h=350&fit=crop",
-    afterImg: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=500&h=350&fit=crop",
-    remarks: "বর্ণমালার মাত্রা সোজা ও স্পষ্ট হয়েছে।",
-    remarksEN: "Line alignment and letter shapes are sharp.",
-  },
-  {
-    id: "work-2",
-    title: "সপ্তাহ ২ প্রগ্রেস তুলনা",
-    titleEN: "Week 2 Progress Comparison",
-    date: "২০ জুলাই, ২০২৬",
-    score: 82,
-    beforeImg: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=500&h=350&fit=crop",
-    afterImg: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=500&h=350&fit=crop",
-    remarks: "পেন্সিল ধরার ভুলভ্রান্তি শুধরে নেওয়া হয়েছে।",
-    remarksEN: "Pencil grip posture corrected.",
-  },
-];
-
-export const mockInvoices: BillingInvoice[] = [
-  {
-    id: "inv-1",
-    invoiceNo: "INV-2026-089",
-    courseName: "২৫ দিনে সুন্দর হাতের লেখা (ব্যাচ ০৪)",
-    amount: "৳২,৫০০",
-    date: "০১ জুলাই, ২০২৬",
-    status: "Paid",
-    method: "bKash Online Payment",
   },
 ];

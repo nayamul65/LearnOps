@@ -5,12 +5,8 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   X,
-  FileText,
-  Clock,
-  Sparkles,
   MessageCircle,
   Award,
-  ExternalLink,
   Share2,
 } from "lucide-react";
 import { HomeworkSubmission, StudentProfile } from "../types";
@@ -72,38 +68,28 @@ export const GuardianHomeworkUpload: React.FC<GuardianHomeworkUploadProps> = ({
     setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Generate WhatsApp pre-filled submission message for teacher
+  // Task 3: Generate pre-filled WhatsApp message containing:
+  // Student Name, Student ID, Lesson Name, Homework Name, Submission Date, Homework Link
   const generateTeacherWhatsAppUrl = () => {
-    const nowStr = new Date().toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-
+    const submissionDate = new Date().toISOString().split("T")[0];
     const hwTitle = isEnglish ? currentHomework.titleEN : currentHomework.title;
     const studentName = isEnglish ? student.studentNameEN : student.studentName;
+    const lessonName = `লেসন ${currentHomework.lessonNo}`;
 
-    const messageText = isEnglish
-      ? `📚 *HOMEWORK SUBMISSION - LEARNOPS*\n\n` +
-        `👤 *Student Name:* ${studentName}\n` +
-        `🆔 *Student ID:* ${student.studentId}\n` +
-        `📖 *Lesson:* Lesson ${currentHomework.lessonNo}\n` +
-        `✍️ *Homework Title:* ${hwTitle}\n` +
-        `⏰ *Upload Time:* ${nowStr}\n` +
-        `🔗 *Homework File Link:* ${previews[0] || "https://learnops.app/homework/preview"}\n\n` +
-        `Respected Teacher, please review the submitted handwriting sheet.`
-      : `📚 *হোমওয়ার্ক জমা - LearnOps*\n\n` +
-        `👤 *শিক্ষার্থীর নাম:* ${studentName}\n` +
-        `🆔 *শিক্ষার্থী আইডি:* ${student.studentId}\n` +
-        `📖 *লেসন নাম:* লেসন ${currentHomework.lessonNo}\n` +
-        `✍️ *হোমওয়ার্ক শিরোনাম:* ${hwTitle}\n` +
-        `⏰ *আপলোড সময়:* ${nowStr}\n` +
-        `🔗 *হোমওয়ার্ক লিংক:* ${previews[0] || "https://learnops.app/homework/preview"}\n\n` +
-        `শ্রদ্ধেয় শিক্ষক, অনুগ্রহ করে জমা প্রদানকৃত হাতের লেখার খাতাটি পরিদর্শন করুন।`;
+    const messageText =
+      `📚 *হোমওয়ার্ক জমা (LearnOps Platform)*\n\n` +
+      `👤 *Student Name:* ${studentName}\n` +
+      `🆔 *Student ID:* ${student.studentId}\n` +
+      `📖 *Lesson Name:* ${lessonName}\n` +
+      `✍️ *Homework Name:* ${hwTitle}\n` +
+      `📅 *Submission Date:* ${submissionDate}\n` +
+      `🔗 *Homework Link:* ${previews[0] || "https://learnops.app/homework/submission"}\n\n` +
+      `শ্রদ্ধেয় শিক্ষক, অনুগ্রহ করে আমার জমা দেওয়া হোমওয়ার্ক মূল্যায়ন করুন।`;
 
     return `https://wa.me/${student.teacherPhone}?text=${encodeURIComponent(messageText)}`;
   };
 
-  // Handler for Green WhatsApp Submission Button
+  // Task 3: Handle Green WhatsApp Button Click (#25D366)
   const handleWhatsAppSubmit = () => {
     if (previews.length === 0) return;
 
@@ -117,7 +103,7 @@ export const GuardianHomeworkUpload: React.FC<GuardianHomeworkUploadProps> = ({
           clearInterval(interval);
           setUploadSuccess(true);
 
-          // Open WhatsApp in new tab
+          // Open Teacher WhatsApp Chat with pre-filled message
           window.open(generateTeacherWhatsAppUrl(), "_blank");
 
           if (onUploadSuccess) onUploadSuccess();
@@ -128,27 +114,22 @@ export const GuardianHomeworkUpload: React.FC<GuardianHomeworkUploadProps> = ({
     }, 300);
   };
 
-  // Generate WhatsApp Notification message link for Guardian
   const generateGuardianNotificationWhatsAppUrl = (hw: HomeworkSubmission) => {
     const studentName = isEnglish ? student.studentNameEN : student.studentName;
     const hwTitle = isEnglish ? hw.titleEN : hw.title;
     const marks = `${hw.score}/${hw.maxScore || 100}`;
 
-    const msg = isEnglish
-      ? `📢 *HOMEWORK EVALUATION REPORT*\n\n` +
-        `👤 *Student:* ${studentName}\n` +
-        `✍️ *Homework:* ${hwTitle}\n` +
-        `📊 *Marks:* ${marks}\n` +
-        `🏅 *Grade:* ${hw.grade || "A+"}\n` +
-        `📝 *Teacher Summary:* ${hw.teacherSummary || hw.feedback}\n\n` +
-        `Please log in to your Guardian Portal to view the complete report.`
-      : `📢 *হোমওয়ার্ক মূল্যায়ন রিপোর্ট*\n\n` +
-        `👤 *শিক্ষার্থীর নাম:* ${studentName}\n` +
-        `✍️ *হোমওয়ার্কের নাম:* ${hwTitle}\n` +
-        `📊 *প্রাপ্ত নম্বর:* ${marks}\n` +
-        `🏅 *গ্রেড:* ${hw.grade || "A+"}\n` +
-        `📝 *শিক্ষকের সারসংক্ষেপ:* ${hw.teacherSummary || hw.feedback}\n\n` +
-        `অনুগ্রহ করে সম্পূর্ণ রিপোর্ট দেখতে অভিভাবক পোর্টালে লগইন করুন।`;
+    const msg =
+      `প্রিয় অভিভাবক,\n\n` +
+      `আপনার সন্তানের হোমওয়ার্ক মূল্যায়ন সম্পন্ন হয়েছে।\n\n` +
+      `Student: ${studentName}\n` +
+      `Lesson: লেসন ${hw.lessonNo}\n` +
+      `Marks: ${marks}\n` +
+      `Grade: ${hw.grade || "A+"}\n` +
+      `Teacher Remarks: ${hw.teacherSummary || hw.feedback}\n\n` +
+      `সম্পূর্ণ রিপোর্ট দেখতে:\n` +
+      `http://localhost:5174/guardian\n\n` +
+      `ধন্যবাদ।`;
 
     return `https://wa.me/?text=${encodeURIComponent(msg)}`;
   };
@@ -171,17 +152,17 @@ export const GuardianHomeworkUpload: React.FC<GuardianHomeworkUploadProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                {isEnglish ? "Quick Homework Upload via WhatsApp" : "দ্রুত হোমওয়ার্ক আপলোড (WhatsApp Integration)"}
+                {isEnglish ? "Homework Upload & WhatsApp Integration" : "হোমওয়ার্ক আপলোড (WhatsApp Integration)"}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {isEnglish ? "Upload student practice sheets directly to mentor's WhatsApp" : "শিক্ষার্থীর অনুশীলনী আপলোড করে হোয়াটসঅ্যাপের মাধ্যমে শিক্ষকের কাছে জমা দিন"}
+                {isEnglish ? "Upload clear sheet and send directly to teacher via WhatsApp" : "শিক্ষার্থীর অনুশীলনী আপলোড করে হোয়াটসঅ্যাপের মাধ্যমে শিক্ষকের কাছে জমা দিন"}
               </p>
             </div>
           </div>
 
           <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{isEnglish ? "WhatsApp Direct Flow" : "হোয়াটসঅ্যাপ সমাকলন সক্রিয়"}</span>
+            <span>{isEnglish ? "WhatsApp Flow Active" : "হোয়াটসঅ্যাপ সমাকলন সক্রিয়"}</span>
           </span>
         </div>
 
@@ -263,7 +244,7 @@ export const GuardianHomeworkUpload: React.FC<GuardianHomeworkUploadProps> = ({
               </div>
             </div>
 
-            {/* Upload Progress Indicator */}
+            {/* Upload Status Bar */}
             {uploadProgress !== null && (
               <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
                 <div className="flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-300 mb-2">
@@ -301,7 +282,7 @@ export const GuardianHomeworkUpload: React.FC<GuardianHomeworkUploadProps> = ({
 
           </div>
 
-          {/* Right Column: Previews & REQUIRED Green WhatsApp Submit Button */}
+          {/* Right Column: Previews & REQUIRED Green WhatsApp Submit Button (#25D366) */}
           <div className="lg:col-span-5 space-y-5">
             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               {isEnglish ? "Uploaded Previews" : "আপলোডকৃত ছবির প্রিভিউ"}
@@ -333,18 +314,16 @@ export const GuardianHomeworkUpload: React.FC<GuardianHomeworkUploadProps> = ({
               </div>
             )}
 
-            {/* 🟢 REQUIRED GREEN WHATSAPP BUTTON: "হোয়াটসঅ্যাপের মাধ্যমে হোমওয়ার্ক জমা দিন" */}
+            {/* Task 3 Green WhatsApp Button (#25D366) with exact text: "হোয়াটসঅ্যাপের মাধ্যমে হোমওয়ার্ক জমা দিন" */}
             <button
               onClick={handleWhatsAppSubmit}
               disabled={previews.length === 0 || uploadProgress !== null}
-              className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all cursor-pointer shadow-xl flex items-center justify-center gap-2.5 ${
-                previews.length > 0
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 hover:scale-[1.01]"
-                  : "bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed"
+              style={{ backgroundColor: "#25D366" }}
+              className={`w-full py-4 rounded-2xl font-extrabold text-sm text-white transition-all cursor-pointer shadow-xl flex items-center justify-center gap-2.5 hover:opacity-90 hover:scale-[1.01] ${
+                previews.length === 0 ? "opacity-50 cursor-not-allowed" : ""
               }`}
-              style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
             >
-              <MessageCircle className="w-5 h-5 fill-white text-emerald-600" />
+              <MessageCircle className="w-5 h-5 fill-white text-[#25D366]" />
               <span>হোয়াটসঅ্যাপের মাধ্যমে হোমওয়ার্ক জমা দিন</span>
             </button>
           </div>
@@ -352,7 +331,7 @@ export const GuardianHomeworkUpload: React.FC<GuardianHomeworkUploadProps> = ({
         </div>
       </div>
 
-      {/* Evaluated Homework Results Cards (Displaying Marks, Grade, Summary, Inspection Feedback, Dates) */}
+      {/* Evaluated Homework Results Cards */}
       <div className={`rounded-3xl p-6 sm:p-8 border transition-all shadow-lg ${
         isDark ? "bg-slate-900/90 border-slate-800 text-slate-100" : "bg-white border-slate-200/90 text-slate-800"
       }`}>
@@ -436,7 +415,7 @@ export const GuardianHomeworkUpload: React.FC<GuardianHomeworkUploadProps> = ({
                 </div>
 
                 <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-900 dark:text-emerald-200">
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{isEnglish ? "Teacher Inspection / Feedback:" : "শিক্ষকের পরিদর্শন ও মতামত:"} </span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{isEnglish ? "Teacher Inspection / Feedback:" : "শিক্ষকের পরিদর্শনের বিবরণ:"} </span>
                   <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>"{hw.teacherInspection || hw.feedback}"</span>
                 </div>
               </div>

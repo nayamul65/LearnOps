@@ -3,14 +3,9 @@ import {
   LayoutDashboard,
   Video,
   UploadCloud,
-  Images,
   MessageSquare,
-  CreditCard,
   Settings,
   X,
-  Sparkles,
-  Award,
-  ChevronRight,
 } from "lucide-react";
 import { GuardianTab, StudentProfile } from "../types";
 import { useGuardianTheme } from "../context/GuardianThemeContext";
@@ -34,6 +29,7 @@ export const GuardianSidebar: React.FC<GuardianSidebarProps> = ({
   const { isDark } = useGuardianTheme();
   const { isEnglish } = useLanguage();
 
+  // Task 1 Final navigation list: Dashboard, Live Classes, Homework Upload, Teacher Message, Settings
   const navigationItems = [
     {
       id: "dashboard" as GuardianTab,
@@ -56,23 +52,11 @@ export const GuardianSidebar: React.FC<GuardianSidebarProps> = ({
       badgeColor: "bg-amber-500 text-white",
     },
     {
-      id: "progress-gallery" as GuardianTab,
-      label: isEnglish ? "Progress Gallery" : "প্রগ্রেস গ্যালারি",
-      icon: Images,
-      badge: null,
-    },
-    {
       id: "messages" as GuardianTab,
-      label: isEnglish ? "Messages" : "টিচার মেসেজ",
+      label: isEnglish ? "Teacher Message" : "টিচার মেসেজ",
       icon: MessageSquare,
       badge: "1",
       badgeColor: "bg-purple-600 text-white",
-    },
-    {
-      id: "billing" as GuardianTab,
-      label: isEnglish ? "Billing" : "বিলিং ও পেমেন্ট",
-      icon: CreditCard,
-      badge: null,
     },
     {
       id: "settings" as GuardianTab,

@@ -1,17 +1,11 @@
-import React, { useState, useRef } from "react";
+import React from "react";
 import {
   FileText,
   Download,
   Star,
   Award,
-  Play,
-  Pause,
-  Volume2,
   Sparkles,
   Quote,
-  Zap,
-  CheckCircle2,
-  RotateCcw,
 } from "lucide-react";
 import { StudentProfile, AchievementBadge } from "../types";
 import { useGuardianTheme } from "../context/GuardianThemeContext";
@@ -30,21 +24,6 @@ export const GuardianPerformanceReport: React.FC<GuardianPerformanceReportProps>
 }) => {
   const { isDark } = useGuardianTheme();
   const { isEnglish } = useLanguage();
-
-  // Voice Note Player State
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackProgress, setPlaybackProgress] = useState(30); // %
-  const [playbackSpeed, setPlaybackSpeed] = useState<1 | 1.25 | 1.5>(1);
-
-  const togglePlayVoiceNote = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleSpeedChange = () => {
-    if (playbackSpeed === 1) setPlaybackSpeed(1.25);
-    else if (playbackSpeed === 1.25) setPlaybackSpeed(1.5);
-    else setPlaybackSpeed(1);
-  };
 
   return (
     <div className={`rounded-3xl p-6 sm:p-8 lg:p-10 border transition-all relative overflow-hidden mb-8 shadow-lg ${
@@ -124,103 +103,33 @@ export const GuardianPerformanceReport: React.FC<GuardianPerformanceReportProps>
         </div>
       </div>
 
-      {/* Teacher Remarks & Voice Note Section */}
-      <div className="grid lg:grid-cols-12 gap-6 mb-8">
-        
-        {/* Remarks Box */}
-        <div className="lg:col-span-7">
-          <div className={`p-5 rounded-2xl border h-full flex flex-col justify-between ${
-            isDark ? "bg-slate-800/50 border-slate-800" : "bg-slate-50 border-slate-200/80"
-          }`}>
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-2">
-                <Quote className="w-4 h-4" />
-                <span>{isEnglish ? "Teacher's Evaluation Remarks" : "শিক্ষকের মূল্যায়ন মন্তব্য (Teacher Remarks)"}</span>
-              </div>
-              <p className="text-sm text-foreground/90 leading-relaxed italic" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                "{isEnglish ? student.teacherRemarksEN : student.teacherRemarks}"
-              </p>
+      {/* Task 2: Expanded Teacher Remarks Box (Full width on Desktop, Tablet, Mobile) */}
+      <div className="w-full mb-8">
+        <div className={`p-6 rounded-3xl border w-full flex flex-col justify-between ${
+          isDark ? "bg-slate-800/50 border-slate-800" : "bg-slate-50 border-slate-200/80"
+        }`}>
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-2">
+              <Quote className="w-4 h-4" />
+              <span>{isEnglish ? "Teacher's Evaluation Remarks" : "শিক্ষকের মূল্যায়ন মন্তব্য (Teacher Remarks)"}</span>
             </div>
+            <p className="text-base text-foreground/90 leading-relaxed italic" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+              "{isEnglish ? student.teacherRemarksEN : student.teacherRemarks}"
+            </p>
+          </div>
 
-            <div className="flex items-center gap-3 pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
-              <img
-                src={student.teacherAvatar}
-                alt={student.teacherName}
-                className="w-9 h-9 rounded-full object-cover border-2 border-purple-500"
-              />
-              <div className="text-xs">
-                <p className="font-bold text-foreground">{student.teacherName}</p>
-                <p className="text-[11px] text-muted-foreground">{student.teacherTitle}</p>
-              </div>
+          <div className="flex items-center gap-3 pt-4 mt-6 border-t border-slate-200 dark:border-slate-800">
+            <img
+              src={student.teacherAvatar}
+              alt={student.teacherName}
+              className="w-10 h-10 rounded-full object-cover border-2 border-purple-500"
+            />
+            <div className="text-xs">
+              <p className="font-extrabold text-foreground">{student.teacherName}</p>
+              <p className="text-[11px] text-muted-foreground">{student.teacherTitle}</p>
             </div>
           </div>
         </div>
-
-        {/* Voice Note Audio Player */}
-        <div className="lg:col-span-5">
-          <div className={`p-5 rounded-2xl border h-full flex flex-col justify-between ${
-            isDark
-              ? "bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700"
-              : "bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-100"
-          }`}>
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 text-xs font-extrabold text-purple-600 dark:text-purple-400">
-                  <Volume2 className="w-4 h-4 text-purple-500 animate-pulse" />
-                  <span>{isEnglish ? "Teacher Voice Note" : "শিক্ষকের ভয়েস মেসেজ"}</span>
-                </div>
-                <button
-                  onClick={handleSpeedChange}
-                  className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20"
-                >
-                  {playbackSpeed}x Speed
-                </button>
-              </div>
-
-              <p className="text-xs text-muted-foreground mb-4">
-                {isEnglish ? "Listen to mentor's audio guidance on Araf's progress" : "আরাফের পড়া ও হাতের লেখা সংক্রান্ত বিশেষ ভয়েস টিপস শুনুন"}
-              </p>
-
-              {/* Player Controls & Waveform */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={togglePlayVoiceNote}
-                  className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md hover:scale-105 transition-all cursor-pointer"
-                >
-                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-                </button>
-
-                {/* Animated Waveform Visualizer */}
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between text-[11px] font-mono font-bold text-muted-foreground">
-                    <span>{isPlaying ? "00:34" : "00:00"}</span>
-                    <span>{student.voiceNoteDuration}</span>
-                  </div>
-                  {/* Waveform bars */}
-                  <div className="flex items-center gap-1 h-7">
-                    {[40, 70, 30, 90, 60, 100, 45, 80, 55, 95, 40, 65, 85, 30, 75, 50, 90, 60, 40].map((h, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex-1 rounded-full transition-all duration-300 ${
-                          idx < (playbackProgress / 100) * 19
-                            ? "bg-purple-600 dark:bg-purple-400"
-                            : "bg-slate-300 dark:bg-slate-700"
-                        } ${isPlaying ? "animate-pulse" : ""}`}
-                        style={{ height: `${h}%` }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800 text-[11px] text-muted-foreground flex items-center justify-between">
-              <span>{isEnglish ? "Recorded by Rahila Khatun" : "রেকর্ডকৃত সময়: গতকাল সন্ধ্যা ৭:৩০"}</span>
-              <span className="font-bold text-purple-600 dark:text-purple-400">Audio Verified ✓</span>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       {/* Achievement Badges Section */}
