@@ -8,7 +8,7 @@ export interface Course1Data {
 
 export const COURSE_1_DATA: Course1Data = {
   courseId: 1,
-  youtubeReviewUrl: "https://www.youtube.com/embed/E_WC6BxHIpE",
+  youtubeReviewUrl: "https://www.youtube.com/embed/E_WC6BxHIpE?enablejsapi=1",
   facebookReviewUrl: "https://www.facebook.com/share/v/1BfVKfj9RU/",
 };
 

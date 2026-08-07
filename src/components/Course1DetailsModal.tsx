@@ -20,6 +20,7 @@ import {
   Star,
   Settings,
 } from "lucide-react";
+import { COURSE_1_DATA } from "../data/coursesData";
 
 /* ── ADMIN EDITABLE DATA INTERFACE FOR COURSE 1 ── */
 export interface Course1DetailsData {
@@ -42,8 +43,8 @@ export const DEFAULT_COURSE1_DATA: Course1DetailsData = {
   courseId: 1,
   courseTitle: "২৫ দিনে সুন্দর হাতের লেখা",
   totalEnrolled: "৬,২৪০+",
-  youtubeDemoLink: "https://www.youtube.com/embed/kiwCdNcVks4",
-  facebookVideoLink: "https://www.facebook.com/share/v/1859syYPUS/",
+  youtubeDemoLink: COURSE_1_DATA.youtubeReviewUrl,
+  facebookVideoLink: COURSE_1_DATA.facebookReviewUrl,
   helplineNumber: "09611-678344",
   promoText:
     "আমাদের ২৫ দিনের হাতের লেখা উন্নয়ন প্রোগ্রাম এর মাধ্যমে শত শত শিক্ষার্থী পেয়েছে সুন্দর, পরিস্কার ও গঠনমূলক হাতের লেখা শেখার সঠিক গাইডলাইন।",
@@ -362,8 +363,9 @@ export default function Course1DetailsModal({
                 <iframe
                   src={getYouTubeEmbedUrl(data.youtubeDemoLink)}
                   title="Course 1 YouTube Demo Video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
                   className="absolute inset-0 w-full h-full border-0"
                 />
               </div>
