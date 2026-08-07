@@ -2,12 +2,12 @@ export type GuardianTab =
   | "dashboard"
   | "live-classes"
   | "homework-upload"
-  | "progress-gallery"
   | "messages"
-  | "billing"
   | "settings";
 
 export interface StudentProfile {
+  studentId: string;
+  parentId: string; // Used for authorization check (guardian.parent_id)
   studentName: string;
   studentNameEN: string;
   avatar: string;
@@ -26,11 +26,10 @@ export interface StudentProfile {
   totalStars: number;
   teacherName: string;
   teacherTitle: string;
+  teacherPhone: string;
   teacherAvatar: string;
   teacherRemarks: string;
   teacherRemarksEN: string;
-  voiceNoteUrl?: string;
-  voiceNoteDuration: string;
   upcomingClassTime: string;
   upcomingClassTimeEN: string;
   nextClassDateISO: string; // Used for live countdown
@@ -51,6 +50,7 @@ export interface AchievementBadge {
 
 export interface HomeworkSubmission {
   id: string;
+  studentId: string;
   title: string;
   titleEN: string;
   lessonNo: number;
@@ -59,7 +59,11 @@ export interface HomeworkSubmission {
   status: "Pending" | "Submitted" | "Graded";
   score?: number;
   maxScore?: number;
+  grade?: string;
   feedback?: string;
+  teacherSummary?: string;
+  teacherInspection?: string;
+  reviewDate?: string;
   previewUrl?: string;
 }
 
@@ -73,26 +77,4 @@ export interface NotificationItem {
   timestamp: string;
   read: boolean;
   linkTab?: GuardianTab;
-}
-
-export interface WorkGalleryItem {
-  id: string;
-  title: string;
-  titleEN: string;
-  date: string;
-  score: number;
-  beforeImg: string;
-  afterImg: string;
-  remarks: string;
-  remarksEN: string;
-}
-
-export interface BillingInvoice {
-  id: string;
-  invoiceNo: string;
-  courseName: string;
-  amount: string;
-  date: string;
-  status: "Paid" | "Pending" | "Due";
-  method: string;
 }

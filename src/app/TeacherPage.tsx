@@ -674,6 +674,8 @@ export default function TeacherPage() {
       )
     );
 
+import { whatsappNotificationController } from "../services/whatsappNotificationController";
+
     // Add notification
     setNotifications((prev) => [
       {
@@ -691,6 +693,21 @@ export default function TeacherPage() {
       },
       ...prev,
     ]);
+
+    // NEW Backend Hook: Executes AFTER existing Save logic completes seamlessly in background
+    whatsappNotificationController.handleHomeworkGraded({
+      body: {
+        homework_id: selectedHw.id,
+        student_id: selectedHw.studentId || "std-1",
+        guardian_id: "grd-101",
+        guardian_phone: "+8801700000000",
+        student_name: getLocalizedText(selectedHw.studentName, "bn"),
+        lesson_name: getLocalizedText(selectedHw.title, "bn"),
+        marks: scoreNum,
+        grade: gradeLetter,
+        teacher_remarks: feedbackInput || "খুব সুন্দর চেষ্টা করা হয়েছে!",
+      },
+    });
 
     setSelectedHw(null);
   };

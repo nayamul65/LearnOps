@@ -105,6 +105,7 @@ const GuardianDashboardContent: React.FC = () => {
 
               {/* Quick Homework Upload */}
               <GuardianHomeworkUpload
+                student={mockStudentData}
                 homeworkList={mockHomeworkList}
               />
 
@@ -118,7 +119,7 @@ const GuardianDashboardContent: React.FC = () => {
           )}
 
           {activeTab === "homework-upload" && (
-            <GuardianHomeworkUpload homeworkList={mockHomeworkList} />
+            <GuardianHomeworkUpload student={mockStudentData} homeworkList={mockHomeworkList} />
           )}
 
           {activeTab === "progress-gallery" && (
