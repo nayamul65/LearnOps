@@ -1,5 +1,12 @@
 /* ── COURSES DATA FILE (Isolated for Course ID 3 & Course ID 4) ── */
 
+export const COURSE_1_YOUTUBE_URL = "https://www.youtube.com/embed/E_WC6BxHIpE";
+
+export const COURSE_1_DATA = {
+  youtubeReviewUrl: "https://www.youtube.com/embed/E_WC6BxHIpE",
+  enrollUrl: "https://docs.google.com/forms/d/e/1FAIpQLScfUbFTmOUymZ1QDIq7hF3TllwPWphLrCixclCQJ8_WSKHVBw/viewform?sfnsn=wa"
+};
+
 export interface Course3Data {
   courseId: number;
   title: string;
