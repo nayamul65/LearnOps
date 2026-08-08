@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { whatsappNotificationController } from "../services/whatsappNotificationController";
 import {
   CheckCircle2,
   XCircle,
@@ -673,8 +674,6 @@ export default function TeacherPage() {
           : hw
       )
     );
-
-import { whatsappNotificationController } from "../services/whatsappNotificationController";
 
     // Add notification
     setNotifications((prev) => [

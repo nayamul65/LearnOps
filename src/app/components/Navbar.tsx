@@ -28,7 +28,7 @@ export default function Navbar({
   dark?: boolean;
   toggleDark?: () => void;
   open?: boolean;
-  setOpen?: React.Dispatch<React.SetStateAction<boolean>> | ((fn: (prev: boolean) => boolean) => void);
+  setOpen?: React.Dispatch<React.SetStateAction<boolean>> | ((val: boolean | ((prev: boolean) => boolean)) => void);
   scrolled?: boolean;
   t?: (key: string) => string;
 }) {
