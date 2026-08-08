@@ -110,7 +110,7 @@ const GuardianDashboardContent: React.FC = () => {
               />
 
               {/* Recharts Analytics */}
-              <GuardianCharts />
+              <GuardianCharts studentId={mockStudentData.studentId} />
             </>
           )}
 

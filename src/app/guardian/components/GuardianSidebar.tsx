@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   Video,
   UploadCloud,
-  MessageSquare,
   Settings,
   X,
 } from "lucide-react";
@@ -29,7 +28,7 @@ export const GuardianSidebar: React.FC<GuardianSidebarProps> = ({
   const { isDark } = useGuardianTheme();
   const { isEnglish } = useLanguage();
 
-  // Task 1 Final navigation list: Dashboard, Live Classes, Homework Upload, Teacher Message, Settings
+  // Task 1 Final navigation list: Dashboard, Live Classes, Homework Upload, Settings
   const navigationItems = [
     {
       id: "dashboard" as GuardianTab,
@@ -50,13 +49,6 @@ export const GuardianSidebar: React.FC<GuardianSidebarProps> = ({
       icon: UploadCloud,
       badge: isEnglish ? "Due" : "বাকি",
       badgeColor: "bg-amber-500 text-white",
-    },
-    {
-      id: "messages" as GuardianTab,
-      label: isEnglish ? "Teacher Message" : "টিচার মেসেজ",
-      icon: MessageSquare,
-      badge: "1",
-      badgeColor: "bg-purple-600 text-white",
     },
     {
       id: "settings" as GuardianTab,
