@@ -4,7 +4,7 @@ export const COURSE_1_YOUTUBE_URL = "https://www.youtube.com/embed/E_WC6BxHIpE";
 
 export const COURSE_1_DATA = {
   youtubeReviewUrl: "https://www.youtube.com/embed/E_WC6BxHIpE",
-  enrollUrl: "https://docs.google.com/forms/d/e/1FAIpQLScfUbFTmOUymZ1QDIq7hF3TllwPWphLrCixclCQJ8_WSKHVBw/viewform?sfnsn=wa"
+  enrollUrl: "https://forms.gle/gMzsJJxmq9RqpSW66"
 };
 
 export interface Course3Data {
