@@ -5,7 +5,6 @@ import {
   mockBadges,
   mockHomeworkList,
   mockNotifications,
-  mockWorkGallery,
 } from "./mockData";
 import { GuardianThemeProvider, useGuardianTheme } from "./context/GuardianThemeContext";
 import { GuardianNavbar } from "./components/GuardianNavbar";
@@ -14,12 +13,9 @@ import { GuardianHeroBanner } from "./components/GuardianHeroBanner";
 import { GuardianStatsCards } from "./components/GuardianStatsCards";
 import { GuardianPerformanceReport } from "./components/GuardianPerformanceReport";
 import { GuardianHomeworkUpload } from "./components/GuardianHomeworkUpload";
-import { GuardianCharts } from "./components/GuardianCharts";
+import { GuardianDailyActionHub } from "./components/GuardianDailyActionHub";
 import { GuardianNotifications } from "./components/GuardianNotifications";
-import { GuardianProgressGallery } from "./components/GuardianProgressGallery";
 import { GuardianLiveClasses } from "./components/GuardianLiveClasses";
-import { GuardianMessages } from "./components/GuardianMessages";
-import { GuardianBilling } from "./components/GuardianBilling";
 import { GuardianSettings } from "./components/GuardianSettings";
 import { GuardianWhatsAppButton } from "./components/GuardianWhatsAppButton";
 
@@ -109,8 +105,8 @@ const GuardianDashboardContent: React.FC = () => {
                 homeworkList={mockHomeworkList}
               />
 
-              {/* Recharts Analytics */}
-              <GuardianCharts />
+              {/* Daily Action & Mentor Tips Hub (Replaced Chart Section) */}
+              <GuardianDailyActionHub />
             </>
           )}
 
@@ -121,16 +117,6 @@ const GuardianDashboardContent: React.FC = () => {
           {activeTab === "homework-upload" && (
             <GuardianHomeworkUpload student={mockStudentData} homeworkList={mockHomeworkList} />
           )}
-
-          {activeTab === "progress-gallery" && (
-            <GuardianProgressGallery galleryItems={mockWorkGallery} />
-          )}
-
-          {activeTab === "messages" && (
-            <GuardianMessages student={mockStudentData} />
-          )}
-
-          {activeTab === "billing" && <GuardianBilling />}
 
           {activeTab === "settings" && <GuardianSettings />}
 

@@ -287,7 +287,7 @@ export const ALL_COURSES: Course[] = [
     rating: 5.0,
     reviews: 143,
     students: "৫২০",
-    img: "https://images.unsplash.com/photo-1609599006353-e629f1d40968?w=600&h=400&fit=crop&auto=format",
+    img: "https://unsplash.com",
     heroImg: "https://images.unsplash.com/photo-1609599006353-e629f1d40968?w=1400&h=700&fit=crop&auto=format",
     level: "বিগিনার",
     levelColor: "bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300",
