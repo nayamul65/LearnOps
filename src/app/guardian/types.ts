@@ -2,9 +2,6 @@ export type GuardianTab =
   | "dashboard"
   | "live-classes"
   | "homework-upload"
-  | "progress-gallery"
-  | "messages"
-  | "billing"
   | "settings";
 
 export interface StudentProfile {
