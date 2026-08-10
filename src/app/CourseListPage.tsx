@@ -24,7 +24,7 @@ import Course2DetailsModal from "../components/Course2DetailsModal";
 import Course3DetailsModal from "../components/Course3DetailsModal";
 import Course4DetailsModal from "../components/Course4DetailsModal";
 
-export const GOOGLE_FORM_URL = "https://google.com";
+export const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScfUbFTmOUymZ1QDIq7hF3TllwPWphLrCixclCQJ8_WSKHVBw/viewform";
 
 export interface Course {
   id: number | string;
