@@ -12,7 +12,6 @@ import {
   Moon,
   ChevronRight,
   TrendingUp,
-  Play,
   X,
 } from "lucide-react";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
@@ -468,16 +467,6 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
                         {lang === "BN" ? course.level : course.levelEN}
                       </span>
                     </div>
-
-                    {/* Video Demo Button Overlay */}
-                    <button
-                      onClick={() => setDemoCourse(course)}
-                      className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                    >
-                      <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-xl hover:scale-110 transition-transform">
-                        <Play className="w-6 h-6 fill-white ml-1" />
-                      </div>
-                    </button>
 
                     {/* Emoji Floating Badge with dynamic theme accent shadow */}
                     <div
