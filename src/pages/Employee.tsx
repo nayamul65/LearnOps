@@ -441,6 +441,11 @@ export default function Employee() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Sync theme mode to document element for Tailwind dark variant support
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
+
   // Core Data States
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
   const [batches, setBatches] = useState(MOCK_BATCHES);
@@ -794,15 +799,24 @@ export default function Employee() {
     { name: lang === "en" ? "Fri" : "শুক্র", calls: 12, sales: 1 },
   ];
 
-  // Theme styles
+  // Dynamic Theme helper classes matching Light & Dark mode contrast rules
   const isDark = theme === "dark";
   const bgMain = isDark ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900";
-  const bgSidebar = isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200";
-  const bgCard = isDark ? "bg-slate-900/90 border-slate-800" : "bg-white border-slate-200 shadow-sm";
+  const bgSidebar = isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm";
+  const bgCard = isDark ? "bg-slate-900/90 border-slate-800" : "bg-white border-slate-200 shadow-xs";
+  const bgInnerCard = isDark ? "bg-slate-950/70 border-slate-800" : "bg-slate-50 border-slate-200";
+  const bgSubCard = isDark ? "bg-slate-900/90 border-slate-800" : "bg-white border-slate-200";
   const textHeading = isDark ? "text-white" : "text-slate-900";
-  const textSub = isDark ? "text-slate-400" : "text-slate-500";
-  const inputBg = isDark ? "bg-slate-950 border-slate-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-300 text-slate-900 focus:border-emerald-500";
-  const tableHeaderStyle = isDark ? "border-slate-800 bg-slate-950/80 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-700";
+  const textSub = isDark ? "text-slate-400" : "text-slate-600";
+  const textLabel = isDark ? "text-slate-300" : "text-slate-700";
+  const inputBg = isDark
+    ? "bg-slate-950 border-slate-800 text-white focus:border-emerald-500 placeholder-slate-500"
+    : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500 placeholder-slate-400";
+  const tableHeaderStyle = isDark
+    ? "border-slate-800 bg-slate-950/80 text-slate-400"
+    : "border-slate-200 bg-slate-100 text-slate-700";
+  const tableRowHover = isDark ? "hover:bg-slate-900/50" : "hover:bg-slate-100/60";
+  const modalBg = isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-2xl";
 
   return (
     <div className={`min-h-screen ${bgMain} flex overflow-hidden font-sans transition-colors duration-200`}>
@@ -816,7 +830,7 @@ export default function Employee() {
       >
         <div>
           {/* Brand Header */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800/60">
+          <div className={`h-16 flex items-center justify-between px-4 border-b ${isDark ? "border-slate-800/60" : "border-slate-200"}`}>
             {!isSidebarCollapsed && (
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-black text-white shadow-lg">
@@ -829,7 +843,7 @@ export default function Employee() {
             )}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className={`p-2 rounded-xl text-slate-400 hover:${textHeading} hover:bg-slate-800/30 transition-colors cursor-pointer mx-auto`}
+              className={`p-2 rounded-xl ${textSub} hover:${textHeading} ${isDark ? "hover:bg-slate-800/30" : "hover:bg-slate-100"} transition-colors cursor-pointer mx-auto`}
               title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             >
               {isSidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
@@ -910,7 +924,7 @@ export default function Employee() {
                   }`}
                   title={isSidebarCollapsed ? item.label : undefined}
                 >
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-white" : "text-slate-400"}`} />
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-white" : isDark ? "text-slate-400" : "text-slate-500"}`} />
                   {!isSidebarCollapsed && (
                     <div className="text-left leading-tight">
                       <div className="font-bold text-sm">{item.label}</div>
@@ -927,13 +941,15 @@ export default function Employee() {
 
         {/* Sidebar Footer System Status */}
         {!isSidebarCollapsed && (
-          <div className="p-4 border-t border-slate-800/60 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 p-2.5 rounded-xl">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <div className={`p-4 border-t ${isDark ? "border-slate-800/60" : "border-slate-200"} space-y-2`}>
+            <div className={`flex items-center gap-2 text-xs font-semibold p-2.5 rounded-xl border ${
+              isDark ? "text-emerald-400 bg-emerald-950/40 border-emerald-800/40" : "text-emerald-700 bg-emerald-50 border-emerald-200"
+            }`}>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>{t.supabaseConnected}</span>
             </div>
-            <p className="text-[10px] text-slate-500 text-center">
-              {t.loggedInAs} <span className="font-bold text-slate-300">{currentAgent.name}</span>
+            <p className={`text-[10px] text-center ${textSub}`}>
+              {t.loggedInAs} <span className={`font-bold ${textHeading}`}>{currentAgent.name}</span>
             </p>
           </div>
         )}
@@ -957,7 +973,7 @@ export default function Employee() {
               {activeTab === "payments" && t.paymentsTab}
               {activeTab === "guardian" && t.guardianTab}
             </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
               Telesales Desk
             </span>
           </div>
@@ -992,56 +1008,56 @@ export default function Employee() {
                 {/* Metric 1: Total Calls Made */}
                 <div className={`p-5 rounded-3xl border ${bgCard} relative overflow-hidden`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t.kpiCallsMade}</span>
-                    <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className={`text-xs font-bold ${textSub} uppercase tracking-wider`}>{t.kpiCallsMade}</span>
+                    <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                       <PhoneCall className="w-5 h-5" />
                     </div>
                   </div>
                   <div className="mt-3">
-                    <div className="text-3xl font-black text-white">{totalCallsCount}</div>
-                    <p className="text-[11px] text-slate-400 mt-1">{t.kpiCallsSub}</p>
+                    <div className={`text-3xl font-black ${textHeading}`}>{totalCallsCount}</div>
+                    <p className={`text-[11px] ${textSub} mt-1`}>{t.kpiCallsSub}</p>
                   </div>
                 </div>
 
                 {/* Metric 2: Converted Deals */}
                 <div className={`p-5 rounded-3xl border ${bgCard} relative overflow-hidden`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t.kpiConvertedDeals}</span>
-                    <div className="p-2.5 rounded-2xl bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                    <span className={`text-xs font-bold ${textSub} uppercase tracking-wider`}>{t.kpiConvertedDeals}</span>
+                    <div className="p-2.5 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
                   </div>
                   <div className="mt-3">
-                    <div className="text-3xl font-black text-emerald-400">{convertedDealsCount}</div>
-                    <p className="text-[11px] text-slate-400 mt-1">{t.kpiConvertedSub}</p>
+                    <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{convertedDealsCount}</div>
+                    <p className={`text-[11px] ${textSub} mt-1`}>{t.kpiConvertedSub}</p>
                   </div>
                 </div>
 
                 {/* Metric 3: Pending Follow-ups */}
                 <div className={`p-5 rounded-3xl border ${bgCard} relative overflow-hidden`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t.kpiPendingFollowups}</span>
-                    <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <span className={`text-xs font-bold ${textSub} uppercase tracking-wider`}>{t.kpiPendingFollowups}</span>
+                    <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                       <Clock className="w-5 h-5" />
                     </div>
                   </div>
                   <div className="mt-3">
-                    <div className="text-3xl font-black text-amber-400">{pendingFollowupsCount}</div>
-                    <p className="text-[11px] text-slate-400 mt-1">{t.kpiPendingSub}</p>
+                    <div className="text-3xl font-black text-amber-600 dark:text-amber-400">{pendingFollowupsCount}</div>
+                    <p className={`text-[11px] ${textSub} mt-1`}>{t.kpiPendingSub}</p>
                   </div>
                 </div>
 
                 {/* Metric 4: Total Revenue Generated */}
                 <div className={`p-5 rounded-3xl border ${bgCard} relative overflow-hidden`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t.kpiTotalRevenue}</span>
-                    <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className={`text-xs font-bold ${textSub} uppercase tracking-wider`}>{t.kpiTotalRevenue}</span>
+                    <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                       <DollarSign className="w-5 h-5" />
                     </div>
                   </div>
                   <div className="mt-3">
-                    <div className="text-3xl font-black text-emerald-400">৳{totalRevenueAmount.toLocaleString()}</div>
-                    <p className="text-[11px] text-slate-400 mt-1">{t.kpiRevenueSub}</p>
+                    <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">৳{totalRevenueAmount.toLocaleString()}</div>
+                    <p className={`text-[11px] ${textSub} mt-1`}>{t.kpiRevenueSub}</p>
                   </div>
                 </div>
               </div>
@@ -1056,10 +1072,10 @@ export default function Employee() {
                       <p className={`text-xs ${textSub}`}>Calls logged vs Converted Sales per day</p>
                     </div>
                     <div className="flex items-center gap-4 text-xs font-semibold">
-                      <span className="flex items-center gap-1.5 text-emerald-400">
+                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                         <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> {t.callsUnit}
                       </span>
-                      <span className="flex items-center gap-1.5 text-teal-400">
+                      <span className="flex items-center gap-1.5 text-teal-600 dark:text-teal-400">
                         <span className="w-2.5 h-2.5 rounded-full bg-teal-400" /> {t.salesUnit}
                       </span>
                     </div>
@@ -1106,11 +1122,11 @@ export default function Employee() {
                       <div>
                         <div className="flex justify-between text-xs font-bold mb-1.5">
                           <span className={textSub}>Quota Achieved</span>
-                          <span className="text-emerald-400">
+                          <span className="text-emerald-600 dark:text-emerald-400">
                             {Math.min(100, Math.round((totalRevenueAmount / 100000) * 100))}% (৳{totalRevenueAmount.toLocaleString()} / ৳1,00,000)
                           </span>
                         </div>
-                        <div className="w-full h-3 rounded-full bg-slate-800 overflow-hidden">
+                        <div className={`w-full h-3 rounded-full overflow-hidden ${isDark ? "bg-slate-800" : "bg-slate-200"}`}>
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
                             style={{ width: `${Math.min(100, Math.round((totalRevenueAmount / 100000) * 100))}%` }}
@@ -1118,20 +1134,20 @@ export default function Employee() {
                         </div>
                       </div>
 
-                      <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
+                      <div className={`p-4 rounded-2xl border space-y-2 ${bgInnerCard}`}>
                         <div className="flex justify-between text-xs">
-                          <span className="text-slate-400">Conversion Rate:</span>
-                          <span className="font-bold text-emerald-400">
+                          <span className={textSub}>Conversion Rate:</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
                             {myLeads.length > 0 ? Math.round((convertedDealsCount / myLeads.length) * 100) : 0}%
                           </span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-slate-400">Average Deal Size:</span>
-                          <span className="font-bold text-white">৳2,500</span>
+                          <span className={textSub}>Average Deal Size:</span>
+                          <span className={`font-bold ${textHeading}`}>৳2,500</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-slate-400">Active Claimed Leads:</span>
-                          <span className="font-bold text-teal-400">{myLeads.length}</span>
+                          <span className={textSub}>Active Claimed Leads:</span>
+                          <span className="font-bold text-teal-600 dark:text-teal-400">{myLeads.length}</span>
                         </div>
                       </div>
                     </div>
@@ -1159,16 +1175,16 @@ export default function Employee() {
                       .slice(-5)
                       .reverse()
                       .map((note, idx) => (
-                        <div key={idx} className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-start justify-between gap-4">
+                        <div key={idx} className={`p-3.5 rounded-2xl border flex items-start justify-between gap-4 ${bgInnerCard}`}>
                           <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                            <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                               <span>{note.studentName}</span>
-                              <span className="text-slate-500">•</span>
-                              <span className="text-slate-400 font-medium">{note.phone}</span>
+                              <span className={textSub}>•</span>
+                              <span className={`font-medium ${textSub}`}>{note.phone}</span>
                             </div>
-                            <p className="text-xs text-slate-200">{note.note}</p>
+                            <p className={`text-xs ${isDark ? "text-slate-200" : "text-slate-800"}`}>{note.note}</p>
                           </div>
-                          <span className="text-[10px] text-slate-500 whitespace-nowrap">{note.date}</span>
+                          <span className={`text-[10px] ${textSub} whitespace-nowrap`}>{note.date}</span>
                         </div>
                       ))
                   )}
@@ -1187,7 +1203,7 @@ export default function Employee() {
               <div className={`p-6 rounded-3xl border ${bgCard} space-y-4`}>
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20 mb-1">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 mb-1">
                       <Unlock className="w-3.5 h-3.5" />
                       <span>{unassignedLeads.length} Available</span>
                     </div>
@@ -1197,28 +1213,28 @@ export default function Employee() {
                 </div>
 
                 {unassignedLeads.length === 0 ? (
-                  <div className="p-8 text-center rounded-2xl bg-slate-950/40 border border-slate-800 text-slate-400 text-xs">
+                  <div className={`p-8 text-center rounded-2xl border text-xs ${bgInnerCard} ${textSub}`}>
                     No unassigned leads in the pool right now. All leads are currently claimed!
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {unassignedLeads.map((lead) => (
-                      <div key={lead.id} className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between space-y-4 hover:border-emerald-500/40 transition-all">
+                      <div key={lead.id} className={`p-5 rounded-2xl border flex flex-col justify-between space-y-4 hover:border-emerald-500/50 transition-all ${bgInnerCard}`}>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800/60">
+                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
                               {lead.source || "Ad Click"}
                             </span>
-                            <span className="text-[10px] text-slate-500">{lead.date}</span>
+                            <span className={`text-[10px] ${textSub}`}>{lead.date}</span>
                           </div>
                           <div>
-                            <h4 className="text-base font-bold text-white">{lead.studentName}</h4>
-                            <p className="text-xs text-slate-400">Guardian: {lead.parentName}</p>
-                            <p className="text-xs text-emerald-400 font-bold mt-1 flex items-center gap-1">
+                            <h4 className={`text-base font-bold ${textHeading}`}>{lead.studentName}</h4>
+                            <p className={`text-xs ${textSub}`}>Guardian: {lead.parentName}</p>
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-1 flex items-center gap-1">
                               <Phone className="w-3 h-3" /> {lead.phone}
                             </p>
                           </div>
-                          <div className="text-xs text-slate-300 bg-slate-900 p-2.5 rounded-xl border border-slate-800 font-medium">
+                          <div className={`text-xs p-2.5 rounded-xl border font-medium ${isDark ? "text-slate-300 bg-slate-900 border-slate-800" : "text-slate-800 bg-white border-slate-200"}`}>
                             🎓 {lead.courseInterest}
                           </div>
                         </div>
@@ -1246,7 +1262,7 @@ export default function Employee() {
                 </div>
 
                 {/* Filters & Search Controls */}
-                <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+                <div className={`flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl border ${bgInnerCard}`}>
                   <div className="flex flex-wrap gap-2">
                     {["All", "Ad Click", "Google Form", "Social DM"].map((src) => (
                       <button
@@ -1255,13 +1271,15 @@ export default function Employee() {
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           leadSourceFilter === src
                             ? "bg-emerald-500 text-white shadow-xs"
-                            : "bg-slate-900 text-slate-400 hover:text-white"
+                            : isDark
+                            ? "bg-slate-900 text-slate-400 hover:text-white"
+                            : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
                         }`}
                       >
                         {src === "All" ? t.allSources : src}
                       </button>
                     ))}
-                    <div className="w-px h-6 bg-slate-800 mx-1" />
+                    <div className={`w-px h-6 mx-1 ${isDark ? "bg-slate-800" : "bg-slate-300"}`} />
                     {["All", "In Progress", "Follow-up", "Converted", "Rejected"].map((st) => (
                       <button
                         key={st}
@@ -1269,7 +1287,9 @@ export default function Employee() {
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           leadStatusFilter === st
                             ? "bg-teal-500 text-white shadow-xs"
-                            : "bg-slate-900 text-slate-400 hover:text-white"
+                            : isDark
+                            ? "bg-slate-900 text-slate-400 hover:text-white"
+                            : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
                         }`}
                       >
                         {st === "All" ? t.allStatuses : st}
@@ -1278,7 +1298,7 @@ export default function Employee() {
                   </div>
 
                   <div className="relative w-full sm:w-64">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <Search className={`w-4 h-4 absolute left-3.5 top-3 ${textSub}`} />
                     <input
                       type="text"
                       placeholder={t.searchPlaceholder}
@@ -1294,55 +1314,59 @@ export default function Employee() {
                   {filteredMyLeads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between space-y-4 hover:border-slate-700 transition-all shadow-xs"
+                      className={`border rounded-3xl p-6 flex flex-col justify-between space-y-4 hover:border-slate-400 dark:hover:border-slate-700 transition-all shadow-xs ${bgInnerCard}`}
                     >
                       <div>
                         {/* Header Badge */}
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <div className={`flex items-center justify-between pb-3 border-b ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                           <span
                             className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${
                               lead.status === "Converted"
-                                ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                                ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"
                                 : lead.status === "Follow-up"
-                                ? "bg-amber-950 text-amber-400 border border-amber-800"
-                                : "bg-teal-950 text-teal-400 border border-teal-800"
+                                ? "bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800"
+                                : "bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-400 border border-teal-300 dark:border-teal-800"
                             }`}
                           >
                             {lead.status === "Converted" && <CheckCircle2 className="w-3.5 h-3.5" />}
                             {lead.status}
                           </span>
-                          <span className="text-[10px] font-semibold text-slate-400 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+                          <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg border ${
+                            isDark ? "text-slate-400 bg-slate-900 border-slate-800" : "text-slate-600 bg-white border-slate-200"
+                          }`}>
                             {lead.source || "Ad Click"}
                           </span>
                         </div>
 
                         {/* Student Details */}
                         <div className="mt-4 space-y-1">
-                          <h3 className="text-lg font-bold text-white">{lead.studentName}</h3>
-                          <p className="text-xs text-slate-400">
-                            {t.parentName}: <span className="font-semibold text-slate-200">{lead.parentName}</span>
+                          <h3 className={`text-lg font-bold ${textHeading}`}>{lead.studentName}</h3>
+                          <p className={`text-xs ${textSub}`}>
+                            {t.parentName}: <span className={`font-semibold ${textHeading}`}>{lead.parentName}</span>
                           </p>
-                          <p className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 pt-1">
+                          <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 pt-1">
                             <PhoneCall className="w-3.5 h-3.5" />
                             <a href={`tel:${lead.phone}`} className="hover:underline">{lead.phone}</a>
                           </p>
-                          <div className="text-xs font-medium text-teal-300 bg-teal-950/40 border border-teal-800/50 px-3 py-1.5 rounded-xl mt-2">
+                          <div className="text-xs font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/50 px-3 py-1.5 rounded-xl mt-2">
                             🎓 {lead.courseInterest}
                           </div>
                         </div>
 
                         {/* Call Notes History */}
-                        <div className="mt-4 bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 space-y-2 max-h-36 overflow-y-auto">
-                          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3 text-emerald-400" />
+                        <div className={`mt-4 p-3.5 rounded-2xl border space-y-2 max-h-36 overflow-y-auto ${bgSubCard}`}>
+                          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 ${textSub}`}>
+                            <MessageSquare className="w-3 h-3 text-emerald-500" />
                             {t.callNotesHistory} ({lead.callNotes.length})
                           </div>
                           {lead.callNotes.length === 0 ? (
-                            <p className="text-xs text-slate-500 italic">{t.noCallNotes}</p>
+                            <p className={`text-xs italic ${textSub}`}>{t.noCallNotes}</p>
                           ) : (
                             lead.callNotes.map((note, idx) => (
-                              <div key={idx} className="text-xs text-slate-200 bg-slate-950 p-2 rounded-xl border border-slate-800/60 space-y-0.5">
-                                <div className="flex justify-between text-[10px] text-slate-500">
+                              <div key={idx} className={`text-xs p-2 rounded-xl border space-y-0.5 ${
+                                isDark ? "text-slate-200 bg-slate-950 border-slate-800/60" : "text-slate-800 bg-slate-50 border-slate-200"
+                              }`}>
+                                <div className={`flex justify-between text-[10px] ${textSub}`}>
                                   <span>{note.agent}</span>
                                   <span>{note.date}</span>
                                 </div>
@@ -1354,12 +1378,16 @@ export default function Employee() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="pt-3 border-t border-slate-800 flex flex-wrap gap-2">
+                      <div className={`pt-3 border-t flex flex-wrap gap-2 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                         <button
                           onClick={() => setSelectedLeadForNote(lead)}
-                          className="flex-1 inline-flex items-center justify-center gap-1.5 bg-slate-900 border border-slate-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl hover:bg-slate-800 transition-all cursor-pointer"
+                          className={`flex-1 inline-flex items-center justify-center gap-1.5 border text-xs font-bold py-2.5 px-3 rounded-xl transition-all cursor-pointer ${
+                            isDark
+                              ? "bg-slate-900 border-slate-700 text-white hover:bg-slate-800"
+                              : "bg-white border-slate-300 text-slate-800 hover:bg-slate-100"
+                          }`}
                         >
-                          <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                          <Plus className="w-3.5 h-3.5 text-emerald-500" />
                           <span>{t.addCallNoteBtn}</span>
                         </button>
 
@@ -1370,7 +1398,7 @@ export default function Employee() {
                           }}
                           className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 px-3 rounded-xl transition-all cursor-pointer ${
                             lead.paymentConfirmed
-                              ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                              ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"
                               : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs"
                           }`}
                         >
@@ -1398,15 +1426,15 @@ export default function Employee() {
                 </div>
 
                 {/* Form to Confirm Sales Directly */}
-                <form onSubmit={handleConfirmPayment} className="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
-                  <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2">
+                <form onSubmit={handleConfirmPayment} className={`p-6 rounded-2xl border space-y-4 ${bgInnerCard}`}>
+                  <h3 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4" />
                     <span>Quick Payment Confirmation Form</span>
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.selectLeadLabel}</label>
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectLeadLabel}</label>
                       <select
                         required
                         value={selectedLeadForPayment?.id || ""}
@@ -1427,7 +1455,7 @@ export default function Employee() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.selectCourseBatchLabel}</label>
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectCourseBatchLabel}</label>
                       <input
                         type="text"
                         required
@@ -1439,7 +1467,7 @@ export default function Employee() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.paymentMethodLabel}</label>
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.paymentMethodLabel}</label>
                       <div className="grid grid-cols-4 gap-2">
                         {["bKash", "Nagad", "Bank", "Cash"].map((m) => (
                           <button
@@ -1449,7 +1477,9 @@ export default function Employee() {
                             className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
                               paymentMethod === m
                                 ? "bg-emerald-500 text-white border-emerald-500 shadow-xs"
-                                : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                                : isDark
+                                ? "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                                : "bg-white text-slate-600 border-slate-300 hover:text-slate-900"
                             }`}
                           >
                             {m}
@@ -1459,7 +1489,7 @@ export default function Employee() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.amountPaidLabel}</label>
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.amountPaidLabel}</label>
                       <input
                         type="number"
                         required
@@ -1471,7 +1501,7 @@ export default function Employee() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.trxIdLabel}</label>
+                    <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.trxIdLabel}</label>
                     <input
                       type="text"
                       required
@@ -1506,23 +1536,23 @@ export default function Employee() {
                         <th className="p-3 rounded-r-xl">{t.colDate}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 text-xs">
+                    <tbody className={`divide-y text-xs ${isDark ? "divide-slate-800/60" : "divide-slate-200"}`}>
                       {myLeads
                         .filter((l) => l.paymentConfirmed || l.status === "Converted")
                         .map((b) => (
-                          <tr key={b.id} className="hover:bg-slate-900/50 transition-colors">
-                            <td className="p-3 font-bold text-white">
+                          <tr key={b.id} className={`${tableRowHover} transition-colors`}>
+                            <td className={`p-3 font-bold ${textHeading}`}>
                               <div>{b.studentName}</div>
-                              <div className="text-[11px] font-normal text-slate-400">{b.phone}</div>
+                              <div className={`text-[11px] font-normal ${textSub}`}>{b.phone}</div>
                             </td>
-                            <td className="p-3 text-slate-300">{b.courseInterest}</td>
+                            <td className={`p-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{b.courseInterest}</td>
                             <td className="p-3">
-                              <span className="font-mono text-emerald-400 font-bold bg-emerald-950 px-2 py-1 rounded-md border border-emerald-800">
+                              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950 px-2 py-1 rounded-md border border-emerald-200 dark:border-emerald-800">
                                 {b.trxId || "BK892310X"}
                               </span>
                             </td>
-                            <td className="p-3 font-extrabold text-emerald-400">৳{b.paymentAmount || 2500}</td>
-                            <td className="p-3 text-slate-400">{b.date}</td>
+                            <td className="p-3 font-extrabold text-emerald-600 dark:text-emerald-400">৳{b.paymentAmount || 2500}</td>
+                            <td className={`p-3 ${textSub}`}>{b.date}</td>
                           </tr>
                         ))}
                     </tbody>
@@ -1545,15 +1575,15 @@ export default function Employee() {
                 </div>
 
                 {/* Form to create Guardian Account */}
-                <form onSubmit={handleCreateGuardianAccount} className="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
-                  <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2">
+                <form onSubmit={handleCreateGuardianAccount} className={`p-6 rounded-2xl border space-y-4 ${bgInnerCard}`}>
+                  <h3 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                     <UserPlus className="w-4 h-4" />
                     <span>{t.registerGuardianFormTitle}</span>
                   </h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.guardianNameLabel}</label>
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.guardianNameLabel}</label>
                       <input
                         type="text"
                         required
@@ -1565,7 +1595,7 @@ export default function Employee() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.guardianPhoneLabel}</label>
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.guardianPhoneLabel}</label>
                       <input
                         type="text"
                         required
@@ -1577,7 +1607,7 @@ export default function Employee() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.studentNameLabel}</label>
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.studentNameLabel}</label>
                       <input
                         type="text"
                         required
@@ -1589,7 +1619,7 @@ export default function Employee() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.assignBatchLabel}</label>
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.assignBatchLabel}</label>
                       <select
                         value={selectedBatchId}
                         onChange={(e) => setSelectedBatchId(e.target.value)}
@@ -1615,19 +1645,23 @@ export default function Employee() {
 
                 {/* Newly Generated Shareable Link Card */}
                 {generatedLinkInfo && (
-                  <div className="p-6 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 space-y-4">
-                    <div className="flex items-center gap-2 text-emerald-400">
+                  <div className={`p-6 rounded-2xl border space-y-4 ${
+                    isDark ? "bg-emerald-950/40 border-emerald-500/40" : "bg-emerald-50 border-emerald-300"
+                  }`}>
+                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                       <CheckCircle2 className="w-5 h-5" />
                       <h3 className="text-base font-bold">{t.magicLinkGeneratedTitle}</h3>
                     </div>
-                    <p className="text-xs text-slate-300">{t.magicLinkDesc}</p>
+                    <p className={`text-xs ${isDark ? "text-slate-300" : "text-slate-700"}`}>{t.magicLinkDesc}</p>
 
-                    <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                      <div className="text-xs text-slate-400 flex justify-between">
-                        <span>{t.loginIdLabel} <strong className="text-white">{generatedLinkInfo.loginId}</strong></span>
-                        <span>{t.tempPassLabel} <strong className="text-white">{generatedLinkInfo.tempPass}</strong></span>
+                    <div className={`p-4 rounded-xl border space-y-2 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
+                      <div className={`text-xs flex justify-between ${textSub}`}>
+                        <span>{t.loginIdLabel} <strong className={textHeading}>{generatedLinkInfo.loginId}</strong></span>
+                        <span>{t.tempPassLabel} <strong className={textHeading}>{generatedLinkInfo.tempPass}</strong></span>
                       </div>
-                      <div className="font-mono text-xs text-emerald-400 break-all p-2 rounded bg-slate-900 border border-slate-800">
+                      <div className={`font-mono text-xs break-all p-2 rounded border ${
+                        isDark ? "bg-slate-900 border-slate-800 text-emerald-400" : "bg-slate-100 border-slate-200 text-emerald-700 font-bold"
+                      }`}>
                         {generatedLinkInfo.link}
                       </div>
                     </div>
@@ -1635,17 +1669,25 @@ export default function Employee() {
                     <div className="flex flex-wrap gap-3">
                       <button
                         onClick={() => copyToClipboard(generatedLinkInfo.link, "link")}
-                        className="flex-1 inline-flex items-center justify-center gap-2 bg-slate-900 border border-slate-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl hover:bg-slate-800 transition-all cursor-pointer"
+                        className={`flex-1 inline-flex items-center justify-center gap-2 border text-xs font-bold py-2.5 px-4 rounded-xl transition-all cursor-pointer ${
+                          isDark
+                            ? "bg-slate-900 border-slate-700 text-white hover:bg-slate-800"
+                            : "bg-white border-slate-300 text-slate-800 hover:bg-slate-100"
+                        }`}
                       >
-                        {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        {copiedLink ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                         <span>{copiedLink ? t.linkCopiedAlert : t.copyLinkBtn}</span>
                       </button>
 
                       <button
                         onClick={() => copyToClipboard(generatedLinkInfo.message, "msg")}
-                        className="flex-1 inline-flex items-center justify-center gap-2 bg-slate-900 border border-slate-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl hover:bg-slate-800 transition-all cursor-pointer"
+                        className={`flex-1 inline-flex items-center justify-center gap-2 border text-xs font-bold py-2.5 px-4 rounded-xl transition-all cursor-pointer ${
+                          isDark
+                            ? "bg-slate-900 border-slate-700 text-white hover:bg-slate-800"
+                            : "bg-white border-slate-300 text-slate-800 hover:bg-slate-100"
+                        }`}
                       >
-                        {copiedMsg ? <Check className="w-4 h-4 text-emerald-400" /> : <MessageCircle className="w-4 h-4 text-teal-400" />}
+                        {copiedMsg ? <Check className="w-4 h-4 text-emerald-500" /> : <MessageCircle className="w-4 h-4 text-teal-500" />}
                         <span>{copiedMsg ? t.msgCopiedAlert : t.copyWhatsAppMsgBtn}</span>
                       </button>
 
@@ -1676,16 +1718,16 @@ export default function Employee() {
                           <th className="p-3 rounded-r-xl">Share Action</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800/60 text-xs">
+                      <tbody className={`divide-y text-xs ${isDark ? "divide-slate-800/60" : "divide-slate-200"}`}>
                         {guardianAccounts.map((g) => (
-                          <tr key={g.id} className="hover:bg-slate-900/50 transition-colors">
-                            <td className="p-3 font-bold text-white">
+                          <tr key={g.id} className={`${tableRowHover} transition-colors`}>
+                            <td className={`p-3 font-bold ${textHeading}`}>
                               <div>{g.guardianName}</div>
-                              <div className="text-[11px] font-normal text-slate-400">Student: {g.studentName}</div>
+                              <div className={`text-[11px] font-normal ${textSub}`}>Student: {g.studentName}</div>
                             </td>
-                            <td className="p-3 font-semibold text-emerald-400">{g.guardianPhone}</td>
-                            <td className="p-3 text-slate-300">{g.batchName}</td>
-                            <td className="p-3 font-mono text-[11px] text-slate-400">
+                            <td className="p-3 font-semibold text-emerald-600 dark:text-emerald-400">{g.guardianPhone}</td>
+                            <td className={`p-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{g.batchName}</td>
+                            <td className={`p-3 font-mono text-[11px] ${textSub}`}>
                               <div>ID: {g.loginId}</div>
                               <div>Pass: {g.tempPass}</div>
                             </td>
@@ -1696,7 +1738,7 @@ export default function Employee() {
                                 )}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-all text-xs font-bold cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-all text-xs font-bold cursor-pointer"
                               >
                                 <Send className="w-3.5 h-3.5" />
                                 <span>WhatsApp</span>
@@ -1720,21 +1762,21 @@ export default function Employee() {
       ═══════════════════════════════════════════════════════════════════════════ */}
       {selectedLeadForNote && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4">
+          <div className={`border rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4 ${modalBg}`}>
             <button
               onClick={() => setSelectedLeadForNote(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer"
+              className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-lg font-bold text-white">
+            <h3 className={`text-lg font-bold ${textHeading}`}>
               {t.addNoteTitle} - {selectedLeadForNote.studentName}
             </h3>
-            <p className="text-xs text-slate-400">Phone: {selectedLeadForNote.phone}</p>
+            <p className={`text-xs ${textSub}`}>Phone: {selectedLeadForNote.phone}</p>
 
             <form onSubmit={handleAddCallNote} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.selectStatusLabel}</label>
+                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectStatusLabel}</label>
                 <select
                   value={newNoteStatus}
                   onChange={(e) => setNewNoteStatus(e.target.value as Lead["status"])}
@@ -1749,7 +1791,7 @@ export default function Employee() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Call Summary & Notes</label>
+                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>Call Summary & Notes</label>
                 <textarea
                   rows={4}
                   required
@@ -1776,24 +1818,24 @@ export default function Employee() {
       ═══════════════════════════════════════════════════════════════════════════ */}
       {selectedLeadForPayment && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4">
+          <div className={`border rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4 ${modalBg}`}>
             <button
               onClick={() => setSelectedLeadForPayment(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer"
+              className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2 text-emerald-400">
+            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
               <ShieldCheck className="w-6 h-6" />
-              <h3 className="text-lg font-bold text-white">Payment & Enrollment Confirmation</h3>
+              <h3 className={`text-lg font-bold ${textHeading}`}>Payment & Enrollment Confirmation</h3>
             </div>
-            <p className="text-xs text-slate-400">
-              Student: <strong className="text-white">{selectedLeadForPayment.studentName}</strong> ({selectedLeadForPayment.courseInterest})
+            <p className={`text-xs ${textSub}`}>
+              Student: <strong className={textHeading}>{selectedLeadForPayment.studentName}</strong> ({selectedLeadForPayment.courseInterest})
             </p>
 
             <form onSubmit={handleConfirmPayment} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.paymentMethodLabel}</label>
+                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.paymentMethodLabel}</label>
                 <div className="grid grid-cols-4 gap-2">
                   {["bKash", "Nagad", "Bank", "Cash"].map((m) => (
                     <button
@@ -1801,7 +1843,11 @@ export default function Employee() {
                       key={m}
                       onClick={() => setPaymentMethod(m)}
                       className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                        paymentMethod === m ? "bg-emerald-500 text-white border-emerald-500" : "bg-slate-950 text-slate-400 border-slate-800"
+                        paymentMethod === m
+                          ? "bg-emerald-500 text-white border-emerald-500"
+                          : isDark
+                          ? "bg-slate-950 text-slate-400 border-slate-800"
+                          : "bg-slate-100 text-slate-600 border-slate-300"
                       }`}
                     >
                       {m}
@@ -1811,7 +1857,7 @@ export default function Employee() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.amountPaidLabel}</label>
+                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.amountPaidLabel}</label>
                 <input
                   type="number"
                   required
@@ -1822,7 +1868,7 @@ export default function Employee() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">{t.trxIdLabel}</label>
+                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.trxIdLabel}</label>
                 <input
                   type="text"
                   required
