@@ -706,10 +706,16 @@ function Footer({ setPage, contactInfo = mockContactInfo }: { setPage: (p: Page)
             </div>
             <div className="flex gap-3 mt-5">
               {contactInfo.socialLinks.map((s) => (
-                <a key={s.platform} href={s.url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 hover:bg-primary flex items-center justify-center transition-colors cursor-pointer text-white">
+                <a
+                  key={s.platform}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#22c55e] flex items-center justify-center transition-all duration-200 cursor-pointer text-white"
+                >
                   {s.platform === "facebook" && <Facebook className="w-4 h-4" />}
-                  {s.platform === "youtube" && <Youtube className="w-4 h-4" />}
                   {s.platform === "instagram" && <Instagram className="w-4 h-4" />}
+                  {s.platform === "youtube" && <Youtube className="w-4 h-4" />}
                   {s.platform === "whatsapp" && <MessageCircle className="w-4 h-4" />}
                 </a>
               ))}

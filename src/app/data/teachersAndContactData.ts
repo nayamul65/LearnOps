@@ -92,9 +92,9 @@ export const mockContactInfo: ContactInfo = {
   address: "ধানমন্ডি, ঢাকা ১২০৫, বাংলাদেশ",
   officeHours: "সকাল ৯:০০ - রাত ৯:০০ (প্রতিদিন)",
   socialLinks: [
-    { platform: "facebook", url: "https://facebook.com/learnops.bd", label: "Facebook" },
-    { platform: "youtube", url: "https://youtube.com/learnops.bd", label: "YouTube" },
-    { platform: "instagram", url: "https://instagram.com/learnops.bd", label: "Instagram" },
-    { platform: "whatsapp", url: "https://wa.me/8801700000000", label: "WhatsApp" },
+    { platform: "facebook", url: "https://www.facebook.com/share/1Emi21t7xo/", label: "Facebook" },
+    { platform: "instagram", url: "https://www.instagram.com/bdlearnplus?igsh=MWM2M2w3MzcweWR3dg==", label: "Instagram" },
+    { platform: "youtube", url: "https://youtube.com/@learnplusbd?feature=shared", label: "YouTube" },
+    { platform: "whatsapp", url: "https://api.whatsapp.com/send/?phone=8801938153294&text&type=phone_number&app_absent=0", label: "WhatsApp" },
   ],
 };
