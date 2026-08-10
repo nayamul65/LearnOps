@@ -192,7 +192,7 @@ export const COURSES: Course[] = [
     reviews: 143,
     students: "৫২০",
     studentsEN: "520",
-    img: "https://images.unsplash.com/photo-1609599006353-e629f1d40968?w=600&h=400&fit=crop&auto=format",
+    img: "https://unsplash.com",
     badge: "🕌",
     gradient: "from-teal-700 to-emerald-800",
     bgLight: "bg-teal-50 dark:bg-teal-950/20",
