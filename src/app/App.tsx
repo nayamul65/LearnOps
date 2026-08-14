@@ -11,6 +11,7 @@ import TelesalesPage from "./TelesalesPage";
 import AdminPage from "./AdminPage";
 import TeacherPage from "./TeacherPage";
 import GuardianPage from "./GuardianPage";
+import PageTransition from "./components/PageTransition";
 import { mockTeachers, mockContactInfo, ContactInfo } from "./data/teachersAndContactData";
 import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 import {
@@ -777,18 +778,24 @@ function AppContent() {
       )}
 
       {/* ── FLOATING BOTTOM-RIGHT ROLE SWITCHER WIDGET ── */}
-      <div className="fixed bottom-4 right-4 z-50 transition-all">
+      <div className="fixed bottom-4 right-4 z-[9999] transition-all">
         {isRoleSwitcherOpen ? (
           <div className="bg-slate-900/95 text-white backdrop-blur-lg border border-slate-700/80 p-3 rounded-2xl shadow-2xl max-w-xs sm:max-w-md animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-center justify-between gap-3 mb-2 px-1">
-              <div className="flex items-center gap-1.5 font-bold text-[11px] text-amber-400">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Role Portals Switcher</span>
-              </div>
               <button
                 onClick={() => setIsRoleSwitcherOpen(false)}
-                className="text-slate-400 hover:text-white text-xs px-1 cursor-pointer font-bold"
-                title="Minimize"
+                className="flex items-center gap-1.5 font-bold text-[11px] text-amber-400 hover:text-amber-300 transition-colors cursor-pointer group text-left"
+                title="Click to close menu"
+              >
+                <Sparkles className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
+                <span>Role Portals Switcher</span>
+                <span className="text-[9px] text-slate-400 font-normal group-hover:text-slate-300 ml-1">(click to close)</span>
+              </button>
+              <button
+                onClick={() => setIsRoleSwitcherOpen(false)}
+                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-800 text-slate-400 hover:text-white text-xs cursor-pointer font-bold transition-colors"
+                title="Close"
+                aria-label="Close Role Switcher"
               >
                 ✕
               </button>
@@ -822,56 +829,71 @@ function AppContent() {
         )}
       </div>
 
-      <Routes>
-        <Route path="/" element={
-          <>
-            <Hero setPage={handleNavigate} />
-            <Carousel />
-            <HomeSections setPage={handleNavigate} />
-            <Footer setPage={handleNavigate} />
-          </>
-        } />
-        <Route path="/courses" element={
-          <>
-            <CourseListPage dark={dark} toggleDark={toggle} lang={lang} setLang={setLang} />
-            <Footer setPage={handleNavigate} />
-          </>
-        } />
-        <Route path="/shafoller-golpo" element={
-          <main className="pt-16">
-            <SuccessStories />
-            <Footer setPage={handleNavigate} />
-          </main>
-        } />
-        <Route path="/teachers" element={
-          <main className="pt-16">
-            <TeachersSection />
-            <Footer setPage={handleNavigate} />
-          </main>
-        } />
-        <Route path="/contact" element={
-          <main className="pt-16">
-            <ContactSection />
-            <Footer setPage={handleNavigate} />
-          </main>
-        } />
-        <Route path="/course/:id" element={
-          <>
-            <CourseDetailPage dark={dark} toggleDark={toggle} lang={lang} />
-            <Footer setPage={handleNavigate} />
-          </>
-        } />
-        <Route path="/employee" element={<TelesalesPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/teacher" element={<TeacherPage />} />
-        <Route path="/guardian" element={<GuardianPage />} />
-        <Route path="/login" element={
-          <LoginPage onLogin={() => navigate("/dashboard")} />
-        } />
-        <Route path="/dashboard" element={
-          <Dashboard dark={dark} toggleDark={toggle} onLogout={() => navigate("/login")} />
-        } />
-      </Routes>
+      <PageTransition>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={
+            <>
+              <Hero setPage={handleNavigate} />
+              <Carousel />
+              <HomeSections setPage={handleNavigate} />
+              <Footer setPage={handleNavigate} />
+            </>
+          } />
+          <Route path="/courses" element={
+            <>
+              <CourseListPage dark={dark} toggleDark={toggle} lang={lang} setLang={setLang} />
+              <Footer setPage={handleNavigate} />
+            </>
+          } />
+          <Route path="/shafoller-golpo" element={
+            <main className="pt-16">
+              <SuccessStories />
+              <Footer setPage={handleNavigate} />
+            </main>
+          } />
+          <Route path="/teachers" element={
+            <main className="pt-16">
+              <TeachersSection />
+              <Footer setPage={handleNavigate} />
+            </main>
+          } />
+          <Route path="/contact" element={
+            <main className="pt-16">
+              <ContactSection />
+              <Footer setPage={handleNavigate} />
+            </main>
+          } />
+          <Route path="/course/:id" element={
+            <>
+              <CourseDetailPage dark={dark} toggleDark={toggle} lang={lang} />
+              <Footer setPage={handleNavigate} />
+            </>
+          } />
+          <Route path="/employee" element={<TelesalesPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/teacher" element={<TeacherPage />} />
+          <Route path="/guardian" element={<GuardianPage />} />
+          <Route path="/login" element={
+            <LoginPage onLogin={(selectedRole) => {
+              if (selectedRole === "admin") {
+                localStorage.setItem("learnops_admin_auth", JSON.stringify({ authenticated: true, role: "admin", email: "admin@learnops.com", name: "System Administrator" }));
+                navigate("/admin");
+              } else if (selectedRole === "sales") {
+                navigate("/employee");
+              } else if (selectedRole === "teacher") {
+                navigate("/teacher");
+              } else if (selectedRole === "guardian") {
+                navigate("/guardian");
+              } else {
+                navigate("/dashboard");
+              }
+            }} />
+          } />
+          <Route path="/dashboard" element={
+            <Dashboard dark={dark} toggleDark={toggle} onLogout={() => navigate("/login")} />
+          } />
+        </Routes>
+      </PageTransition>
     </div>
   );
 }
