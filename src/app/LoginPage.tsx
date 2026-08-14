@@ -3,6 +3,7 @@ import {
   Eye, EyeOff, ArrowRight, PenLine, ShieldCheck,
   Users, BookOpen, TrendingUp, Star, CheckCircle2,
 } from "lucide-react";
+import { getStoredStaff } from "../services/staffStore";
 
 function cn(...c: (string | undefined | false)[]) {
   return c.filter(Boolean).join(" ");
@@ -51,7 +52,27 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    setTimeout(() => { setLoading(false); onLogin(role); }, 1200);
+
+    const cleanEmail = email.toLowerCase().trim();
+    let targetRole: Role = role;
+
+    // Check against registered staff in staffStore
+    const registeredStaff = getStoredStaff();
+    const matched = registeredStaff.find(
+      (s) => s.email.toLowerCase().trim() === cleanEmail
+    );
+
+    if (cleanEmail === "admin@learnops.com" || cleanEmail === "admin") {
+      targetRole = "admin";
+    } else if (matched) {
+      if (matched.role === "Telesales") targetRole = "sales";
+      else if (matched.role === "Teacher") targetRole = "teacher";
+    }
+
+    setTimeout(() => {
+      setLoading(false);
+      onLogin(targetRole);
+    }, 600);
   }
 
   return (
