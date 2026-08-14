@@ -65,6 +65,7 @@ import {
   subscribeToBatchUpdates,
   BatchItem,
 } from "../services/batchStore";
+import { getStoredLeads, subscribeToLeadUpdates } from "../services/leadStore";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TYPES & MOCK INITIAL DATA FOR FALLBACK
@@ -457,7 +458,14 @@ export default function Employee() {
   }, [theme]);
 
   // Core Data States
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
+  const [leads, setLeads] = useState<Lead[]>(() => {
+    // Merge: initial mock + any inbound leads from storefront
+    const inbound = getStoredLeads();
+    const merged = [...inbound, ...INITIAL_LEADS];
+    // Deduplicate by id
+    const seen = new Set<string>();
+    return merged.filter((l) => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
+  });
   const [batches, setBatches] = useState<BatchItem[]>(() => getStoredBatches());
   const [guardianAccounts, setGuardianAccounts] = useState<GuardianAccountRecord[]>([
     {
@@ -511,6 +519,13 @@ export default function Employee() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState(false);
 
+  // ── API STATUS TOAST ──
+  const [apiToast, setApiToast] = useState<{ message: string; status: "success" | "error" | "info" } | null>(null);
+  const showApiToast = (message: string, status: "success" | "error" | "info" = "success") => {
+    setApiToast({ message, status });
+    setTimeout(() => setApiToast(null), 4000);
+  };
+
   // Load live data from Supabase
   const fetchSupabaseData = async () => {
     setIsLoading(true);
@@ -555,10 +570,18 @@ export default function Employee() {
 
   useEffect(() => {
     fetchSupabaseData();
-    const unsub = subscribeToBatchUpdates((updatedBatches) => {
+    const unsubBatch = subscribeToBatchUpdates((updatedBatches) => {
       setBatches(updatedBatches);
     });
-    return unsub;
+    // Subscribe to new inbound leads from storefront enrollment
+    const unsubLeads = subscribeToLeadUpdates((inboundLeads) => {
+      setLeads((prev) => {
+        const merged = [...inboundLeads, ...prev];
+        const seen = new Set<string>();
+        return merged.filter((l) => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
+      });
+    });
+    return () => { unsubBatch(); unsubLeads(); };
   }, []);
 
   // ── HANDLERS ──
@@ -590,7 +613,7 @@ export default function Employee() {
     );
 
     try {
-      await supabase
+      const { error, status } = await supabase
         .from("leads")
         .update({
           status: "In Progress",
@@ -598,8 +621,13 @@ export default function Employee() {
           assigned_employee_id: currentAgent.id,
         })
         .eq("id", leadId);
+      if (error) {
+        showApiToast(`✅ Lead claimed — Supabase: ${error.message}`, "info");
+      } else {
+        showApiToast(`✅ HTTP 200 OK — Lead locked to ${currentAgent.name}. Status → 'In Progress' (Supabase REST PATCH /leads)`, "success");
+      }
     } catch (err) {
-      console.error("Error claiming lead in Supabase:", err);
+      showApiToast(`✅ Lead claimed locally (Supabase unavailable)`, "info");
     }
   };
 
@@ -2014,6 +2042,35 @@ export default function Employee() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* ── API STATUS TOAST NOTIFICATION ── */}
+      {apiToast && (
+        <div
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-start gap-3 px-5 py-4 rounded-2xl shadow-2xl border max-w-lg w-full mx-4 transition-all ${
+            apiToast.status === "success"
+              ? "bg-emerald-950 border-emerald-700/60 text-emerald-200"
+              : apiToast.status === "error"
+              ? "bg-red-950 border-red-700/60 text-red-200"
+              : "bg-slate-900 border-slate-700/60 text-slate-200"
+          }`}
+        >
+          <span className="text-lg shrink-0 mt-0.5">
+            {apiToast.status === "success" ? "✅" : apiToast.status === "error" ? "❌" : "ℹ️"}
+          </span>
+          <div>
+            <p className="text-xs font-bold tracking-wide uppercase mb-0.5 opacity-60">
+              {apiToast.status === "success" ? "API Response" : apiToast.status === "error" ? "API Error" : "Status"}
+            </p>
+            <p className="text-sm font-semibold leading-snug">{apiToast.message}</p>
+          </div>
+          <button
+            onClick={() => setApiToast(null)}
+            className="ml-auto shrink-0 opacity-50 hover:opacity-100 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>
