@@ -21,6 +21,7 @@ import {
   UserCheck,
   PhoneCall,
   X,
+  Menu,
   RefreshCw,
   ShieldCheck,
   Building,
@@ -46,6 +47,12 @@ import {
   MapPin,
   ShieldAlert,
   Lock,
+  LogOut,
+  LogIn,
+  User,
+  Check,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -645,6 +652,25 @@ const adminTranslations = {
     saveChanges: "Save Changes ✓",
     publishCourse: "Publish Course ✓",
 
+    // Auth & Logout
+    logout: "Log Out",
+    login: "Log In",
+    adminLoginTitle: "Admin Portal Authentication",
+    adminLoginSubtitle: "Enter administrator credentials to access the management dashboard.",
+    emailAddress: "Email Address",
+    password: "Password",
+    rememberMe: "Remember session",
+    loginBtn: "Sign In to Admin Portal",
+    demoAdminCredentials: "Quick Demo Credentials",
+    loginError: "Invalid email or password. Use admin@learnops.com / admin123",
+    loggedOutSuccess: "You have been logged out successfully.",
+    logoutConfirmTitle: "Confirm Admin Logout",
+    logoutConfirmDesc: "Are you sure you want to sign out of the LearnOps Admin Portal?",
+    cancelBtn: "Cancel",
+    confirmLogoutBtn: "Yes, Log Out",
+    backToHome: "Return to Public Home",
+    superAdminRole: "Super Admin",
+    loggedAdminUser: "System Administrator",
   },
   bn: {
     brandName: "লার্নঅপস অ্যাডমিন",
@@ -825,6 +851,25 @@ const adminTranslations = {
     saveChanges: "পরিবর্তন সেভ করুন ✓",
     publishCourse: "কোর্স পাবলিশ করুন ✓",
 
+    // Auth & Logout
+    logout: "লগআউট",
+    login: "লগইন",
+    adminLoginTitle: "অ্যাডমিন পোর্টাল লগইন",
+    adminLoginSubtitle: "ম্যানেজমেন্ট ড্যাশবোর্ডে প্রবেশ করতে আপনার অ্যাডমিনিস্ট্রেটর তথ্য দিন।",
+    emailAddress: "ইমেইল অ্যাড্রেস",
+    password: "পাসওয়ার্ড",
+    rememberMe: "সেশন মনে রাখুন",
+    loginBtn: "অ্যাডমিন হিসেবে প্রবেশ করুন",
+    demoAdminCredentials: "কুইক ডেমো তথ্য",
+    loginError: "ভুল ইমেইল বা পাসওয়ার্ড। admin@learnops.com / admin123 ব্যবহার করুন",
+    loggedOutSuccess: "আপনি সফলভাবে লগআউট করেছেন।",
+    logoutConfirmTitle: "অ্যাডমিন লগআউট নিশ্চিত করুন",
+    logoutConfirmDesc: "আপনি কি নিশ্চিতভাবে লার্নঅপস অ্যাডমিন পোর্টাল থেকে সাইন আউট করতে চান?",
+    cancelBtn: "বাতিল করুন",
+    confirmLogoutBtn: "হ্যাঁ, লগআউট করুন",
+    backToHome: "পাবলিক হোমে ফিরে যান",
+    superAdminRole: "সুপার অ্যাডমিন",
+    loggedAdminUser: "সিস্টেম অ্যাডমিনিস্ট্রেটর",
   },
 };
 
@@ -840,7 +885,70 @@ export default function Admin() {
   // Navigation Sidebar & Loading States
   const [activeTab, setActiveTab] = useState<"sales" | "leads" | "employees" | "batches" | "courses">("sales");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // ── ADMIN AUTHENTICATION STATES ──
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("learnops_admin_auth") || sessionStorage.getItem("learnops_admin_auth");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Boolean(parsed.authenticated);
+      }
+    } catch (e) {
+      // fallback
+    }
+    return true; // Default authenticated so existing links work, with full login/logout capabilities
+  });
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("admin@learnops.com");
+  const [loginPassword, setLoginPassword] = useState("admin123");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [loginRemember, setLoginRemember] = useState(true);
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    if (!loginEmail || !loginPassword) {
+      setLoginError(lang === "en" ? "Please enter both email and password." : "ইমেইল এবং পাসওয়ার্ড প্রবেশ করুন।");
+      return;
+    }
+    setLoginLoading(true);
+    setTimeout(() => {
+      setLoginLoading(false);
+      const cleanEmail = loginEmail.toLowerCase().trim();
+      if (
+        (cleanEmail === "admin@learnops.com" && loginPassword === "admin123") ||
+        (cleanEmail === "admin" && loginPassword === "admin")
+      ) {
+        const authData = {
+          authenticated: true,
+          role: "admin",
+          email: "admin@learnops.com",
+          name: "System Administrator",
+          loginTime: new Date().toISOString(),
+        };
+        if (loginRemember) {
+          localStorage.setItem("learnops_admin_auth", JSON.stringify(authData));
+        } else {
+          sessionStorage.setItem("learnops_admin_auth", JSON.stringify(authData));
+        }
+        setIsAdminLoggedIn(true);
+      } else {
+        setLoginError(t.loginError);
+      }
+    }, 500);
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem("learnops_admin_auth");
+    sessionStorage.removeItem("learnops_admin_auth");
+    setIsAdminLoggedIn(false);
+    setIsLogoutModalOpen(false);
+  };
 
   // ── DATA STATES ──
   const [courses, setCourses] = useState<CMSCourse[]>(INITIAL_COURSES);
@@ -1521,41 +1629,209 @@ export default function Admin() {
   const tableHeaderStyle = isDark ? "border-slate-800 bg-slate-950/80 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-700";
   const tableRowStyle = isDark ? "hover:bg-slate-800/30 divide-slate-800/60" : "hover:bg-slate-50 divide-slate-200";
 
+  // ── CONDITIONAL RENDER: ADMIN LOGIN PORTAL ──
+  if (!isAdminLoggedIn) {
+    return (
+      <div className={`min-h-screen ${bgMain} flex flex-col justify-center items-center p-4 sm:p-6 font-sans relative transition-colors duration-200`}>
+        {/* Top-Right Control Bar for Language & Theme */}
+        <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
+          <button
+            onClick={() => setLang(lang === "en" ? "bn" : "en")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+              isDark ? "bg-slate-900 border-slate-800 text-slate-200 hover:text-white" : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
+            }`}
+            title="Switch Language"
+          >
+            <Globe className="w-3.5 h-3.5 text-emerald-500" />
+            <span>{lang === "en" ? "ENG" : "বাংলা"}</span>
+          </button>
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className={`w-9 h-9 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center shadow-2xs ${
+              isDark ? "bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800" : "bg-white border-slate-300 text-amber-600 hover:bg-slate-50"
+            }`}
+            title="Toggle Theme"
+          >
+            {theme === "dark" ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+          </button>
+        </div>
+
+        {/* Login Card */}
+        <div className={`w-full max-w-md p-8 rounded-3xl border shadow-2xl ${bgCard} border-slate-700/50 backdrop-blur-md relative z-10 animate-in fade-in zoom-in-95 duration-300`}>
+          {/* Logo & Header */}
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 mx-auto mb-4 flex items-center justify-center font-black text-white text-2xl shadow-xl shadow-emerald-950/40">
+              L
+            </div>
+            <h1 className={`text-2xl font-black tracking-tight ${textHeading}`}>
+              Learn<span className="text-emerald-500">Ops</span> Admin
+            </h1>
+            <p className={`text-xs mt-1.5 ${textSub}`}>
+              {t.adminLoginSubtitle}
+            </p>
+          </div>
+
+          {/* Quick Demo Fill Button */}
+          <div className="mb-6 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between gap-2">
+            <div className="text-[11px] text-emerald-400 font-medium">
+              <span className="font-bold">{t.demoAdminCredentials}:</span> admin@learnops.com / admin123
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginEmail("admin@learnops.com");
+                setLoginPassword("admin123");
+                setLoginError("");
+              }}
+              className="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold text-[10px] hover:bg-emerald-400 transition-colors cursor-pointer shrink-0"
+            >
+              Fill Demo
+            </button>
+          </div>
+
+          {/* Error message */}
+          {loginError && (
+            <div className="mb-5 p-3 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+              <ShieldAlert className="w-4 h-4 shrink-0" />
+              <span>{loginError}</span>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            <div>
+              <label className={`block text-xs font-bold mb-1.5 ${textHeading}`}>{t.emailAddress}</label>
+              <input
+                type="text"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="admin@learnops.com"
+                className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-colors outline-hidden ${inputStyle}`}
+                required
+              />
+            </div>
+
+            <div>
+              <label className={`block text-xs font-bold mb-1.5 ${textHeading}`}>{t.password}</label>
+              <div className="relative">
+                <input
+                  type={showLoginPassword ? "text" : "password"}
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={`w-full px-4 py-2.5 pr-10 rounded-xl border text-sm transition-colors outline-hidden ${inputStyle}`}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={loginRemember}
+                  onChange={(e) => setLoginRemember(e.target.checked)}
+                  className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500"
+                />
+                <span>{t.rememberMe}</span>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full mt-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-950/40 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50"
+            >
+              {loginLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  <span>{t.loginBtn}</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Return to Home link */}
+          <div className="text-center mt-6 pt-4 border-t border-slate-800/80">
+            <a
+              href="./"
+              className="text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              ← {t.backToHome}
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`min-h-screen ${bgMain} flex overflow-hidden font-sans transition-colors duration-200`}>
+    <div className={`min-h-screen ${bgMain} flex overflow-hidden font-sans transition-colors duration-200 relative`}>
       
+      {/* ── MOBILE BACKDROP OVERLAY ── */}
+      {isMobileSidebarOpen && (
+        <div
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden animate-in fade-in duration-200 cursor-pointer"
+          aria-label="Close Mobile Sidebar"
+        />
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════════════════
-         LEFT SIDEBAR NAVIGATION MENU WITH TOGGLES ROW (FEATURE 1 & FEATURE 3)
+         LEFT SIDEBAR NAVIGATION MENU (RESPONSIVE OFF-CANVAS DRAWER & DESKTOP DOCK)
       ═══════════════════════════════════════════════════════════════════════════ */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-40 ${bgSidebar} border-r transition-all duration-300 flex flex-col justify-between`}
-        style={{ width: isSidebarCollapsed ? "5rem" : "16rem" }}
+        className={`fixed top-0 left-0 bottom-0 z-50 md:z-40 ${bgSidebar} border-r transition-all duration-300 ease-in-out flex flex-col justify-between
+          ${isMobileSidebarOpen ? "translate-x-0 w-72 shadow-2xl" : "-translate-x-full md:translate-x-0"}
+          ${isSidebarCollapsed ? "md:w-20" : "md:w-64"}
+        `}
       >
         <div>
           {/* Brand Header */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800/60">
-            {!isSidebarCollapsed && (
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-black text-white shadow-lg">
-                  L
-                </div>
-                <span className={`font-extrabold text-base tracking-tight ${textHeading}`}>
-                  Learn<span className="text-emerald-500">Ops</span> Admin
-                </span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-black text-white shadow-lg shrink-0">
+                L
               </div>
-            )}
+              <span className={`font-extrabold text-base tracking-tight truncate ${textHeading} ${isSidebarCollapsed ? "md:hidden" : "block"}`}>
+                Learn<span className="text-emerald-500">Ops</span> Admin
+              </span>
+            </div>
+
+            {/* Desktop Collapse Toggle Pill Button */}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className={`p-2 rounded-xl text-slate-400 hover:${textHeading} hover:bg-slate-800/30 transition-colors cursor-pointer mx-auto`}
+              className={`hidden md:flex p-1.5 rounded-xl text-slate-400 hover:${textHeading} hover:bg-slate-800/40 border border-slate-700/40 transition-all cursor-pointer items-center justify-center`}
               title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             >
-              {isSidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+              {isSidebarCollapsed ? <ChevronRight className="w-4 h-4 text-emerald-400" /> : <ChevronLeft className="w-4 h-4 text-emerald-400" />}
+            </button>
+
+            {/* Mobile Close Button (✕) */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="md:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
+              title="Close Menu"
+            >
+              <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* TOP-LEFT SIDEBAR CONTROL ROW: SINGLE-CLICK LANGUAGE & THEME TOGGLES */}
           <div className={`px-4 my-3 pb-3 border-b ${isDark ? "border-slate-800/80" : "border-slate-200"}`}>
-            {!isSidebarCollapsed ? (
+            {!isSidebarCollapsed || isMobileSidebarOpen ? (
               <div className="flex items-center gap-2">
                 {/* 1-Click Language Toggle Button: 🌐 ENG or 🌐 বাংলা */}
                 <button
@@ -1612,14 +1888,16 @@ export default function Admin() {
               { id: "employees", label: t.employeePerf, icon: PhoneCall, desc: t.employeeDesc },
               { id: "batches", label: t.teacherBatches, icon: GraduationCap, desc: t.teacherDesc },
               { id: "courses", label: t.courseCms, icon: BookOpen, desc: t.cmsDesc },
-
             ].map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id as any)}
+                  onClick={() => {
+                    setActiveTab(item.id as any);
+                    setIsMobileSidebarOpen(false);
+                  }}
                   className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     isActive
                       ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-950/30"
@@ -1630,7 +1908,7 @@ export default function Admin() {
                   title={isSidebarCollapsed ? item.label : undefined}
                 >
                   <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-white" : "text-slate-400"}`} />
-                  {!isSidebarCollapsed && (
+                  {(!isSidebarCollapsed || isMobileSidebarOpen) && (
                     <div className="text-left leading-tight">
                       <div className="font-bold text-sm">
                         {item.label}
@@ -1646,67 +1924,143 @@ export default function Admin() {
           </nav>
         </div>
 
-        {/* Sidebar Footer System Status */}
-        {!isSidebarCollapsed && (
-          <div className={`p-4 border-t ${isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-slate-50"} flex items-center justify-between`}>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className={`font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>{t.supabaseConnected}</span>
+        {/* Sidebar Footer: System Status & Admin Profile with Logout */}
+        <div className={`border-t ${isDark ? "border-slate-800/80 bg-slate-900/40" : "border-slate-200 bg-slate-50/70"}`}>
+          {(!isSidebarCollapsed || isMobileSidebarOpen) ? (
+            <div className="p-3 space-y-3">
+              {/* DB Status */}
+              <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className={`text-[11px] font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>{t.supabaseConnected}</span>
+                </div>
+                <button onClick={fetchSupabaseData} className="text-slate-400 hover:text-emerald-500 cursor-pointer" title={t.refreshDb}>
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-400" : ""}`} />
+                </button>
+              </div>
+
+              {/* Admin Profile & Logout Box */}
+              <div className={`p-2.5 rounded-xl border ${isDark ? "bg-slate-950/70 border-slate-800" : "bg-white border-slate-200"} flex items-center justify-between gap-2 shadow-2xs`}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-xs shrink-0">
+                    SA
+                  </div>
+                  <div className="truncate">
+                    <div className={`text-xs font-bold truncate leading-tight ${textHeading}`}>{t.loggedAdminUser}</div>
+                    <div className="text-[10px] text-slate-400 truncate">admin@learnops.com</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsLogoutModalOpen(true)}
+                  className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 transition-colors cursor-pointer shrink-0"
+                  title={t.logout}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-            <button onClick={fetchSupabaseData} className="text-slate-400 hover:text-emerald-500 cursor-pointer" title={t.refreshDb}>
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-400" : ""}`} />
-            </button>
-          </div>
-        )}
+          ) : (
+            <div className="p-2 flex flex-col items-center gap-2">
+              <button
+                onClick={fetchSupabaseData}
+                className="w-8 h-8 rounded-lg text-slate-400 hover:text-emerald-400 flex items-center justify-center cursor-pointer"
+                title={t.refreshDb}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-400" : ""}`} />
+              </button>
+              <button
+                onClick={() => setIsLogoutModalOpen(true)}
+                className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
+                title={t.logout}
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* ═══════════════════════════════════════════════════════════════════════════
          MAIN CONTENT AREA (RIGHT SIDE)
       ═══════════════════════════════════════════════════════════════════════════ */}
       <main
-        className={`flex-1 min-h-screen transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-20" : "ml-64"
-        } p-6 sm:p-10 pb-20`}
+        className={`flex-1 min-h-screen transition-all duration-300 ease-in-out
+          ml-0 ${isSidebarCollapsed ? "md:ml-20" : "md:ml-64"}
+          p-3.5 sm:p-6 lg:p-8 pb-24 overflow-x-hidden min-w-0
+        `}
       >
         {/* Header Title Bar */}
-        <header className={`flex flex-wrap items-center justify-between gap-4 pb-6 mb-8 border-b ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-          <div>
-            <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs font-bold px-3 py-1.5 rounded-full mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>
-                {activeTab === "sales" && t.badgeSales}
-                {activeTab === "leads" && t.badgeLeads}
-                {activeTab === "employees" && t.badgeEmployees}
-                {activeTab === "batches" && t.badgeBatches}
-                {activeTab === "courses" && t.badgeCourses}
-              </span>
+        <header className={`flex flex-wrap items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 mb-6 sm:mb-8 border-b ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Mobile Hamburger Toggle Button */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className={`md:hidden p-2 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800" : "bg-white border-slate-200 text-slate-800 hover:bg-slate-100"} shadow-xs cursor-pointer shrink-0`}
+              title="Open Navigation Menu"
+              aria-label="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5 text-emerald-500" />
+            </button>
+
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full mb-1">
+                <Sparkles className="w-3 h-3 shrink-0" />
+                <span className="truncate">
+                  {activeTab === "sales" && t.badgeSales}
+                  {activeTab === "leads" && t.badgeLeads}
+                  {activeTab === "employees" && t.badgeEmployees}
+                  {activeTab === "batches" && t.badgeBatches}
+                  {activeTab === "courses" && t.badgeCourses}
+                </span>
+              </div>
+              <h1 className={`text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight truncate ${textHeading}`}>
+                {activeTab === "sales" && t.titleSales}
+                {activeTab === "leads" && t.titleLeads}
+                {activeTab === "employees" && t.titleEmployees}
+                {activeTab === "batches" && t.titleBatches}
+                {activeTab === "courses" && t.titleCourses}
+              </h1>
             </div>
-            <h1 className={`text-3xl font-extrabold tracking-tight ${textHeading}`}>
-              {activeTab === "sales" && t.titleSales}
-              {activeTab === "leads" && t.titleLeads}
-              {activeTab === "employees" && t.titleEmployees}
-              {activeTab === "batches" && t.titleBatches}
-              {activeTab === "courses" && t.titleCourses}
-            </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {isLoading && (
-              <span className="inline-flex items-center gap-2 text-xs text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+              <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-500 bg-emerald-500/10 px-2.5 py-1.5 rounded-xl border border-emerald-500/30">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                {t.syncing}
+                <span className="hidden xs:inline">{t.syncing}</span>
               </span>
             )}
 
             {activeTab === "courses" && (
               <button
                 onClick={handleOpenCreateCourse}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-5 py-2.5 rounded-2xl shadow-lg transition-all text-xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-2xl shadow-lg transition-all text-xs cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                {t.addNewCourse}
+                <span>{t.addNewCourse}</span>
               </button>
             )}
+
+            {/* Quick Admin Profile & Logout Button in Header */}
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-700/50">
+              <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border ${isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"}`}>
+                <div className="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-[10px]">
+                  SA
+                </div>
+                <div className="text-left">
+                  <div className={`text-[11px] font-bold ${textHeading}`}>admin@learnops.com</div>
+                  <div className="text-[9px] text-emerald-500 font-semibold">{t.superAdminRole}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsLogoutModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 transition-all text-xs font-bold cursor-pointer"
+                title={t.logout}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t.logout}</span>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -2868,7 +3222,7 @@ export default function Admin() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className={`block text-xs font-bold ${textHeading} mb-1`}>
                     {t.fieldPrice}
@@ -3128,6 +3482,43 @@ export default function Admin() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* ═══════════════════════════════════════════════════════════════════════════
+         MODAL: 🔐 LOGOUT CONFIRMATION DIALOG
+      ═══════════════════════════════════════════════════════════════════════════ */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`w-full max-w-sm rounded-3xl border shadow-2xl ${bgCard} border-slate-700 p-6 animate-in fade-in zoom-in-95`}>
+            <div className="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <LogOut className="w-6 h-6" />
+            </div>
+            <h3 className={`text-lg font-bold text-center mb-2 ${textHeading}`}>
+              {t.logoutConfirmTitle}
+            </h3>
+            <p className={`text-xs text-center mb-6 leading-relaxed ${textSub}`}>
+              {t.logoutConfirmDesc}
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsLogoutModalOpen(false)}
+                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
+                  isDark ? "bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800" : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                {t.cancelBtn}
+              </button>
+              <button
+                type="button"
+                onClick={handleAdminLogout}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shadow-lg shadow-red-950/40 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{t.confirmLogoutBtn}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
