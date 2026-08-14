@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CheckCircle2,
   XCircle,
@@ -29,6 +29,12 @@ import {
   Eye,
   Video,
 } from "lucide-react";
+import {
+  getStoredBatches,
+  subscribeToBatchUpdates,
+  BatchItem,
+  StudentRosterItem,
+} from "../services/batchStore";
 
 /* ── DATA TYPES ── */
 export interface Student {
@@ -36,8 +42,10 @@ export interface Student {
   name: string | { bn: string; en: string };
   rollNo: string;
   batch: string | { bn: string; en: string };
+  batchId?: string;
   courseId: number;
   phone: string;
+  whatsappNumber?: string;
   attendanceStatus: "Present" | "Absent" | "Late";
   submittedHwCount: number;
   totalHwCount: number;
@@ -593,11 +601,61 @@ export default function TeacherPage() {
   const [currentLang, setCurrentLang] = useState<"bn" | "en">("bn");
   const t = dictionary[currentLang];
 
+  /* ── BATCH & ROSTER SYNC FROM BATCH STORE ── */
+  const [batches, setBatches] = useState<BatchItem[]>(() => getStoredBatches());
+
+  // Function to build unified student list from live batchStore + INITIAL_STUDENTS
+  const buildStudentsFromBatches = (batchList: BatchItem[]): Student[] => {
+    const list: Student[] = [...INITIAL_STUDENTS];
+    batchList.forEach((b, bIdx) => {
+      b.roster.forEach((r) => {
+        if (!list.some((s) => s.id === r.id || s.phone === r.phone)) {
+          list.push({
+            id: r.id,
+            name: { bn: r.name, en: r.name },
+            rollNo: r.rollNo || String(list.length + 1).padStart(2, "0"),
+            batch: { bn: b.name, en: b.name },
+            batchId: b.id,
+            courseId: bIdx + 1,
+            phone: r.phone,
+            whatsappNumber: r.whatsappNumber || r.phone,
+            attendanceStatus: "Present",
+            submittedHwCount: 3,
+            totalHwCount: 4,
+            progressPercent: r.attendancePercentage || 85,
+          });
+        }
+      });
+    });
+    return list;
+  };
+
   /* ── STATES ── */
-  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
+  const [students, setStudents] = useState<Student[]>(() => buildStudentsFromBatches(getStoredBatches()));
   const [homeworks, setHomeworks] = useState<HomeworkSubmission[]>(INITIAL_HOMEWORKS);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [activeTab, setActiveTab] = useState<"students" | "queue" | "assign" | "attendance" | "stats" | "notifs">("students");
+
+  // Subscribe to live batch store updates
+  useEffect(() => {
+    const initialBatches = getStoredBatches();
+    setBatches(initialBatches);
+    setStudents(buildStudentsFromBatches(initialBatches));
+
+    const unsub = subscribeToBatchUpdates((updatedBatches) => {
+      setBatches(updatedBatches);
+      setStudents(buildStudentsFromBatches(updatedBatches));
+    });
+    return unsub;
+  }, []);
+
+  // WhatsApp 1-Click Direct Messaging Helper
+  const openWhatsAppDirect = (phoneOrWa: string, message: string) => {
+    const clean = (phoneOrWa || "").replace(/\D/g, "");
+    if (!clean) return;
+    const num = clean.startsWith("88") ? clean : clean.startsWith("0") ? `88${clean}` : `880${clean}`;
+    window.open(`https://wa.me/${num}?text=${encodeURIComponent(message)}`, "_blank");
+  };
 
   /* Filter & Search States */
   const [searchQuery, setSearchQuery] = useState("");
@@ -772,9 +830,11 @@ export default function TeacherPage() {
       s.rollNo.includes(searchQuery);
     const matchesBatch =
       selectedBatch === "all" ||
+      s.batchId === selectedBatch ||
       (selectedBatch === "batch1" && stdBatch.includes("01")) ||
       (selectedBatch === "batch2" && stdBatch.includes("02")) ||
-      (selectedBatch === "batch3" && stdBatch.includes("03"));
+      (selectedBatch === "batch3" && stdBatch.includes("03")) ||
+      stdBatch.includes(selectedBatch);
     const matchesCourse =
       selectedCourseId === "all" || s.courseId === Number(selectedCourseId);
 
@@ -1137,9 +1197,11 @@ export default function TeacherPage() {
                     style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                   >
                     <option value="all">{t.allBatches}</option>
-                    <option value="batch1">{t.batch1}</option>
-                    <option value="batch2">{t.batch2}</option>
-                    <option value="batch3">{t.batch3}</option>
+                    {batches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name} ({b.schedule || b.courseTitle})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1172,7 +1234,9 @@ export default function TeacherPage() {
                             <span className="font-bold text-foreground text-sm block" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
                               {getLocalizedText(std.name, currentLang)}
                             </span>
-                            <span className="text-[11px] text-muted-foreground">{std.phone}</span>
+                            <span className="text-[11px] text-muted-foreground font-mono">
+                              {std.whatsappNumber || std.phone}
+                            </span>
                           </div>
                         </div>
                       </td>
@@ -1223,16 +1287,21 @@ export default function TeacherPage() {
 
                       {/* WhatsApp Direct Action */}
                       <td className="py-3.5 px-4 text-right">
-                        <a
-                          href={`https://api.whatsapp.com/send?phone=${std.phone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(`Dear ${getLocalizedText(std.name, currentLang)}, update from LearnOps regarding homework.`)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nameStr = getLocalizedText(std.name, currentLang);
+                            const msg = currentLang === "bn"
+                              ? `আসসালামু আলাইকুম! ${nameStr}-এর অভিভাবক, লার্নঅপস একাডেমি শিক্ষক পোর্টাল থেকে যোগাযোগ করছি। ক্লাসের পড়া ও অগ্রগতি সম্পর্কে কথা বলতে চাচ্ছি।`
+                              : `Assalamu Alaikum! Guardian of ${nameStr}, contacting you from LearnOps Teacher Portal regarding class progress and homework.`;
+                            openWhatsAppDirect(std.whatsappNumber || std.phone, msg);
+                          }}
+                          className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
                           style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                         >
                           <Send className="w-3 h-3" />
-                          <span>{t.sendViaWhatsApp}</span>
-                        </a>
+                          <span>WhatsApp</span>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -1370,20 +1439,45 @@ export default function TeacherPage() {
                     )}
                   </div>
 
-                  {/* Grading Action */}
-                  <div className="pt-3 border-t border-border/50 flex items-center justify-between gap-3">
+                  {/* Grading Action & WhatsApp Share */}
+                  <div className="pt-3 border-t border-border/50 flex flex-wrap items-center justify-between gap-2">
                     <button
                       onClick={() => {
                         setSelectedHw(hw);
                         setScoreInput(hw.score ? String(hw.score) : "90");
                         setFeedbackInput(getLocalizedText(hw.feedback, currentLang) || "");
                       }}
-                      className="w-full inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer shadow-xs"
+                      className="flex-1 inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all cursor-pointer shadow-xs"
                       style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                     >
                       <Award className="w-4 h-4" />
                       <span>{hw.status === "Graded" ? t.editGradeBtn : t.enterMarksGrade}</span>
                     </button>
+
+                    {hw.status === "Graded" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const sName = getLocalizedText(hw.studentName, currentLang);
+                          const hwTitleStr = getLocalizedText(hw.title, currentLang);
+                          const fbStr = getLocalizedText(hw.feedback, currentLang);
+                          const matchedStudent = students.find((s) => s.id === hw.studentId || getLocalizedText(s.name, "bn") === getLocalizedText(hw.studentName, "bn"));
+                          const targetPhone = matchedStudent?.whatsappNumber || matchedStudent?.phone || "01711223344";
+
+                          const msg = currentLang === "bn"
+                            ? `আসসালামু আলাইকুম! ${sName}-এর অভিভাবক, '${hwTitleStr}' হোমওয়ার্ক মূল্যায়ন সম্পন্ন হয়েছে। প্রাপ্ত স্কোর: ${hw.score}/১০০ (গ্রেড: ${hw.grade})। শিক্ষকের মন্তব্য: "${fbStr || 'খুব ভালো চেষ্টা'}"। - লার্নঅপস একাডেমি`
+                            : `Assalamu Alaikum! Guardian of ${sName}, homework '${hwTitleStr}' evaluation completed. Score: ${hw.score}/100 (Grade: ${hw.grade}). Teacher feedback: "${fbStr || 'Well done!'}". - LearnOps Academy`;
+
+                          openWhatsAppDirect(targetPhone, msg);
+                        }}
+                        className="inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-3.5 rounded-xl transition-all cursor-pointer shadow-xs"
+                        style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
+                        title="Send grade & feedback to Parent's WhatsApp"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>WhatsApp Result</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1438,12 +1532,14 @@ export default function TeacherPage() {
                       <h4 className="text-sm font-bold text-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
                         {getLocalizedText(student.name, currentLang)}
                       </h4>
-                      <p className="text-[11px] text-muted-foreground">{getLocalizedText(student.batch, currentLang)}</p>
+                      <p className="text-[11px] text-muted-foreground font-mono">
+                        {getLocalizedText(student.batch, currentLang)} • {student.whatsappNumber || student.phone}
+                      </p>
                     </div>
                   </div>
 
-                  {/* 1-Click Toggles */}
-                  <div className="flex gap-2">
+                  {/* 1-Click Toggles & Automated WhatsApp Alert */}
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => toggleAttendance(student.id, "Present")}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -1482,6 +1578,32 @@ export default function TeacherPage() {
                       <XCircle className="w-3.5 h-3.5" />
                       {t.absent}
                     </button>
+
+                    {/* WhatsApp Direct Absence / Late Alert */}
+                    {(student.attendanceStatus === "Absent" || student.attendanceStatus === "Late") && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const sName = getLocalizedText(student.name, currentLang);
+                          const isAbs = student.attendanceStatus === "Absent";
+                          const msg = currentLang === "bn"
+                            ? isAbs
+                              ? `আসসালামু আলাইকুম! ${sName}-এর অভিভাবক, আপনার সন্তান আজকের লাইভ ক্লাসে অনুপস্থিত ছিল। নিয়মিত ক্লাসে অংশ নেওয়া নিশ্চিত করার জন্য অনুরোধ করা যাচ্ছে। - লার্নঅপস একাডেমি`
+                              : `আসসালামু আলাইকুম! ${sName}-এর অভিভাবক, আপনার সন্তান আজকের ক্লাসে নির্ধারিত সময়ের চেয়ে দেরিতে যোগদান করেছে। সময়মতো ক্লাসে উপস্থিত থাকতে সহায়তা করুন। - লার্নঅপস একাডেমি`
+                            : isAbs
+                              ? `Assalamu Alaikum! Guardian of ${sName}, your child was absent in today's live class. Please ensure regular attendance. - LearnOps Academy`
+                              : `Assalamu Alaikum! Guardian of ${sName}, your child joined today's class late. Please ensure on-time attendance. - LearnOps Academy`;
+
+                          openWhatsAppDirect(student.whatsappNumber || student.phone, msg);
+                        }}
+                        className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer shadow-xs animate-in fade-in"
+                        style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
+                        title="Send automated WhatsApp alert to Guardian"
+                      >
+                        <Send className="w-3 h-3" />
+                        <span>WhatsApp Alert</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
