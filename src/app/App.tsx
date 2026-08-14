@@ -879,8 +879,14 @@ function AppContent() {
                 localStorage.setItem("learnops_admin_auth", JSON.stringify({ authenticated: true, role: "admin", email: "admin@learnops.com", name: "System Administrator" }));
                 navigate("/admin");
               } else if (selectedRole === "sales") {
+                localStorage.removeItem("learnops_admin_auth");
+                sessionStorage.removeItem("learnops_admin_auth");
+                localStorage.setItem("learnops_user_session", JSON.stringify({ authenticated: true, role: "telesales" }));
                 navigate("/employee");
               } else if (selectedRole === "teacher") {
+                localStorage.removeItem("learnops_admin_auth");
+                sessionStorage.removeItem("learnops_admin_auth");
+                localStorage.setItem("learnops_user_session", JSON.stringify({ authenticated: true, role: "teacher" }));
                 navigate("/teacher");
               } else if (selectedRole === "guardian") {
                 navigate("/guardian");
