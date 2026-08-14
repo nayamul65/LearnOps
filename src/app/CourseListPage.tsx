@@ -24,6 +24,7 @@ import Course2DetailsModal from "../components/Course2DetailsModal";
 import Course3DetailsModal from "../components/Course3DetailsModal";
 import Course4DetailsModal from "../components/Course4DetailsModal";
 import { getStoredCourses, subscribeToCourseUpdates, UnifiedCourse } from "../services/courseStore";
+import { submitInboundLead } from "../services/leadStore";
 
 export const GOOGLE_FORM_URL = "https://forms.google.com/demo-enrollment-form";
 
@@ -225,6 +226,56 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
   const [course3ModalOpen, setCourse3ModalOpen] = useState(false);
   const [course4ModalOpen, setCourse4ModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  // ── LEAD CAPTURE ENROLL MODAL STATE ──
+  const [enrollModal, setEnrollModal] = useState<{ isOpen: boolean; courseTitle: string }>({ isOpen: false, courseTitle: "" });
+  const [enrollStudentName, setEnrollStudentName] = useState("");
+  const [enrollParentName, setEnrollParentName] = useState("");
+  const [enrollPhone, setEnrollPhone] = useState("");
+  const [enrollLoading, setEnrollLoading] = useState(false);
+  const [enrollResult, setEnrollResult] = useState<{ status: "success" | "error"; message: string } | null>(null);
+
+  const openEnrollModal = (courseTitle: string) => {
+    setEnrollModal({ isOpen: true, courseTitle });
+    setEnrollStudentName("");
+    setEnrollParentName("");
+    setEnrollPhone("");
+    setEnrollResult(null);
+  };
+
+  const handleEnrollSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!enrollStudentName.trim() || !enrollParentName.trim() || !enrollPhone.trim()) return;
+    setEnrollLoading(true);
+    setEnrollResult(null);
+    try {
+      const { lead, httpStatus, error } = await submitInboundLead({
+        studentName: enrollStudentName.trim(),
+        parentName: enrollParentName.trim(),
+        phone: enrollPhone.trim(),
+        courseInterest: enrollModal.courseTitle,
+        source: "Google Form",
+      });
+      setEnrollResult({
+        status: "success",
+        message:
+          lang === "BN"
+            ? `✅ HTTP ${httpStatus} Created — আপনার এনরোলমেন্ট অনুরোধ সফলভাবে জমা হয়েছে! আমাদের প্রতিনিধি শীঘ্রই যোগাযোগ করবেন।`
+            : `✅ HTTP ${httpStatus} Created — Your enrollment request has been submitted! Our agent will contact you soon.`,
+      });
+      setTimeout(() => {
+        setEnrollModal({ isOpen: false, courseTitle: "" });
+        setEnrollResult(null);
+      }, 3000);
+    } catch (err) {
+      setEnrollResult({
+        status: "error",
+        message: lang === "BN" ? "❌ জমা দিতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।" : "❌ Submission failed. Please try again.",
+      });
+    } finally {
+      setEnrollLoading(false);
+    }
+  };
 
   useEffect(() => {
     return subscribeToCourseUpdates((updated) => {
@@ -625,12 +676,10 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
                           {lang === "BN" ? "বিস্তারিত দেখুন" : "View Details"}
                         </Button>
                         <Button
-                          asChild
                           className="flex-1 text-xs font-bold rounded-2xl transition-all hover:scale-[1.02] cursor-pointer py-5 flex items-center justify-center gap-1.5 shadow-md bg-primary text-white hover:bg-green-600 shadow-green-200/50 dark:shadow-green-950/40"
+                          onClick={() => openEnrollModal(lang === "BN" ? (course.title || "") : (course.titleEN || course.title || ""))}
                         >
-                          <a href={GOOGLE_FORM_URL} target="_blank" rel="noopener noreferrer">
-                            {lang === "BN" ? "এনরোল করুন" : "Enroll Now"} →
-                          </a>
+                          {lang === "BN" ? "এনরোল করুন" : "Enroll Now"} →
                         </Button>
                       </div>
                     </div>
@@ -641,6 +690,111 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
           </div>
         )}
       </div>
+
+      {/* ── LEAD CAPTURE ENROLL MODAL ── */}
+      {enrollModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-card border border-border rounded-3xl max-w-md w-full p-7 shadow-2xl relative">
+            <button
+              onClick={() => setEnrollModal({ isOpen: false, courseTitle: "" })}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Header */}
+            <div className="mb-5">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 rounded-full mb-3" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                <BookOpen className="w-3.5 h-3.5" />
+                {lang === "BN" ? "বিনামূল্যে ভর্তি অনুরোধ" : "Free Enrollment Request"}
+              </div>
+              <h2 className="text-xl font-bold text-foreground leading-tight" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                {lang === "BN" ? "কোর্সে ভর্তির জন্য আবেদন করুন" : "Apply to Enroll in This Course"}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                {lang === "BN"
+                  ? `কোর্স: ${enrollModal.courseTitle} — আপনার তথ্য দিন, আমাদের টিম শীঘ্রই যোগাযোগ করবে।`
+                  : `Course: ${enrollModal.courseTitle} — Fill your details and our team will contact you soon.`}
+              </p>
+            </div>
+
+            {enrollResult ? (
+              <div className={`flex items-start gap-3 p-4 rounded-2xl border text-sm font-semibold ${
+                enrollResult.status === "success"
+                  ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"
+                  : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
+              }`} style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                <span className="text-lg mt-0.5 shrink-0">{enrollResult.status === "success" ? "✅" : "❌"}</span>
+                <p className="leading-snug">{enrollResult.message}</p>
+              </div>
+            ) : (
+              <form onSubmit={handleEnrollSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                    {lang === "BN" ? "শিক্ষার্থীর নাম *" : "Student Name *"}
+                  </label>
+                  <input
+                    id="enroll-student-name"
+                    type="text"
+                    required
+                    placeholder={lang === "BN" ? "যেমন: আরাফ হোসেন" : "e.g. Araf Hossain"}
+                    value={enrollStudentName}
+                    onChange={(e) => setEnrollStudentName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-muted/40 text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
+                    style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                    {lang === "BN" ? "অভিভাবকের নাম *" : "Guardian Name *"}
+                  </label>
+                  <input
+                    id="enroll-guardian-name"
+                    type="text"
+                    required
+                    placeholder={lang === "BN" ? "যেমন: সামিরা বেগম" : "e.g. Samira Begum"}
+                    value={enrollParentName}
+                    onChange={(e) => setEnrollParentName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-muted/40 text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
+                    style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                    {lang === "BN" ? "মোবাইল নম্বর *" : "Phone Number *"}
+                  </label>
+                  <input
+                    id="enroll-phone"
+                    type="tel"
+                    required
+                    placeholder={lang === "BN" ? "যেমন: 01711-223344" : "e.g. 01711-223344"}
+                    value={enrollPhone}
+                    onChange={(e) => setEnrollPhone(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-muted/40 text-foreground text-sm focus:outline-none focus:border-primary transition-colors font-mono"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={enrollLoading}
+                  className="w-full bg-primary hover:bg-green-600 disabled:opacity-60 text-white font-bold py-3.5 rounded-2xl transition-all text-sm cursor-pointer shadow-md flex items-center justify-center gap-2"
+                  style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
+                >
+                  {enrollLoading ? (
+                    <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />{lang === "BN" ? "পাঠানো হচ্ছে..." : "Submitting..."}</>
+                  ) : (
+                    <>{lang === "BN" ? "ভর্তির অনুরোধ পাঠান" : "Submit Enrollment Request"} →</>
+                  )}
+                </button>
+
+                <p className="text-center text-[11px] text-muted-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+                  {lang === "BN" ? "🔒 আপনার তথ্য সম্পূর্ণ সুরক্ষিত। স্প্যাম নয়।" : "🔒 Your data is 100% secure. No spam."}
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── VIDEO DEMO MODAL ── */}
       {demoCourse && (
