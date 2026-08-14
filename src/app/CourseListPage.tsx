@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Star,
@@ -23,6 +23,7 @@ import Course1DetailsModal from "../components/Course1DetailsModal";
 import Course2DetailsModal from "../components/Course2DetailsModal";
 import Course3DetailsModal from "../components/Course3DetailsModal";
 import Course4DetailsModal from "../components/Course4DetailsModal";
+import { getStoredCourses, subscribeToCourseUpdates, UnifiedCourse } from "../services/courseStore";
 
 export const GOOGLE_FORM_URL = "https://forms.google.com/demo-enrollment-form";
 
@@ -215,6 +216,7 @@ interface CourseListPageProps {
 export default function CourseListPage({ dark, toggleDark, lang: propsLang }: CourseListPageProps) {
   const { lang: ctxLang } = useLanguage();
   const lang = ctxLang || propsLang || "BN";
+  const [coursesList, setCoursesList] = useState<UnifiedCourse[]>(getStoredCourses);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [demoCourse, setDemoCourse] = useState<Course | null>(null);
@@ -223,6 +225,12 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
   const [course3ModalOpen, setCourse3ModalOpen] = useState(false);
   const [course4ModalOpen, setCourse4ModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    return subscribeToCourseUpdates((updated) => {
+      setCoursesList(updated);
+    });
+  }, []);
 
   const categories = ["All", "Handwriting", "English", "Language", "Islamic"];
 
@@ -256,20 +264,20 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
     }
   };
 
-  const filteredCourses = COURSES.filter((course) => {
-    const titleToSearch = lang === "BN" ? course.title : course.titleEN;
-    const descToSearch = lang === "BN" ? course.description : course.descriptionEN;
+  const filteredCourses = coursesList.filter((course) => {
+    const titleToSearch = lang === "BN" ? (course.title || "") : (course.titleEN || course.title || "");
+    const descToSearch = lang === "BN" ? (course.description || "") : (course.descriptionEN || course.description || "");
     const matchesSearch =
       titleToSearch.toLowerCase().includes(searchQuery.toLowerCase()) ||
       descToSearch.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.category.toLowerCase().includes(searchQuery.toLowerCase());
+      (course.category || "").toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesCategory =
       selectedCategory === "All" ||
-      (selectedCategory === "Handwriting" && course.category.includes("Handwriting")) ||
-      (selectedCategory === "English" && course.category.includes("English")) ||
-      (selectedCategory === "Language" && course.category.includes("Phonics")) ||
-      (selectedCategory === "Islamic" && course.category.includes("Islamic"));
+      (selectedCategory === "Handwriting" && (course.category || "").includes("Handwriting")) ||
+      (selectedCategory === "English" && (course.category || "").includes("English")) ||
+      (selectedCategory === "Language" && (course.category || "").includes("Phonics")) ||
+      (selectedCategory === "Islamic" && (course.category || "").includes("Islamic"));
 
     return matchesSearch && matchesCategory;
   });
@@ -342,9 +350,9 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
             {/* Stats Badge */}
             <div className="flex gap-6 lg:self-center bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-2xl">
               {[
-                { val: `${COURSES.length}টি`, valEN: `${COURSES.length}`, label: "স্পেশাল কোর্স", labelEN: "Special Courses" },
+                { val: `${coursesList.length}টি`, valEN: `${coursesList.length}`, label: "স্পেশাল কোর্স", labelEN: "Special Courses" },
                 { val: "৫,০০০+", valEN: "5,000+", label: "সফল শিক্ষার্থী", labelEN: "Students" },
-                { val: "১০+", valEN: "10+", label: "বিশেষজ্ঞ মেন্টর", labelEN: "Expert Mentors" },
+                { val: "১০+", valEN: "বিশেষজ্ঞ মেন্টর", label: "বিশেষজ্ঞ মেন্টর", labelEN: "Expert Mentors" },
               ].map((s, idx) => (
                 <div key={idx} className="text-center">
                   <div className="text-xl sm:text-2xl font-bold text-white" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
