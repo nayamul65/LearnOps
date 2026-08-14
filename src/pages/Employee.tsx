@@ -59,6 +59,12 @@ import {
 } from "recharts";
 import { supabase, Lead, UserProfile } from "../lib/supabase";
 import { useLanguage } from "../app/context/LanguageContext";
+import {
+  getStoredBatches,
+  enrollStudentInBatch,
+  subscribeToBatchUpdates,
+  BatchItem,
+} from "../services/batchStore";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TYPES & MOCK INITIAL DATA FOR FALLBACK
@@ -264,11 +270,12 @@ const employeeTranslations = {
     confirmedRevenue: "Confirmed Revenue",
     selectLeadLabel: "Select Lead / Student *",
     selectCourseBatchLabel: "Select Course & Batch *",
+    whatsappNumberLabel: "WhatsApp Number (For Direct Automated Teacher Messaging) *",
     paymentMethodLabel: "Payment Method *",
     amountPaidLabel: "Amount Paid (৳) *",
     trxIdLabel: "Transaction ID (TrxID / Reference) *",
     confirmAndEnrollBtn: "Verify Payment & Confirm Sale ✓",
-    paymentConfirmedSuccess: "Payment confirmed and lead converted successfully!",
+    paymentConfirmedSuccess: "Payment confirmed, student enrolled in batch, and lead converted successfully!",
     confirmedBuyersTableTitle: "Confirmed Sales & Transactions History",
     colStudent: "Student & Parent",
     colCourseBatch: "Course & Batch",
@@ -383,11 +390,12 @@ const employeeTranslations = {
     confirmedRevenue: "কনফার্মড রেভিনিউ",
     selectLeadLabel: "লিড / শিক্ষার্থী নির্বাচন করুন *",
     selectCourseBatchLabel: "কোর্স ও ব্যাচ নির্বাচন করুন *",
+    whatsappNumberLabel: "হোয়াটসঅ্যাপ নম্বর (শিক্ষক পোর্টাল থেকে অটোমেটেড মেসেজিং) *",
     paymentMethodLabel: "পেমেন্ট মেথড *",
     amountPaidLabel: "পেমেন্ট পরিমাণ (টাকা) *",
     trxIdLabel: "ট্রানজেকশন আইডি (TrxID / রেফারেন্স) *",
     confirmAndEnrollBtn: "পেমেন্ট ভেরিফাই ও সেলস কনফার্ম করুন ✓",
-    paymentConfirmedSuccess: "পেমেন্ট ভেরিফাই হয়েছে এবং স্ট্যাটাস কনভার্টেড করা হয়েছে!",
+    paymentConfirmedSuccess: "পেমেন্ট ভেরিফাই হয়েছে, ব্যাচে এনরোল সম্পন্ন ও স্ট্যাটাস কনভার্টেড করা হয়েছে!",
     confirmedBuyersTableTitle: "কনফার্মড সেলস ও ট্রানজেকশন হিস্টোরি",
     colStudent: "শিক্ষার্থী ও অভিভাবক",
     colCourseBatch: "কোর্স ও ব্যাচ",
@@ -450,7 +458,7 @@ export default function Employee() {
 
   // Core Data States
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
-  const [batches, setBatches] = useState(MOCK_BATCHES);
+  const [batches, setBatches] = useState<BatchItem[]>(() => getStoredBatches());
   const [guardianAccounts, setGuardianAccounts] = useState<GuardianAccountRecord[]>([
     {
       id: "grd-101",
@@ -477,7 +485,8 @@ export default function Employee() {
   const [newNoteStatus, setNewNoteStatus] = useState<Lead["status"]>("Called");
 
   const [selectedLeadForPayment, setSelectedLeadForPayment] = useState<Lead | null>(null);
-  const [paymentCourseBatch, setPaymentCourseBatch] = useState(MOCK_BATCHES[0].name);
+  const [paymentSelectedBatchId, setPaymentSelectedBatchId] = useState<string>(() => (getStoredBatches()[0]?.id || "batch-101"));
+  const [paymentWhatsappNumber, setPaymentWhatsappNumber] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState("bKash");
   const [paymentAmount, setPaymentAmount] = useState("2500");
   const [paymentTrxId, setPaymentTrxId] = useState("");
@@ -486,7 +495,7 @@ export default function Employee() {
   const [guardianNameInput, setGuardianNameInput] = useState("");
   const [guardianPhoneInput, setGuardianPhoneInput] = useState("");
   const [studentNameInput, setStudentNameInput] = useState("");
-  const [selectedBatchId, setSelectedBatchId] = useState(MOCK_BATCHES[0].id);
+  const [selectedBatchId, setSelectedBatchId] = useState(() => (getStoredBatches()[0]?.id || "batch-101"));
 
   const [generatedLinkInfo, setGeneratedLinkInfo] = useState<{
     guardianName: string;
@@ -546,6 +555,10 @@ export default function Employee() {
 
   useEffect(() => {
     fetchSupabaseData();
+    const unsub = subscribeToBatchUpdates((updatedBatches) => {
+      setBatches(updatedBatches);
+    });
+    return unsub;
   }, []);
 
   // ── HANDLERS ──
@@ -638,13 +651,27 @@ export default function Employee() {
     if (!selectedLeadForPayment || !paymentTrxId.trim()) return;
 
     const amt = Number(paymentAmount) || 0;
+    const targetBatch = batches.find((b) => b.id === paymentSelectedBatchId) || batches[0];
+    const batchName = targetBatch ? targetBatch.name : "Batch";
+
     const noteObj = {
       date: new Date().toLocaleString(),
       note: lang === "en"
-        ? `Payment Confirmed: ৳${amt} (${paymentMethod}, TrxID: ${paymentTrxId}). Batch: ${paymentCourseBatch}`
-        : `পেমেন্ট নিশ্চিত করা হয়েছে: ৳${amt} (${paymentMethod}, TrxID: ${paymentTrxId})`,
+        ? `Payment Confirmed: ৳${amt} (${paymentMethod}, TrxID: ${paymentTrxId}). Batch: ${batchName}. WhatsApp: ${paymentWhatsappNumber || selectedLeadForPayment.phone}`
+        : `পেমেন্ট নিশ্চিত করা হয়েছে: ৳${amt} (${paymentMethod}, TrxID: ${paymentTrxId})। ব্যাচ: ${batchName}`,
       agent: currentAgent.name,
     };
+
+    // 1. Automatically enroll student in selected batch with WhatsApp number
+    if (targetBatch) {
+      enrollStudentInBatch(targetBatch.id, {
+        name: selectedLeadForPayment.studentName,
+        parentName: selectedLeadForPayment.parentName,
+        phone: selectedLeadForPayment.phone,
+        whatsappNumber: paymentWhatsappNumber || selectedLeadForPayment.phone,
+        courseTitle: selectedLeadForPayment.courseInterest,
+      });
+    }
 
     setLeads((prev) =>
       prev.map((l) => {
@@ -681,6 +708,7 @@ export default function Employee() {
 
     setSelectedLeadForPayment(null);
     setPaymentTrxId("");
+    setPaymentWhatsappNumber("");
   };
 
   // Guardian Account Creation & Direct Magic Link Handler
@@ -1431,7 +1459,9 @@ export default function Employee() {
                         <button
                           onClick={() => {
                             setSelectedLeadForPayment(lead);
-                            setPaymentCourseBatch(lead.courseInterest);
+                            setPaymentWhatsappNumber(lead.phone || "");
+                            const matchedBatch = batches.find((b) => b.courseTitle === lead.courseInterest) || batches[0];
+                            if (matchedBatch) setPaymentSelectedBatchId(matchedBatch.id);
                           }}
                           className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 px-3 rounded-xl transition-all cursor-pointer ${
                             lead.paymentConfirmed
@@ -1478,7 +1508,11 @@ export default function Employee() {
                         onChange={(e) => {
                           const found = myLeads.find((l) => l.id === e.target.value);
                           setSelectedLeadForPayment(found || null);
-                          if (found) setPaymentCourseBatch(found.courseInterest);
+                          if (found) {
+                            setPaymentWhatsappNumber(found.phone || "");
+                            const matchedBatch = batches.find((b) => b.courseTitle === found.courseInterest) || batches[0];
+                            if (matchedBatch) setPaymentSelectedBatchId(matchedBatch.id);
+                          }
                         }}
                         className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold ${inputBg}`}
                       >
@@ -1493,14 +1527,34 @@ export default function Employee() {
 
                     <div>
                       <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectCourseBatchLabel}</label>
-                      <input
-                        type="text"
+                      <select
                         required
-                        value={paymentCourseBatch}
-                        onChange={(e) => setPaymentCourseBatch(e.target.value)}
-                        className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold ${inputBg}`}
-                        placeholder="e.g. Batch 04 - Hand Writing"
-                      />
+                        value={paymentSelectedBatchId}
+                        onChange={(e) => setPaymentSelectedBatchId(e.target.value)}
+                        className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer ${inputBg}`}
+                      >
+                        {batches.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name} - {b.courseTitle} ({b.schedule})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.whatsappNumberLabel}</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. +8801711223344"
+                          value={paymentWhatsappNumber}
+                          onChange={(e) => setPaymentWhatsappNumber(e.target.value)}
+                          className={`w-full px-4 py-2.5 pl-9 rounded-xl text-xs font-mono font-bold text-emerald-400 ${inputBg}`}
+                        />
+                        <MessageSquare className="w-4 h-4 text-emerald-500 absolute left-3 top-3 pointer-events-none" />
+                      </div>
+                      <p className={`text-[10px] ${textSub} mt-1`}>Direct automated messaging enabled on Teacher Portal.</p>
                     </div>
 
                     <div>
@@ -1870,7 +1924,41 @@ export default function Employee() {
               Student: <strong className={textHeading}>{selectedLeadForPayment.studentName}</strong> ({selectedLeadForPayment.courseInterest})
             </p>
 
-            <form onSubmit={handleConfirmPayment} className="space-y-4">
+            <form onSubmit={handleConfirmPayment} className="space-y-3.5">
+              {/* Batch Selection Dropdown */}
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectCourseBatchLabel}</label>
+                <select
+                  required
+                  value={paymentSelectedBatchId}
+                  onChange={(e) => setPaymentSelectedBatchId(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer ${inputBg}`}
+                >
+                  {batches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} - {b.courseTitle} ({b.schedule})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* WhatsApp Number Input Field */}
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.whatsappNumberLabel}</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. +8801711223344"
+                    value={paymentWhatsappNumber}
+                    onChange={(e) => setPaymentWhatsappNumber(e.target.value)}
+                    className={`w-full px-4 py-2.5 pl-9 rounded-xl text-xs font-mono font-bold text-emerald-400 ${inputBg}`}
+                  />
+                  <MessageSquare className="w-4 h-4 text-emerald-500 absolute left-3 top-3 pointer-events-none" />
+                </div>
+                <p className={`text-[10px] ${textSub} mt-1`}>Direct automated messaging will be enabled on Teacher Portal.</p>
+              </div>
+
               <div>
                 <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.paymentMethodLabel}</label>
                 <div className="grid grid-cols-4 gap-2">
@@ -1893,27 +1981,29 @@ export default function Employee() {
                 </div>
               </div>
 
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.amountPaidLabel}</label>
-                <input
-                  type="number"
-                  required
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold ${inputBg}`}
-                />
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.amountPaidLabel}</label>
+                  <input
+                    type="number"
+                    required
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold ${inputBg}`}
+                  />
+                </div>
 
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.trxIdLabel}</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. BK928301X"
-                  value={paymentTrxId}
-                  onChange={(e) => setPaymentTrxId(e.target.value)}
-                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold ${inputBg}`}
-                />
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.trxIdLabel}</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. BK928301X"
+                    value={paymentTrxId}
+                    onChange={(e) => setPaymentTrxId(e.target.value)}
+                    className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold ${inputBg}`}
+                  />
+                </div>
               </div>
 
               <button
