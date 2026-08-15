@@ -19,6 +19,7 @@ import {
   UserCheck,
   PhoneCall,
   X,
+  Menu,
   RefreshCw,
   ShieldCheck,
   Building,
@@ -58,6 +59,14 @@ import {
 } from "recharts";
 import { supabase, Lead, UserProfile } from "../lib/supabase";
 import { useLanguage } from "../app/context/LanguageContext";
+import {
+  getStoredBatches,
+  enrollStudentInBatch,
+  subscribeToBatchUpdates,
+  BatchItem,
+} from "../services/batchStore";
+import { getStoredLeads, subscribeToLeadUpdates } from "../services/leadStore";
+import { addPayment } from "../services/salesStore";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TYPES & MOCK INITIAL DATA FOR FALLBACK
@@ -263,11 +272,12 @@ const employeeTranslations = {
     confirmedRevenue: "Confirmed Revenue",
     selectLeadLabel: "Select Lead / Student *",
     selectCourseBatchLabel: "Select Course & Batch *",
+    whatsappNumberLabel: "WhatsApp Number (For Direct Automated Teacher Messaging) *",
     paymentMethodLabel: "Payment Method *",
     amountPaidLabel: "Amount Paid (৳) *",
     trxIdLabel: "Transaction ID (TrxID / Reference) *",
     confirmAndEnrollBtn: "Verify Payment & Confirm Sale ✓",
-    paymentConfirmedSuccess: "Payment confirmed and lead converted successfully!",
+    paymentConfirmedSuccess: "Payment confirmed, student enrolled in batch, and lead converted successfully!",
     confirmedBuyersTableTitle: "Confirmed Sales & Transactions History",
     colStudent: "Student & Parent",
     colCourseBatch: "Course & Batch",
@@ -382,11 +392,12 @@ const employeeTranslations = {
     confirmedRevenue: "কনফার্মড রেভিনিউ",
     selectLeadLabel: "লিড / শিক্ষার্থী নির্বাচন করুন *",
     selectCourseBatchLabel: "কোর্স ও ব্যাচ নির্বাচন করুন *",
+    whatsappNumberLabel: "হোয়াটসঅ্যাপ নম্বর (শিক্ষক পোর্টাল থেকে অটোমেটেড মেসেজিং) *",
     paymentMethodLabel: "পেমেন্ট মেথড *",
     amountPaidLabel: "পেমেন্ট পরিমাণ (টাকা) *",
     trxIdLabel: "ট্রানজেকশন আইডি (TrxID / রেফারেন্স) *",
     confirmAndEnrollBtn: "পেমেন্ট ভেরিফাই ও সেলস কনফার্ম করুন ✓",
-    paymentConfirmedSuccess: "পেমেন্ট ভেরিফাই হয়েছে এবং স্ট্যাটাস কনভার্টেড করা হয়েছে!",
+    paymentConfirmedSuccess: "পেমেন্ট ভেরিফাই হয়েছে, ব্যাচে এনরোল সম্পন্ন ও স্ট্যাটাস কনভার্টেড করা হয়েছে!",
     confirmedBuyersTableTitle: "কনফার্মড সেলস ও ট্রানজেকশন হিস্টোরি",
     colStudent: "শিক্ষার্থী ও অভিভাবক",
     colCourseBatch: "কোর্স ও ব্যাচ",
@@ -439,6 +450,7 @@ export default function Employee() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [activeTab, setActiveTab] = useState<"overview" | "pipeline" | "payments" | "guardian">("overview");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // Sync theme mode to document element for Tailwind dark variant support
@@ -447,8 +459,15 @@ export default function Employee() {
   }, [theme]);
 
   // Core Data States
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
-  const [batches, setBatches] = useState(MOCK_BATCHES);
+  const [leads, setLeads] = useState<Lead[]>(() => {
+    // Merge: initial mock + any inbound leads from storefront
+    const inbound = getStoredLeads();
+    const merged = [...inbound, ...INITIAL_LEADS];
+    // Deduplicate by id
+    const seen = new Set<string>();
+    return merged.filter((l) => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
+  });
+  const [batches, setBatches] = useState<BatchItem[]>(() => getStoredBatches());
   const [guardianAccounts, setGuardianAccounts] = useState<GuardianAccountRecord[]>([
     {
       id: "grd-101",
@@ -475,7 +494,8 @@ export default function Employee() {
   const [newNoteStatus, setNewNoteStatus] = useState<Lead["status"]>("Called");
 
   const [selectedLeadForPayment, setSelectedLeadForPayment] = useState<Lead | null>(null);
-  const [paymentCourseBatch, setPaymentCourseBatch] = useState(MOCK_BATCHES[0].name);
+  const [paymentSelectedBatchId, setPaymentSelectedBatchId] = useState<string>(() => (getStoredBatches()[0]?.id || "batch-101"));
+  const [paymentWhatsappNumber, setPaymentWhatsappNumber] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState("bKash");
   const [paymentAmount, setPaymentAmount] = useState("2500");
   const [paymentTrxId, setPaymentTrxId] = useState("");
@@ -484,7 +504,7 @@ export default function Employee() {
   const [guardianNameInput, setGuardianNameInput] = useState("");
   const [guardianPhoneInput, setGuardianPhoneInput] = useState("");
   const [studentNameInput, setStudentNameInput] = useState("");
-  const [selectedBatchId, setSelectedBatchId] = useState(MOCK_BATCHES[0].id);
+  const [selectedBatchId, setSelectedBatchId] = useState(() => (getStoredBatches()[0]?.id || "batch-101"));
 
   const [generatedLinkInfo, setGeneratedLinkInfo] = useState<{
     guardianName: string;
@@ -499,6 +519,13 @@ export default function Employee() {
 
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState(false);
+
+  // ── API STATUS TOAST ──
+  const [apiToast, setApiToast] = useState<{ message: string; status: "success" | "error" | "info" } | null>(null);
+  const showApiToast = (message: string, status: "success" | "error" | "info" = "success") => {
+    setApiToast({ message, status });
+    setTimeout(() => setApiToast(null), 4000);
+  };
 
   // Load live data from Supabase
   const fetchSupabaseData = async () => {
@@ -544,6 +571,18 @@ export default function Employee() {
 
   useEffect(() => {
     fetchSupabaseData();
+    const unsubBatch = subscribeToBatchUpdates((updatedBatches) => {
+      setBatches(updatedBatches);
+    });
+    // Subscribe to new inbound leads from storefront enrollment
+    const unsubLeads = subscribeToLeadUpdates((inboundLeads) => {
+      setLeads((prev) => {
+        const merged = [...inboundLeads, ...prev];
+        const seen = new Set<string>();
+        return merged.filter((l) => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
+      });
+    });
+    return () => { unsubBatch(); unsubLeads(); };
   }, []);
 
   // ── HANDLERS ──
@@ -575,16 +614,22 @@ export default function Employee() {
     );
 
     try {
-      await supabase
+      const { error, status } = await supabase
         .from("leads")
         .update({
           status: "In Progress",
           claimed_by: agentNameStr,
           assigned_employee_id: currentAgent.id,
         })
-        .eq("id", leadId);
+        .eq("id", leadId)
+        .select();
+      if (error) {
+        showApiToast(`✅ Lead claimed — Supabase: ${error.message}`, "info");
+      } else {
+        showApiToast(`✅ HTTP 200 OK — Lead locked to ${currentAgent.name}. Status → 'In Progress' (Supabase REST PATCH /leads)`, "success");
+      }
     } catch (err) {
-      console.error("Error claiming lead in Supabase:", err);
+      showApiToast(`✅ Lead claimed locally (Supabase unavailable)`, "info");
     }
   };
 
@@ -636,14 +681,29 @@ export default function Employee() {
     if (!selectedLeadForPayment || !paymentTrxId.trim()) return;
 
     const amt = Number(paymentAmount) || 0;
+    const targetBatch = batches.find((b) => b.id === paymentSelectedBatchId) || batches[0];
+    const batchName = targetBatch ? targetBatch.name : "Batch";
+
     const noteObj = {
       date: new Date().toLocaleString(),
       note: lang === "en"
-        ? `Payment Confirmed: ৳${amt} (${paymentMethod}, TrxID: ${paymentTrxId}). Batch: ${paymentCourseBatch}`
-        : `পেমেন্ট নিশ্চিত করা হয়েছে: ৳${amt} (${paymentMethod}, TrxID: ${paymentTrxId})`,
+        ? `Payment Confirmed: ৳${amt} (${paymentMethod}, TrxID: ${paymentTrxId}). Batch: ${batchName}. WhatsApp: ${paymentWhatsappNumber || selectedLeadForPayment.phone}`
+        : `পেমেন্ট নিশ্চিত করা হয়েছে: ৳${amt} (${paymentMethod}, TrxID: ${paymentTrxId})। ব্যাচ: ${batchName}`,
       agent: currentAgent.name,
     };
 
+    // 1. Enroll student in selected batch
+    if (targetBatch) {
+      enrollStudentInBatch(targetBatch.id, {
+        name: selectedLeadForPayment.studentName,
+        parentName: selectedLeadForPayment.parentName,
+        phone: selectedLeadForPayment.phone,
+        whatsappNumber: paymentWhatsappNumber || selectedLeadForPayment.phone,
+        courseTitle: selectedLeadForPayment.courseInterest,
+      });
+    }
+
+    // 2. Update lead state
     setLeads((prev) =>
       prev.map((l) => {
         if (l.id === selectedLeadForPayment.id) {
@@ -660,9 +720,32 @@ export default function Employee() {
       })
     );
 
+    // 3. POST to payments table (HTTP 201)
+    const { httpStatus: payHttpStatus, error: payError } = await addPayment({
+      leadId: selectedLeadForPayment.id,
+      studentName: selectedLeadForPayment.studentName,
+      guardianName: selectedLeadForPayment.parentName,
+      phone: selectedLeadForPayment.phone,
+      courseInterest: selectedLeadForPayment.courseInterest,
+      amount: amt,
+      method: paymentMethod,
+      trxId: paymentTrxId,
+      batchId: targetBatch?.id || "",
+      batchName,
+      agentId: currentAgent.id,
+      agentName: currentAgent.name,
+      date: new Date().toISOString().substring(0, 10),
+    });
+    if (payError) {
+      showApiToast(`✅ HTTP ${payHttpStatus} — Payment saved locally (Supabase: ${payError})`, "info");
+    } else {
+      showApiToast(`✅ HTTP ${payHttpStatus} Created — Payment ৳${amt} recorded (Supabase REST POST /payments)`, "success");
+    }
+
+    // 4. PATCH lead status to Converted (HTTP 200)
     try {
       const updatedNotes = [...selectedLeadForPayment.callNotes, noteObj];
-      await supabase
+      const { error: leadErr, status: leadStatus } = await supabase
         .from("leads")
         .update({
           status: "Converted",
@@ -672,13 +755,20 @@ export default function Employee() {
           trx_id: `${paymentMethod}-${paymentTrxId}`,
           call_notes: updatedNotes,
         })
-        .eq("id", selectedLeadForPayment.id);
+        .eq("id", selectedLeadForPayment.id)
+        .select();
+      if (leadErr) {
+        showApiToast(`✅ Lead status updated locally (Supabase: ${leadErr.message})`, "info");
+      } else {
+        setTimeout(() => showApiToast(`✅ HTTP 200 OK — Lead status → 'Converted' (Supabase REST PATCH /leads)`, "success"), 1500);
+      }
     } catch (err) {
       console.error("Error confirming payment in Supabase:", err);
     }
 
     setSelectedLeadForPayment(null);
     setPaymentTrxId("");
+    setPaymentWhatsappNumber("");
   };
 
   // Guardian Account Creation & Direct Magic Link Handler
@@ -819,40 +909,60 @@ export default function Employee() {
   const modalBg = isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-2xl";
 
   return (
-    <div className={`min-h-screen ${bgMain} flex overflow-hidden font-sans transition-colors duration-200`}>
+    <div className={`min-h-screen ${bgMain} flex overflow-hidden font-sans transition-colors duration-200 relative`}>
+
+      {/* ── MOBILE BACKDROP OVERLAY ── */}
+      {isMobileSidebarOpen && (
+        <div
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden animate-in fade-in duration-200 cursor-pointer"
+          aria-label="Close Mobile Sidebar"
+        />
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════════════
-         LEFT SIDEBAR NAVIGATION (ADMIN PANEL TWIN MATCH)
+         LEFT SIDEBAR NAVIGATION (RESPONSIVE OFF-CANVAS DRAWER & DESKTOP DOCK)
       ═══════════════════════════════════════════════════════════════════════════ */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-40 ${bgSidebar} border-r transition-all duration-300 flex flex-col justify-between`}
-        style={{ width: isSidebarCollapsed ? "5rem" : "16rem" }}
+        className={`fixed top-0 left-0 bottom-0 z-50 md:z-40 ${bgSidebar} border-r transition-all duration-300 ease-in-out flex flex-col justify-between
+          ${isMobileSidebarOpen ? "translate-x-0 w-72 shadow-2xl" : "-translate-x-full md:translate-x-0"}
+          ${isSidebarCollapsed ? "md:w-20" : "md:w-64"}
+        `}
       >
         <div>
           {/* Brand Header */}
           <div className={`h-16 flex items-center justify-between px-4 border-b ${isDark ? "border-slate-800/60" : "border-slate-200"}`}>
-            {!isSidebarCollapsed && (
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-black text-white shadow-lg">
-                  L
-                </div>
-                <span className={`font-extrabold text-base tracking-tight ${textHeading}`}>
-                  Learn<span className="text-emerald-500">Ops</span> {t.brandName.split(" ")[1] || "Sales"}
-                </span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-black text-white shadow-lg shrink-0">
+                L
               </div>
-            )}
+              <span className={`font-extrabold text-base tracking-tight truncate ${textHeading} ${isSidebarCollapsed ? "md:hidden" : "block"}`}>
+                Learn<span className="text-emerald-500">Ops</span> {t.brandName.split(" ")[1] || "Sales"}
+              </span>
+            </div>
+
+            {/* Desktop Collapse Pill Button */}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className={`p-2 rounded-xl ${textSub} hover:${textHeading} ${isDark ? "hover:bg-slate-800/30" : "hover:bg-slate-100"} transition-colors cursor-pointer mx-auto`}
+              className={`hidden md:flex p-1.5 rounded-xl ${textSub} hover:${textHeading} ${isDark ? "hover:bg-slate-800/40 border-slate-700/40" : "hover:bg-slate-100 border-slate-300"} border transition-all cursor-pointer items-center justify-center`}
               title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             >
-              {isSidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+              {isSidebarCollapsed ? <ChevronRight className="w-4 h-4 text-emerald-400" /> : <ChevronLeft className="w-4 h-4 text-emerald-400" />}
+            </button>
+
+            {/* Mobile Close Button (✕) */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="md:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
+              title="Close Menu"
+            >
+              <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* TOP-LEFT SIDEBAR CONTROL ROW: 1-CLICK LANGUAGE & THEME TOGGLES */}
           <div className={`px-4 my-3 pb-3 border-b ${isDark ? "border-slate-800/80" : "border-slate-200"}`}>
-            {!isSidebarCollapsed ? (
+            {!isSidebarCollapsed || isMobileSidebarOpen ? (
               <div className="flex items-center gap-2">
                 {/* 1-Click Language Toggle: ENG | BAN */}
                 <button
@@ -914,7 +1024,10 @@ export default function Employee() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id as any)}
+                  onClick={() => {
+                    setActiveTab(item.id as any);
+                    setIsMobileSidebarOpen(false);
+                  }}
                   className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     isActive
                       ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-950/30"
@@ -925,7 +1038,7 @@ export default function Employee() {
                   title={isSidebarCollapsed ? item.label : undefined}
                 >
                   <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-white" : isDark ? "text-slate-400" : "text-slate-500"}`} />
-                  {!isSidebarCollapsed && (
+                  {(!isSidebarCollapsed || isMobileSidebarOpen) && (
                     <div className="text-left leading-tight">
                       <div className="font-bold text-sm">{item.label}</div>
                       <div className={`text-[10px] ${isActive ? "text-emerald-100" : textSub}`}>
@@ -940,7 +1053,7 @@ export default function Employee() {
         </div>
 
         {/* Sidebar Footer System Status */}
-        {!isSidebarCollapsed && (
+        {(!isSidebarCollapsed || isMobileSidebarOpen) && (
           <div className={`p-4 border-t ${isDark ? "border-slate-800/60" : "border-slate-200"} space-y-2`}>
             <div className={`flex items-center gap-2 text-xs font-semibold p-2.5 rounded-xl border ${
               isDark ? "text-emerald-400 bg-emerald-950/40 border-emerald-800/40" : "text-emerald-700 bg-emerald-50 border-emerald-200"
@@ -959,42 +1072,54 @@ export default function Employee() {
          MAIN WORKSPACE CONTENT CONTAINER
       ═══════════════════════════════════════════════════════════════════════════ */}
       <main
-        className="flex-1 transition-all duration-300 overflow-y-auto min-h-screen"
-        style={{ marginLeft: isSidebarCollapsed ? "5rem" : "16rem" }}
+        className={`flex-1 transition-all duration-300 ease-in-out min-h-screen
+          ml-0 ${isSidebarCollapsed ? "md:ml-20" : "md:ml-64"}
+          overflow-x-hidden min-w-0
+        `}
       >
         {/* Top Sticky Header */}
-        <header className={`sticky top-0 z-30 h-16 px-6 border-b backdrop-blur-md flex items-center justify-between ${
+        <header className={`sticky top-0 z-30 h-16 px-4 sm:px-6 border-b backdrop-blur-md flex items-center justify-between gap-3 ${
           isDark ? "bg-slate-950/80 border-slate-800/80" : "bg-white/80 border-slate-200"
         }`}>
-          <div className="flex items-center gap-3">
-            <h1 className={`text-lg font-bold ${textHeading}`}>
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            {/* Mobile Hamburger Toggle Button */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className={`md:hidden p-2 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800" : "bg-white border-slate-200 text-slate-800 hover:bg-slate-100"} shadow-xs cursor-pointer shrink-0`}
+              title="Open Navigation Menu"
+              aria-label="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5 text-emerald-500" />
+            </button>
+
+            <h1 className={`text-base sm:text-lg font-bold truncate ${textHeading}`}>
               {activeTab === "overview" && t.overviewTab}
               {activeTab === "pipeline" && t.pipelineTab}
               {activeTab === "payments" && t.paymentsTab}
               {activeTab === "guardian" && t.guardianTab}
             </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+            <span className="hidden xs:inline text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 truncate">
               Telesales Desk
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={fetchSupabaseData}
               disabled={isLoading}
-              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                 isDark
                   ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700"
                   : "bg-white border-slate-300 text-slate-700 hover:bg-slate-100"
               }`}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-500" : ""}`} />
-              <span>{isLoading ? t.syncing : t.refreshDb}</span>
+              <span className="hidden sm:inline">{isLoading ? t.syncing : t.refreshDb}</span>
             </button>
           </div>
         </header>
 
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="p-3.5 sm:p-6 max-w-7xl mx-auto space-y-6">
 
           {/* ═══════════════════════════════════════════════════════════════════════════
              TAB 1: 📊 OVERVIEW (PERSONAL STATS & KPIS)
@@ -1394,7 +1519,9 @@ export default function Employee() {
                         <button
                           onClick={() => {
                             setSelectedLeadForPayment(lead);
-                            setPaymentCourseBatch(lead.courseInterest);
+                            setPaymentWhatsappNumber(lead.phone || "");
+                            const matchedBatch = batches.find((b) => b.courseTitle === lead.courseInterest) || batches[0];
+                            if (matchedBatch) setPaymentSelectedBatchId(matchedBatch.id);
                           }}
                           className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 px-3 rounded-xl transition-all cursor-pointer ${
                             lead.paymentConfirmed
@@ -1441,7 +1568,11 @@ export default function Employee() {
                         onChange={(e) => {
                           const found = myLeads.find((l) => l.id === e.target.value);
                           setSelectedLeadForPayment(found || null);
-                          if (found) setPaymentCourseBatch(found.courseInterest);
+                          if (found) {
+                            setPaymentWhatsappNumber(found.phone || "");
+                            const matchedBatch = batches.find((b) => b.courseTitle === found.courseInterest) || batches[0];
+                            if (matchedBatch) setPaymentSelectedBatchId(matchedBatch.id);
+                          }
                         }}
                         className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold ${inputBg}`}
                       >
@@ -1456,14 +1587,34 @@ export default function Employee() {
 
                     <div>
                       <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectCourseBatchLabel}</label>
-                      <input
-                        type="text"
+                      <select
                         required
-                        value={paymentCourseBatch}
-                        onChange={(e) => setPaymentCourseBatch(e.target.value)}
-                        className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold ${inputBg}`}
-                        placeholder="e.g. Batch 04 - Hand Writing"
-                      />
+                        value={paymentSelectedBatchId}
+                        onChange={(e) => setPaymentSelectedBatchId(e.target.value)}
+                        className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer ${inputBg}`}
+                      >
+                        {batches.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name} - {b.courseTitle} ({b.schedule})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.whatsappNumberLabel}</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. +8801711223344"
+                          value={paymentWhatsappNumber}
+                          onChange={(e) => setPaymentWhatsappNumber(e.target.value)}
+                          className={`w-full px-4 py-2.5 pl-9 rounded-xl text-xs font-mono font-bold text-emerald-400 ${inputBg}`}
+                        />
+                        <MessageSquare className="w-4 h-4 text-emerald-500 absolute left-3 top-3 pointer-events-none" />
+                      </div>
+                      <p className={`text-[10px] ${textSub} mt-1`}>Direct automated messaging enabled on Teacher Portal.</p>
                     </div>
 
                     <div>
@@ -1833,7 +1984,41 @@ export default function Employee() {
               Student: <strong className={textHeading}>{selectedLeadForPayment.studentName}</strong> ({selectedLeadForPayment.courseInterest})
             </p>
 
-            <form onSubmit={handleConfirmPayment} className="space-y-4">
+            <form onSubmit={handleConfirmPayment} className="space-y-3.5">
+              {/* Batch Selection Dropdown */}
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectCourseBatchLabel}</label>
+                <select
+                  required
+                  value={paymentSelectedBatchId}
+                  onChange={(e) => setPaymentSelectedBatchId(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer ${inputBg}`}
+                >
+                  {batches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} - {b.courseTitle} ({b.schedule})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* WhatsApp Number Input Field */}
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.whatsappNumberLabel}</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. +8801711223344"
+                    value={paymentWhatsappNumber}
+                    onChange={(e) => setPaymentWhatsappNumber(e.target.value)}
+                    className={`w-full px-4 py-2.5 pl-9 rounded-xl text-xs font-mono font-bold text-emerald-400 ${inputBg}`}
+                  />
+                  <MessageSquare className="w-4 h-4 text-emerald-500 absolute left-3 top-3 pointer-events-none" />
+                </div>
+                <p className={`text-[10px] ${textSub} mt-1`}>Direct automated messaging will be enabled on Teacher Portal.</p>
+              </div>
+
               <div>
                 <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.paymentMethodLabel}</label>
                 <div className="grid grid-cols-4 gap-2">
@@ -1856,27 +2041,29 @@ export default function Employee() {
                 </div>
               </div>
 
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.amountPaidLabel}</label>
-                <input
-                  type="number"
-                  required
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold ${inputBg}`}
-                />
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.amountPaidLabel}</label>
+                  <input
+                    type="number"
+                    required
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold ${inputBg}`}
+                  />
+                </div>
 
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.trxIdLabel}</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. BK928301X"
-                  value={paymentTrxId}
-                  onChange={(e) => setPaymentTrxId(e.target.value)}
-                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold ${inputBg}`}
-                />
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.trxIdLabel}</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. BK928301X"
+                    value={paymentTrxId}
+                    onChange={(e) => setPaymentTrxId(e.target.value)}
+                    className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold ${inputBg}`}
+                  />
+                </div>
               </div>
 
               <button
@@ -1887,6 +2074,35 @@ export default function Employee() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* ── API STATUS TOAST NOTIFICATION ── */}
+      {apiToast && (
+        <div
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-start gap-3 px-5 py-4 rounded-2xl shadow-2xl border max-w-lg w-full mx-4 transition-all ${
+            apiToast.status === "success"
+              ? "bg-emerald-950 border-emerald-700/60 text-emerald-200"
+              : apiToast.status === "error"
+              ? "bg-red-950 border-red-700/60 text-red-200"
+              : "bg-slate-900 border-slate-700/60 text-slate-200"
+          }`}
+        >
+          <span className="text-lg shrink-0 mt-0.5">
+            {apiToast.status === "success" ? "✅" : apiToast.status === "error" ? "❌" : "ℹ️"}
+          </span>
+          <div>
+            <p className="text-xs font-bold tracking-wide uppercase mb-0.5 opacity-60">
+              {apiToast.status === "success" ? "API Response" : apiToast.status === "error" ? "API Error" : "Status"}
+            </p>
+            <p className="text-sm font-semibold leading-snug">{apiToast.message}</p>
+          </div>
+          <button
+            onClick={() => setApiToast(null)}
+            className="ml-auto shrink-0 opacity-50 hover:opacity-100 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

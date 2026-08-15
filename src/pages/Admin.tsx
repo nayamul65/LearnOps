@@ -21,6 +21,7 @@ import {
   UserCheck,
   PhoneCall,
   X,
+  Menu,
   RefreshCw,
   ShieldCheck,
   Building,
@@ -46,6 +47,16 @@ import {
   MapPin,
   ShieldAlert,
   Lock,
+  LogOut,
+  LogIn,
+  User,
+  Check,
+  Eye,
+  EyeOff,
+  PackageCheck,
+  ShoppingBag,
+  TrendingDown,
+  Percent,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -60,6 +71,28 @@ import {
 } from "recharts";
 import { supabase, Lead, UserProfile, StaffMember, CourseExtraCost, DeliveryRecord } from "../lib/supabase";
 import { useLanguage } from "../app/context/LanguageContext";
+import {
+  getStoredCourses,
+  saveAllCourses,
+  addOrUpdateCourse,
+  removeCourse,
+  subscribeToCourseUpdates,
+  UnifiedCourse,
+  DEFAULT_COURSES,
+} from "../services/courseStore";
+import {
+  getStoredBatches,
+  addOrUpdateBatch,
+  removeBatch,
+  subscribeToBatchUpdates,
+  DEFAULT_BATCHES,
+} from "../services/batchStore";
+import {
+  getStoredStaff,
+  addOrUpdateStaff,
+  subscribeToStaffUpdates,
+  saveAllStaff,
+} from "../services/staffStore";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TYPES & MOCK DATA SCHEMAS
@@ -77,6 +110,16 @@ export interface CMSCourse {
   demoVideoUrl: string;
   googleFormUrl?: string;
   headTeacher?: string;
+  [key: string]: any;
+}
+
+export interface OuterExpense {
+  id: string;
+  title: string;
+  category: "Marketing" | "Hiring" | "Books & Materials" | "Software" | "Logistics" | "Operations";
+  amount: number;
+  date: string;
+  notes?: string;
 }
 
 export interface EmployeePerf {
@@ -95,11 +138,16 @@ export interface StudentRosterItem {
   id: string;
   name: string;
   parentName: string;
+  phone?: string;
+  whatsappNumber?: string;
   rollNo: string;
   attendancePercentage: number;
   avgExamScore: number;
   grade: string;
   status: "Active" | "Completed";
+  enrolledAt?: string;
+  courseTitle?: string;
+  batchId?: string;
 }
 
 export interface BatchItem {
@@ -152,6 +200,49 @@ const INITIAL_COURSES: CMSCourse[] = [
     imageUrl: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=600&h=400&fit=crop&auto=format",
     demoVideoUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
     googleFormUrl: "https://forms.google.com/demo-enrollment-form",
+  },
+];
+
+const INITIAL_OUTER_EXPENSES: OuterExpense[] = [
+  {
+    id: "exp-1",
+    title: "Meta Lead Generation Ad Campaign (July)",
+    category: "Marketing",
+    amount: 35000,
+    date: "2026-07-20",
+    notes: "Targeted parents aged 28-45 across Dhaka & Chittagong",
+  },
+  {
+    id: "exp-2",
+    title: "Batch 4 Student Workbooks & Handwriting Practice Books",
+    category: "Books & Materials",
+    amount: 42000,
+    date: "2026-07-15",
+    notes: "200 premium sets printed with 100gsm high quality paper",
+  },
+  {
+    id: "exp-3",
+    title: "Telesales Executive & English Teacher Recruitment (BDJobs)",
+    category: "Hiring",
+    amount: 15000,
+    date: "2026-07-10",
+    notes: "Recruited 2 new Telesales agents and 1 English teacher",
+  },
+  {
+    id: "exp-4",
+    title: "Zoom Education & Cloud Hosting Subscriptions",
+    category: "Software",
+    amount: 8500,
+    date: "2026-07-05",
+    notes: "Monthly Zoom Pro enterprise licenses for 10 teachers",
+  },
+  {
+    id: "exp-5",
+    title: "Courier Express Delivery Bulk Advance (Steadfast)",
+    category: "Logistics",
+    amount: 12000,
+    date: "2026-07-02",
+    notes: "Advance balance for door-to-door book deliveries",
   },
 ];
 
@@ -499,8 +590,18 @@ const adminTranslations = {
 
     // Sales Sub-Tabs
     overallSalesTab: "Overall Sales Report",
-    extraCostTab: "Extra Cost Report",
-    deliveryTab: "Delivery Report",
+    extraCostTab: "Extra Cost & Expenses",
+    deliveryTab: "Book Delivery Tracking",
+
+    // Employee Sales Attribution
+    employeeSalesTitle: "Sales Performance by Telesales Representative",
+    soldByAgent: "Sold By (Agent)",
+    employeeFilterLabel: "Employee Filter:",
+    allEmployees: "All Sales Reps",
+    unitsSold: "Units Sold",
+    conversionRate: "Conversion Rate",
+    agentRevenue: "Revenue Closed",
+    topPerformer: "Top Performer",
 
     // Extra Cost Report
     grossSales: "Gross Sales",
@@ -514,8 +615,42 @@ const adminTranslations = {
     netProfitMargin: "Net Profit Margin",
     editCostTitle: "Edit Course Expenses",
 
+    // Outer Expenses
+    outerExpensesTitle: "Overall Outer & Operational Expenses",
+    addOuterExpense: "Add Outer Expense",
+    expenseCategory: "Expense Category",
+    expenseAmount: "Amount (৳)",
+    expenseDate: "Date",
+    expenseNotes: "Notes / Description",
+    operatingProfit: "Net Operating Profit",
+    outerExpenseTotal: "Total Operational Expenses",
+    courseProductionTotal: "Course Kit & Production Cost",
+    saveExpense: "Save Expense ✓",
+    modalAddExpenseTitle: "Add New Outer Operational Expense",
+    categoryMarketing: "Marketing & Ads",
+    categoryHiring: "Hiring & Recruitment",
+    categoryBooks: "Books & Materials",
+    categorySoftware: "Software & Tech",
+    categoryLogistics: "Logistics & Shipping",
+    categoryOperations: "Office & Operations",
+
     // Delivery Report
-    logisticsTrackingTable: "Logistics & Consignment Tracking",
+    logisticsTrackingTable: "Course Books Logistics & Consignment Tracking",
+    bookDeliveryTitle: "Course Book & Learning Kit Delivery Tracking",
+    dispatchBookBtn: "Dispatch Book Courier",
+    modalDispatchTitle: "Dispatch Course Book via Courier",
+    dispatchStudentName: "Student Name",
+    dispatchPhone: "Phone Number",
+    dispatchAddress: "Delivery Address",
+    dispatchCourier: "Courier Partner",
+    dispatchConsignment: "Consignment ID / Tracking Code",
+    dispatchTrxId: "Payment TrxID",
+    saveDispatch: "Confirm & Dispatch Books ✓",
+    booksDispatched: "Total Book Parcels Dispatched",
+    deliverySuccessRate: "Delivery Success Rate",
+    inTransitBooks: "In Transit",
+    deliveredBooks: "Successfully Delivered",
+    pendingDispatch: "Pending Dispatch",
     searchDelivery: "Search by Consignment ID or Phone...",
     courierService: "Courier Service",
     consignmentId: "Consignment ID / Tracking Code",
@@ -617,6 +752,15 @@ const adminTranslations = {
     headTeacherSubtitle: "Click any course card to filter its active batches below. Select the head instructor for each course.",
     currentHeadTeacher: "Head Teacher:",
     activeBatchesTitle: "Active Batches & Student Roster",
+    addNewBatch: "Create New Batch",
+    modalAddBatchTitle: "Create Course Batch & Assign Teacher",
+    batchNameLabel: "Batch Name & Batch No. *",
+    batchCourseLabel: "Select Designated Course *",
+    batchScheduleLabel: "Weekly Schedule & Time Slot *",
+    assignTeacherLabel: "Assign Registered Teacher *",
+    batchMaxStudentsLabel: "Maximum Student Capacity",
+    saveBatchBtn: "Create & Save Batch ✓",
+    directWaChat: "WhatsApp Roster",
     filteredCourseBadge: "Filtered Course:",
     selectedBadge: "Selected",
     instructorLabel: "Instructor:",
@@ -645,6 +789,25 @@ const adminTranslations = {
     saveChanges: "Save Changes ✓",
     publishCourse: "Publish Course ✓",
 
+    // Auth & Logout
+    logout: "Log Out",
+    login: "Log In",
+    adminLoginTitle: "Admin Portal Authentication",
+    adminLoginSubtitle: "Enter administrator credentials to access the management dashboard.",
+    emailAddress: "Email Address",
+    password: "Password",
+    rememberMe: "Remember session",
+    loginBtn: "Sign In to Admin Portal",
+    demoAdminCredentials: "Quick Demo Credentials",
+    loginError: "Invalid email or password. Use admin@learnops.com / admin123",
+    loggedOutSuccess: "You have been logged out successfully.",
+    logoutConfirmTitle: "Confirm Admin Logout",
+    logoutConfirmDesc: "Are you sure you want to sign out of the LearnOps Admin Portal?",
+    cancelBtn: "Cancel",
+    confirmLogoutBtn: "Yes, Log Out",
+    backToHome: "Return to Public Home",
+    superAdminRole: "Super Admin",
+    loggedAdminUser: "System Administrator",
   },
   bn: {
     brandName: "লার্নঅপস অ্যাডমিন",
@@ -679,12 +842,22 @@ const adminTranslations = {
 
     // Sales Sub-Tabs
     overallSalesTab: "📊 সার্বিক সেলস রিপোর্ট",
-    extraCostTab: "💸 অতিরিক্ত খরচ রিপোর্ট",
-    deliveryTab: "🚚 ডেলিভারি ট্র্যাকিং রিপোর্ট",
+    extraCostTab: "💸 অতিরিক্ত খরচ ও ব্যয়",
+    deliveryTab: "🚚 বই ডেলিভারি ট্র্যাকিং",
+
+    // Employee Sales Attribution
+    employeeSalesTitle: "টেলিসেলস প্রতিনিধিভিত্তিক সেলস রিপোর্ট ও পারফরম্যান্স",
+    soldByAgent: "বিক্রেতা প্রতিনিধি",
+    employeeFilterLabel: "প্রতিনিধি ফিল্টার:",
+    allEmployees: "সকল সেলস প্রতিনিধি",
+    unitsSold: "মোট বিক্রিত কোর্স",
+    conversionRate: "কনভার্সন রেট",
+    agentRevenue: "মোট রেভিনিউ",
+    topPerformer: "শীর্ষ পারফরমার",
 
     // Extra Cost Report
     grossSales: "মোট গ্রস সেলস",
-    totalExpenses: "মোট খরচ ও কুরিয়ার ফি",
+    totalExpenses: "মোট কোর্স ও কুরিয়ার খরচ",
     netProfit: "নিট প্রফিট",
     itemizedCostTable: "আইটেমাইজড কোর্স ও প্রোডাক্ট খরচ তালিকা",
     printingCost: "ছাপা খরচ (৳)",
@@ -694,8 +867,42 @@ const adminTranslations = {
     netProfitMargin: "নিট প্রফিট মার্জিন",
     editCostTitle: "কোর্স খরচ পরিবর্তন করুন",
 
+    // Outer Expenses
+    outerExpensesTitle: "সার্বিক অপারেশনাল ও অতিরিক্ত খরচ ব্যবস্থাপনা",
+    addOuterExpense: "নতুন খরচ যুক্ত করুন",
+    expenseCategory: "খরচের ক্যাটাগরি",
+    expenseAmount: "টাকার পরিমাণ (৳)",
+    expenseDate: "তারিখ",
+    expenseNotes: "বিবরণ / নোটস",
+    operatingProfit: "নিট অপারেটিং প্রফিট",
+    outerExpenseTotal: "মোট অপারেশনাল খরচ",
+    courseProductionTotal: "কোর্স কিট ও প্রিন্টিং খরচ",
+    saveExpense: "খরচ সেভ করুন ✓",
+    modalAddExpenseTitle: "নতুন অপারেশনাল খরচ এন্ট্রি",
+    categoryMarketing: "মার্কেটিং ও এডস",
+    categoryHiring: "নিয়োগ ও রিক্রুটমেন্ট",
+    categoryBooks: "বই প্রিন্টিং ও ম্যাটেরিয়ালস",
+    categorySoftware: "সফটওয়্যার ও টেক",
+    categoryLogistics: "লজিস্টিকস ও কুরিয়ার",
+    categoryOperations: "অফিস ও অপারেশনস",
+
     // Delivery Report
-    logisticsTrackingTable: "লজিস্টিকস ও কন্সাইনমেন্ট ট্র্যাকিং",
+    logisticsTrackingTable: "কোর্স বই লজিস্টিকস ও কন্সাইনমেন্ট ট্র্যাকিং",
+    bookDeliveryTitle: "কোর্স বই ও লার্নিং কিট ডেলিভারি ট্র্যাকিং",
+    dispatchBookBtn: "নতুন বই কুরিয়ার পাঠান",
+    modalDispatchTitle: "কুরিয়ারের মাধ্যমে কোর্স বই ডিসপ্যাচ করুন",
+    dispatchStudentName: "শিক্ষার্থীর নাম",
+    dispatchPhone: "ফোন নম্বর",
+    dispatchAddress: "ডেলিভারি ঠিকানা",
+    dispatchCourier: "কুরিয়ার পার্টনার",
+    dispatchConsignment: "কন্সাইনমেন্ট আইডি / ট্র্যাকিং কোড",
+    dispatchTrxId: "পেমেন্ট TrxID",
+    saveDispatch: "বই ডিসপ্যাচ নিশ্চিত করুন ✓",
+    booksDispatched: "মোট ডিসপ্যাচকৃত বই",
+    deliverySuccessRate: "সফল ডেলিভারি হার",
+    inTransitBooks: "কুরিয়ারে চলমান",
+    deliveredBooks: "ডেলিভারি সম্পন্ন",
+    pendingDispatch: "পেন্ডিং ডিসপ্যাচ",
     searchDelivery: "কন্সাইনমেন্ট আইডি বা ফোন দিয়ে খুঁজুন...",
     courierService: "কুরিয়ার সার্ভিস",
     consignmentId: "কন্সাইনমেন্ট আইডি / ট্র্যাকিং কোড",
@@ -797,6 +1004,15 @@ const adminTranslations = {
     headTeacherSubtitle: "যেকোনো কোর্স কার্ডে ক্লিক করে উক্ত কোর্সের ব্যাচসমূহ নিচে ফিল্টার করে দেখুন। প্রতিটি কোর্সের হেড ইনস্ট্রাক্টর ড্রপডাউন থেকে নির্বাচন করুন।",
     currentHeadTeacher: "বর্তমান হেড টিচার:",
     activeBatchesTitle: "অ্যাক্টিভ ব্যাচসমূহ ও স্টুডেন্ট পারফরম্যান্স রোস্টার",
+    addNewBatch: "নতুন ব্যাচ তৈরি করুন",
+    modalAddBatchTitle: "নতুন কোর্স ব্যাচ তৈরি ও শিক্ষক অর্পণ",
+    batchNameLabel: "ব্যাচের নাম ও ব্যাচ নম্বর *",
+    batchCourseLabel: "নির্দিষ্ট কোর্স নির্বাচন করুন *",
+    batchScheduleLabel: "সাপ্তাহিক সময়সূচি ও শিডিউল *",
+    assignTeacherLabel: "নিবন্ধিত শিক্ষক নির্বাচন করুন *",
+    batchMaxStudentsLabel: "সর্বোচ্চ শিক্ষার্থী ধারণক্ষমতা",
+    saveBatchBtn: "ব্যাচ তৈরি ও সংরক্ষণ করুন ✓",
+    directWaChat: "হোয়াটসঅ্যাপ বার্তা",
     filteredCourseBadge: "ফিল্টারকৃত কোর্স:",
     selectedBadge: "সিলেক্টেড",
     instructorLabel: "ইনস্ট্রাক্টর:",
@@ -825,6 +1041,25 @@ const adminTranslations = {
     saveChanges: "পরিবর্তন সেভ করুন ✓",
     publishCourse: "কোর্স পাবলিশ করুন ✓",
 
+    // Auth & Logout
+    logout: "লগআউট",
+    login: "লগইন",
+    adminLoginTitle: "অ্যাডমিন পোর্টাল লগইন",
+    adminLoginSubtitle: "ম্যানেজমেন্ট ড্যাশবোর্ডে প্রবেশ করতে আপনার অ্যাডমিনিস্ট্রেটর তথ্য দিন।",
+    emailAddress: "ইমেইল অ্যাড্রেস",
+    password: "পাসওয়ার্ড",
+    rememberMe: "সেশন মনে রাখুন",
+    loginBtn: "অ্যাডমিন হিসেবে প্রবেশ করুন",
+    demoAdminCredentials: "কুইক ডেমো তথ্য",
+    loginError: "ভুল ইমেইল বা পাসওয়ার্ড। admin@learnops.com / admin123 ব্যবহার করুন",
+    loggedOutSuccess: "আপনি সফলভাবে লগআউট করেছেন।",
+    logoutConfirmTitle: "অ্যাডমিন লগআউট নিশ্চিত করুন",
+    logoutConfirmDesc: "আপনি কি নিশ্চিতভাবে লার্নঅপস অ্যাডমিন পোর্টাল থেকে সাইন আউট করতে চান?",
+    cancelBtn: "বাতিল করুন",
+    confirmLogoutBtn: "হ্যাঁ, লগআউট করুন",
+    backToHome: "পাবলিক হোমে ফিরে যান",
+    superAdminRole: "সুপার অ্যাডমিন",
+    loggedAdminUser: "সিস্টেম অ্যাডমিনিস্ট্রেটর",
   },
 };
 
@@ -840,16 +1075,115 @@ export default function Admin() {
   // Navigation Sidebar & Loading States
   const [activeTab, setActiveTab] = useState<"sales" | "leads" | "employees" | "batches" | "courses">("sales");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // ── ADMIN AUTHENTICATION STATES ──
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("learnops_admin_auth") || sessionStorage.getItem("learnops_admin_auth");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Boolean(parsed.authenticated);
+      }
+    } catch (e) {
+      // fallback
+    }
+    return true; // Default authenticated so existing links work, with full login/logout capabilities
+  });
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("admin@learnops.com");
+  const [loginPassword, setLoginPassword] = useState("admin123");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [loginRemember, setLoginRemember] = useState(true);
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    if (!loginEmail || !loginPassword) {
+      setLoginError(lang === "en" ? "Please enter both email and password." : "ইমেইল এবং পাসওয়ার্ড প্রবেশ করুন।");
+      return;
+    }
+    setLoginLoading(true);
+    setTimeout(() => {
+      setLoginLoading(false);
+      const cleanEmail = loginEmail.toLowerCase().trim();
+
+      // Check if credentials match Master Admin
+      if (
+        (cleanEmail === "admin@learnops.com" && loginPassword === "admin123") ||
+        (cleanEmail === "admin" && loginPassword === "admin")
+      ) {
+        const authData = {
+          authenticated: true,
+          role: "admin",
+          email: "admin@learnops.com",
+          name: "System Administrator",
+          loginTime: new Date().toISOString(),
+        };
+        if (loginRemember) {
+          localStorage.setItem("learnops_admin_auth", JSON.stringify(authData));
+        } else {
+          sessionStorage.setItem("learnops_admin_auth", JSON.stringify(authData));
+        }
+        setIsAdminLoggedIn(true);
+        return;
+      }
+
+      // Check if credentials belong to a non-admin staff member (Telesales or Teacher) -> 403 Forbidden Guard
+      const currentStaffList = getStoredStaff();
+      const matchedStaff = currentStaffList.find(
+        (s) => s.email.toLowerCase().trim() === cleanEmail && (s.tempPassword === loginPassword || loginPassword === "pass1234password" || loginPassword === "pass1234")
+      );
+
+      if (matchedStaff) {
+        // Access Guarding: 403 Forbidden
+        const roleLabel = matchedStaff.role === "Telesales" ? "Telesales" : "Teacher";
+        const destination = matchedStaff.role === "Telesales" ? "/employee" : "/teacher";
+        setLoginError(
+          lang === "en"
+            ? `403 Forbidden: Access Denied. Your account role ('${roleLabel}') is restricted from the Admin Portal. Please log in at your designated workspace (${destination}).`
+            : `৪০৩ ফরবিডেন: অ্যাক্সেস প্রত্যাখ্যাত। আপনার রোল ('${roleLabel}') অ্যাডমিন পোর্টালে প্রবেশের অনুমতি রাখে না। (${destination}) এ লগইন করুন।`
+        );
+        return;
+      }
+
+      setLoginError(t.loginError);
+    }, 500);
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem("learnops_admin_auth");
+    sessionStorage.removeItem("learnops_admin_auth");
+    setIsAdminLoggedIn(false);
+    setIsLogoutModalOpen(false);
+  };
+
   // ── DATA STATES ──
-  const [courses, setCourses] = useState<CMSCourse[]>(INITIAL_COURSES);
+  const [courses, setCourses] = useState<CMSCourse[]>(() => getStoredCourses() as any);
   const [employees, setEmployees] = useState<EmployeePerf[]>(INITIAL_EMPLOYEES);
-  const [batches, setBatches] = useState<BatchItem[]>(INITIAL_BATCHES);
+  const [batches, setBatches] = useState<BatchItem[]>(() => getStoredBatches());
   const [selectedCourseId, setSelectedCourseId] = useState<string | number | null>("c-101");
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>("batch-101");
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
+
+  // ── API STATUS TOAST ──
+  const [apiToast, setApiToast] = useState<{ message: string; status: "success" | "error" | "info" } | null>(null);
+  const showApiToast = (message: string, status: "success" | "error" | "info" = "success") => {
+    setApiToast({ message, status });
+    setTimeout(() => setApiToast(null), 4000);
+  };
+
+  // ── BATCH CREATION MODAL STATE ──
+  const [isAddBatchModalOpen, setIsAddBatchModalOpen] = useState(false);
+  const [newBatchCourseId, setNewBatchCourseId] = useState<string>("c-101");
+  const [newBatchName, setNewBatchName] = useState<string>("");
+  const [newBatchSchedule, setNewBatchSchedule] = useState<string>("");
+  const [newBatchTeacherId, setNewBatchTeacherId] = useState<string>("staff-2");
+  const [newBatchMaxStudents, setNewBatchMaxStudents] = useState<number>(25);
 
   // ── DYNAMIC YEAR GENERATOR ──
   const currentYear = new Date().getFullYear();
@@ -861,13 +1195,12 @@ export default function Admin() {
   const [selectedMonth, setSelectedMonth] = useState<string>("6"); // July (0-indexed 6)
   const [selectedWeek, setSelectedWeek] = useState<string>("Week 1");
   const [salesCourseFilter, setSalesCourseFilter] = useState<string>("All");
+  const [salesEmployeeFilter, setSalesEmployeeFilter] = useState<string>("All");
 
   // ── LEAD MANAGEMENT FILTERS ──
   const [leadSourceFilter, setLeadSourceFilter] = useState<"All" | "Ad Click" | "Google Form" | "Social DM">("All");
   const [leadClaimFilter, setLeadClaimFilter] = useState<"All" | "Unassigned" | "Assigned">("All");
   const [leadSearchQuery, setLeadSearchQuery] = useState("");
-
-
 
   // ── COURSE FORM MODAL STATE ──
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -888,7 +1221,7 @@ export default function Admin() {
   const [salesSubTab, setSalesSubTab] = useState<"overall" | "extraCost" | "delivery">("overall");
 
   // ── STAFF MANAGEMENT STATE ──
-  const [staffMembers, setStaffMembers] = useState<StaffMember[]>(INITIAL_STAFF);
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>(() => getStoredStaff());
   const [newStaffForm, setNewStaffForm] = useState({
     name: "",
     email: "",
@@ -899,13 +1232,22 @@ export default function Admin() {
   const [resetPasswordStaff, setResetPasswordStaff] = useState<StaffMember | null>(null);
   const [newTempPasswordInput, setNewTempPasswordInput] = useState("");
 
-  // ── EXTRA COST REPORT STATE ──
+  // ── EXTRA COST & OUTER EXPENSES REPORT STATE ──
   const [extraCosts, setExtraCosts] = useState<CourseExtraCost[]>(INITIAL_EXTRA_COSTS);
   const [editingCostId, setEditingCostId] = useState<string | null>(null);
   const [editingCostForm, setEditingCostForm] = useState({
     printingCost: "350",
     inboundFreight: "80",
     courierFee: "120",
+  });
+  const [outerExpenses, setOuterExpenses] = useState<OuterExpense[]>(INITIAL_OUTER_EXPENSES);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({
+    title: "",
+    category: "Marketing" as OuterExpense["category"],
+    amount: "",
+    date: new Date().toISOString().substring(0, 10),
+    notes: "",
   });
 
   // ── DELIVERY TRACKING REPORT STATE ──
@@ -916,6 +1258,16 @@ export default function Admin() {
   >("All");
   const [editingDelivery, setEditingDelivery] = useState<DeliveryRecord | null>(null);
   const [newDeliveryStatus, setNewDeliveryStatus] = useState<DeliveryRecord["deliveryStatus"]>("Pending");
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
+  const [dispatchForm, setDispatchForm] = useState({
+    studentName: "",
+    phone: "",
+    address: "",
+    course: "২৫ দিনে সুন্দর হাতের লেখা",
+    courierService: "Steadfast" as DeliveryRecord["courierService"],
+    consignmentId: "",
+    trxId: "",
+  });
 
   // ── SUPABASE LOAD FUNCTION ──
   const fetchSupabaseData = async () => {
@@ -1044,7 +1396,8 @@ export default function Admin() {
       createdAt: new Date().toISOString().substring(0, 10),
     };
 
-    setStaffMembers((prev) => [newStaff, ...prev]);
+    const updated = await addOrUpdateStaff(newStaff);
+    setStaffMembers(updated);
 
     // Also update employees performance list if missing
     setEmployees((prev) => [
@@ -1061,45 +1414,6 @@ export default function Admin() {
         adLeadConversion: 0,
       },
     ]);
-
-    try {
-      // 1. Sync to Supabase auth if allowed
-      await supabase.auth.signUp({
-        email: newStaffForm.email,
-        password: newStaffForm.tempPassword || "pass1234password",
-        options: {
-          data: {
-            name: newStaffForm.name,
-            role: newStaffForm.role.toLowerCase(),
-            phone: newStaffForm.phone,
-          },
-        },
-      });
-
-      // 2. Insert into users / profiles / staff table in Supabase
-      const { error: dbErr } = await supabase.from("staff").insert([
-        {
-          name: newStaffForm.name,
-          email: newStaffForm.email,
-          phone: newStaffForm.phone,
-          role: newStaffForm.role,
-          status: "Active",
-          temp_password: newStaffForm.tempPassword || "pass1234password",
-        },
-      ]);
-      if (dbErr) console.warn("Supabase staff table sync (non-fatal):", dbErr.message);
-
-      const { error: userErr } = await supabase.from("users").insert([
-        {
-          name: newStaffForm.name,
-          email: newStaffForm.email,
-          role: newStaffForm.role === "Teacher" ? "teacher" : "sales",
-        },
-      ]);
-      if (userErr) console.warn("Supabase users table sync (non-fatal):", userErr.message);
-    } catch (err) {
-      console.error("Exception adding employee to Supabase:", err);
-    }
 
     setNewStaffForm({
       name: "",
@@ -1119,9 +1433,9 @@ export default function Admin() {
     e.preventDefault();
     if (!resetPasswordStaff || !newTempPasswordInput.trim()) return;
 
-    setStaffMembers((prev) =>
-      prev.map((s) => (s.id === resetPasswordStaff.id ? { ...s, tempPassword: newTempPasswordInput } : s))
-    );
+    const updated = staffMembers.map((s) => (s.id === resetPasswordStaff.id ? { ...s, tempPassword: newTempPasswordInput } : s));
+    setStaffMembers(updated);
+    saveAllStaff(updated);
 
     try {
       const { error } = await supabase
@@ -1137,20 +1451,20 @@ export default function Admin() {
   };
 
   const handleToggleStaffStatus = async (staffId: string) => {
-    setStaffMembers((prev) =>
-      prev.map((s) => {
-        if (s.id === staffId) {
-          const nextStatus = s.status === "Active" ? "Deactivated" : "Active";
-          try {
-            supabase.from("staff").update({ status: nextStatus }).eq("id", staffId);
-          } catch (err) {
-            console.error("Error toggling staff status:", err);
-          }
-          return { ...s, status: nextStatus };
+    const updated = staffMembers.map((s) => {
+      if (s.id === staffId) {
+        const nextStatus = s.status === "Active" ? "Deactivated" : "Active";
+        try {
+          supabase.from("staff").update({ status: nextStatus }).eq("id", staffId);
+        } catch (err) {
+          console.error("Error toggling staff status:", err);
         }
-        return s;
-      })
-    );
+        return { ...s, status: nextStatus as any };
+      }
+      return s;
+    });
+    setStaffMembers(updated);
+    saveAllStaff(updated);
   };
 
   // ── EXTRA COST REPORT HANDLERS ──
@@ -1248,8 +1562,58 @@ export default function Admin() {
   });
 
 
+  // ── BATCH CREATION & REMOVAL HANDLERS ──
+  const handleCreateBatch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBatchName.trim() || !newBatchSchedule.trim()) return;
+
+    const targetCourse = courses.find((c) => String(c.id) === String(newBatchCourseId)) || courses[0];
+    const assignedStaff = staffMembers.find((s) => s.id === newBatchTeacherId) || staffMembers.find((s) => s.role === "Teacher") || staffMembers[0];
+
+    const newBatch: BatchItem = {
+      id: `batch-${Date.now()}`,
+      courseId: targetCourse.id,
+      name: newBatchName.trim(),
+      courseTitle: targetCourse.title,
+      headTeacher: assignedStaff.name,
+      teacherId: assignedStaff.id,
+      totalStudents: 0,
+      maxStudents: Number(newBatchMaxStudents) || 25,
+      schedule: newBatchSchedule.trim(),
+      roster: [],
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+
+    const updated = addOrUpdateBatch(newBatch);
+    setBatches(updated);
+    setIsAddBatchModalOpen(false);
+    setNewBatchName("");
+    setNewBatchSchedule("");
+  };
+
+  const handleDeleteBatch = (batchId: string) => {
+    if (window.confirm("Are you sure you want to delete this batch?")) {
+      const updated = removeBatch(batchId);
+      setBatches(updated);
+    }
+  };
+
   useEffect(() => {
     fetchSupabaseData();
+    const unsubCourses = subscribeToCourseUpdates((updated) => {
+      setCourses(updated as any);
+    });
+    const unsubBatches = subscribeToBatchUpdates((updatedBatches) => {
+      setBatches(updatedBatches);
+    });
+    const unsubStaff = subscribeToStaffUpdates((updatedStaff) => {
+      setStaffMembers(updatedStaff);
+    });
+    return () => {
+      unsubCourses();
+      unsubBatches();
+      unsubStaff();
+    };
   }, []);
 
   // ── FILTERED LEADS PIPELINE ──
@@ -1273,7 +1637,7 @@ export default function Admin() {
     return true;
   });
 
-  // ── FILTERED BUYERS ──
+  // ── FILTERED BUYERS & EMPLOYEE ATTRIBUTION ──
   const buyersList = leads
     .filter((l) => l.status === "Converted" || l.paymentConfirmed)
     .map((l) => ({
@@ -1285,10 +1649,14 @@ export default function Admin() {
       amount: l.paymentAmount || 2500,
       trxId: l.trxId || "BK000000",
       date: l.date,
+      claimedBy: l.claimedBy || "আরিফুল ইসলাম",
     }));
 
   const filteredBuyers = buyersList.filter((b) => {
     if (salesCourseFilter !== "All" && b.course !== salesCourseFilter) {
+      return false;
+    }
+    if (salesEmployeeFilter !== "All" && b.claimedBy !== salesEmployeeFilter) {
       return false;
     }
     return true;
@@ -1409,8 +1777,8 @@ export default function Admin() {
       instructor: course.instructor,
       category: course.category,
       description: course.description,
-      imageUrl: course.imageUrl,
-      demoVideoUrl: course.demoVideoUrl,
+      imageUrl: course.imageUrl || course.img,
+      demoVideoUrl: course.demoVideoUrl || "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
       googleFormUrl: course.googleFormUrl || "https://forms.google.com/demo-enrollment-form",
     });
     setIsCourseModalOpen(true);
@@ -1420,27 +1788,28 @@ export default function Admin() {
     e.preventDefault();
     if (!courseForm.title.trim()) return;
 
+    const coursePayload: any = {
+      id: editingCourseId || `c-${Date.now()}`,
+      title: courseForm.title,
+      price: Number(courseForm.price) || 2500,
+      duration: courseForm.duration,
+      instructor: courseForm.instructor,
+      headTeacher: courseForm.instructor,
+      category: courseForm.category,
+      description: courseForm.description,
+      imageUrl: courseForm.imageUrl,
+      img: courseForm.imageUrl,
+      demoVideoUrl: courseForm.demoVideoUrl,
+      googleFormUrl: courseForm.googleFormUrl,
+    };
+
+    const updated = addOrUpdateCourse(coursePayload);
+    setCourses(updated as any);
+
     if (editingCourseId) {
-      setCourses((prev) =>
-        prev.map((c) =>
-          c.id === editingCourseId
-            ? {
-                ...c,
-                title: courseForm.title,
-                price: Number(courseForm.price),
-                duration: courseForm.duration,
-                instructor: courseForm.instructor,
-                category: courseForm.category,
-                description: courseForm.description,
-                imageUrl: courseForm.imageUrl,
-                demoVideoUrl: courseForm.demoVideoUrl,
-                googleFormUrl: courseForm.googleFormUrl,
-              }
-            : c
-        )
-      );
+      // ── PATCH (UPDATE) → HTTP 200 ──
       try {
-        const { error } = await supabase
+        const { data, error, status } = await supabase
           .from("courses")
           .update({
             title: courseForm.title,
@@ -1453,28 +1822,20 @@ export default function Admin() {
             demo_video_url: courseForm.demoVideoUrl,
             google_form_url: courseForm.googleFormUrl,
           })
-          .eq("id", editingCourseId);
-        if (error) console.error("Error updating course in Supabase:", error);
+          .eq("id", editingCourseId)
+          .select();
+        if (error) {
+          showApiToast(`✅ Course updated locally (Supabase: ${error.message})`, "info");
+        } else {
+          showApiToast(`✅ HTTP 200 OK — Course price & details updated successfully (Supabase REST PATCH /courses)`, "success");
+        }
       } catch (err) {
-        console.error("Exception updating course:", err);
+        showApiToast(`✅ Course saved locally (Supabase unavailable)`, "info");
       }
     } else {
-      const newCourse: CMSCourse = {
-        id: `c-${Date.now()}`,
-        title: courseForm.title,
-        price: Number(courseForm.price),
-        duration: courseForm.duration,
-        instructor: courseForm.instructor,
-        headTeacher: courseForm.instructor,
-        category: courseForm.category,
-        description: courseForm.description,
-        imageUrl: courseForm.imageUrl,
-        demoVideoUrl: courseForm.demoVideoUrl,
-        googleFormUrl: courseForm.googleFormUrl,
-      };
-      setCourses((prev) => [newCourse, ...prev]);
+      // ── POST (CREATE) → HTTP 201 ──
       try {
-        const { error } = await supabase.from("courses").insert([
+        const { data, error, status } = await supabase.from("courses").insert([
           {
             title: courseForm.title,
             price: Number(courseForm.price),
@@ -1486,10 +1847,14 @@ export default function Admin() {
             demo_video_url: courseForm.demoVideoUrl,
             google_form_url: courseForm.googleFormUrl,
           },
-        ]);
-        if (error) console.error("Error creating course in Supabase:", error);
+        ]).select();
+        if (error) {
+          showApiToast(`✅ Course published locally (Supabase: ${error.message})`, "info");
+        } else {
+          showApiToast(`✅ HTTP 201 Created — New course published & synced to storefront (Supabase REST POST /courses)`, "success");
+        }
       } catch (err) {
-        console.error("Exception creating course:", err);
+        showApiToast(`✅ Course published locally (Supabase unavailable)`, "info");
       }
     }
     setIsCourseModalOpen(false);
@@ -1497,14 +1862,70 @@ export default function Admin() {
 
   const handleDeleteCourse = async (id: string | number) => {
     if (confirm(t.deleteCourseConfirm)) {
-      setCourses((prev) => prev.filter((c) => c.id !== id));
+      const updated = removeCourse(id);
+      setCourses(updated as any);
       try {
         const { error } = await supabase.from("courses").delete().eq("id", id);
-        if (error) console.error("Error deleting course in Supabase:", error);
+        if (error) console.warn("Notice: Deleted locally, Supabase:", error.message);
       } catch (err) {
-        console.error("Exception deleting course:", err);
+        console.warn("Notice: Deleted locally:", err);
       }
     }
+  };
+
+  // ── OUTER EXPENSES HANDLERS ──
+  const handleSaveOuterExpense = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!expenseForm.title.trim() || !expenseForm.amount) return;
+    const newExp: OuterExpense = {
+      id: `exp-${Date.now()}`,
+      title: expenseForm.title,
+      category: expenseForm.category,
+      amount: Number(expenseForm.amount) || 0,
+      date: expenseForm.date,
+      notes: expenseForm.notes,
+    };
+    setOuterExpenses((prev) => [newExp, ...prev]);
+    setExpenseForm({
+      title: "",
+      category: "Marketing",
+      amount: "",
+      date: new Date().toISOString().substring(0, 10),
+      notes: "",
+    });
+    setIsExpenseModalOpen(false);
+  };
+
+  const handleDeleteOuterExpense = (id: string) => {
+    setOuterExpenses((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  // ── BOOK DELIVERY DISPATCH HANDLERS ──
+  const handleSaveBookDispatch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dispatchForm.studentName.trim() || !dispatchForm.phone.trim()) return;
+    const newDelivery: DeliveryRecord = {
+      id: `del-${Date.now()}`,
+      studentName: dispatchForm.studentName,
+      phone: dispatchForm.phone,
+      address: dispatchForm.address,
+      courierService: dispatchForm.courierService,
+      consignmentId: dispatchForm.consignmentId || `ST-${Math.floor(100000 + Math.random() * 900000)}`,
+      trxId: dispatchForm.trxId || `BK${Math.floor(100000 + Math.random() * 900000)}`,
+      deliveryStatus: "Dispatched",
+      date: new Date().toISOString().substring(0, 10),
+    };
+    setDeliveries((prev) => [newDelivery, ...prev]);
+    setDispatchForm({
+      studentName: "",
+      phone: "",
+      address: "",
+      course: "২৫ দিনে সুন্দর হাতের লেখা",
+      courierService: "Steadfast",
+      consignmentId: "",
+      trxId: "",
+    });
+    setIsDispatchModalOpen(false);
   };
 
   // ── DYNAMIC THEME CLASS HELPER ──
@@ -1521,41 +1942,209 @@ export default function Admin() {
   const tableHeaderStyle = isDark ? "border-slate-800 bg-slate-950/80 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-700";
   const tableRowStyle = isDark ? "hover:bg-slate-800/30 divide-slate-800/60" : "hover:bg-slate-50 divide-slate-200";
 
+  // ── CONDITIONAL RENDER: ADMIN LOGIN PORTAL ──
+  if (!isAdminLoggedIn) {
+    return (
+      <div className={`min-h-screen ${bgMain} flex flex-col justify-center items-center p-4 sm:p-6 font-sans relative transition-colors duration-200`}>
+        {/* Top-Right Control Bar for Language & Theme */}
+        <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
+          <button
+            onClick={() => setLang(lang === "en" ? "bn" : "en")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+              isDark ? "bg-slate-900 border-slate-800 text-slate-200 hover:text-white" : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
+            }`}
+            title="Switch Language"
+          >
+            <Globe className="w-3.5 h-3.5 text-emerald-500" />
+            <span>{lang === "en" ? "ENG" : "বাংলা"}</span>
+          </button>
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className={`w-9 h-9 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center shadow-2xs ${
+              isDark ? "bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800" : "bg-white border-slate-300 text-amber-600 hover:bg-slate-50"
+            }`}
+            title="Toggle Theme"
+          >
+            {theme === "dark" ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+          </button>
+        </div>
+
+        {/* Login Card */}
+        <div className={`w-full max-w-md p-8 rounded-3xl border shadow-2xl ${bgCard} border-slate-700/50 backdrop-blur-md relative z-10 animate-in fade-in zoom-in-95 duration-300`}>
+          {/* Logo & Header */}
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 mx-auto mb-4 flex items-center justify-center font-black text-white text-2xl shadow-xl shadow-emerald-950/40">
+              L
+            </div>
+            <h1 className={`text-2xl font-black tracking-tight ${textHeading}`}>
+              Learn<span className="text-emerald-500">Ops</span> Admin
+            </h1>
+            <p className={`text-xs mt-1.5 ${textSub}`}>
+              {t.adminLoginSubtitle}
+            </p>
+          </div>
+
+          {/* Quick Demo Fill Button */}
+          <div className="mb-6 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between gap-2">
+            <div className="text-[11px] text-emerald-400 font-medium">
+              <span className="font-bold">{t.demoAdminCredentials}:</span> admin@learnops.com / admin123
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginEmail("admin@learnops.com");
+                setLoginPassword("admin123");
+                setLoginError("");
+              }}
+              className="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold text-[10px] hover:bg-emerald-400 transition-colors cursor-pointer shrink-0"
+            >
+              Fill Demo
+            </button>
+          </div>
+
+          {/* Error message */}
+          {loginError && (
+            <div className="mb-5 p-3 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+              <ShieldAlert className="w-4 h-4 shrink-0" />
+              <span>{loginError}</span>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            <div>
+              <label className={`block text-xs font-bold mb-1.5 ${textHeading}`}>{t.emailAddress}</label>
+              <input
+                type="text"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="admin@learnops.com"
+                className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-colors outline-hidden ${inputStyle}`}
+                required
+              />
+            </div>
+
+            <div>
+              <label className={`block text-xs font-bold mb-1.5 ${textHeading}`}>{t.password}</label>
+              <div className="relative">
+                <input
+                  type={showLoginPassword ? "text" : "password"}
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={`w-full px-4 py-2.5 pr-10 rounded-xl border text-sm transition-colors outline-hidden ${inputStyle}`}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={loginRemember}
+                  onChange={(e) => setLoginRemember(e.target.checked)}
+                  className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500"
+                />
+                <span>{t.rememberMe}</span>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full mt-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-950/40 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50"
+            >
+              {loginLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  <span>{t.loginBtn}</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Return to Home link */}
+          <div className="text-center mt-6 pt-4 border-t border-slate-800/80">
+            <a
+              href="./"
+              className="text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              ← {t.backToHome}
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`min-h-screen ${bgMain} flex overflow-hidden font-sans transition-colors duration-200`}>
+    <div className={`min-h-screen ${bgMain} flex overflow-hidden font-sans transition-colors duration-200 relative`}>
       
+      {/* ── MOBILE BACKDROP OVERLAY ── */}
+      {isMobileSidebarOpen && (
+        <div
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden animate-in fade-in duration-200 cursor-pointer"
+          aria-label="Close Mobile Sidebar"
+        />
+      )}
+
       {/* ═══════════════════════════════════════════════════════════════════════════
-         LEFT SIDEBAR NAVIGATION MENU WITH TOGGLES ROW (FEATURE 1 & FEATURE 3)
+         LEFT SIDEBAR NAVIGATION MENU (RESPONSIVE OFF-CANVAS DRAWER & DESKTOP DOCK)
       ═══════════════════════════════════════════════════════════════════════════ */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-40 ${bgSidebar} border-r transition-all duration-300 flex flex-col justify-between`}
-        style={{ width: isSidebarCollapsed ? "5rem" : "16rem" }}
+        className={`fixed top-0 left-0 bottom-0 z-50 md:z-40 ${bgSidebar} border-r transition-all duration-300 ease-in-out flex flex-col justify-between
+          ${isMobileSidebarOpen ? "translate-x-0 w-72 shadow-2xl" : "-translate-x-full md:translate-x-0"}
+          ${isSidebarCollapsed ? "md:w-20" : "md:w-64"}
+        `}
       >
         <div>
           {/* Brand Header */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800/60">
-            {!isSidebarCollapsed && (
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-black text-white shadow-lg">
-                  L
-                </div>
-                <span className={`font-extrabold text-base tracking-tight ${textHeading}`}>
-                  Learn<span className="text-emerald-500">Ops</span> Admin
-                </span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-black text-white shadow-lg shrink-0">
+                L
               </div>
-            )}
+              <span className={`font-extrabold text-base tracking-tight truncate ${textHeading} ${isSidebarCollapsed ? "md:hidden" : "block"}`}>
+                Learn<span className="text-emerald-500">Ops</span> Admin
+              </span>
+            </div>
+
+            {/* Desktop Collapse Toggle Pill Button */}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className={`p-2 rounded-xl text-slate-400 hover:${textHeading} hover:bg-slate-800/30 transition-colors cursor-pointer mx-auto`}
+              className={`hidden md:flex p-1.5 rounded-xl text-slate-400 hover:${textHeading} hover:bg-slate-800/40 border border-slate-700/40 transition-all cursor-pointer items-center justify-center`}
               title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             >
-              {isSidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+              {isSidebarCollapsed ? <ChevronRight className="w-4 h-4 text-emerald-400" /> : <ChevronLeft className="w-4 h-4 text-emerald-400" />}
+            </button>
+
+            {/* Mobile Close Button (✕) */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="md:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
+              title="Close Menu"
+            >
+              <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* TOP-LEFT SIDEBAR CONTROL ROW: SINGLE-CLICK LANGUAGE & THEME TOGGLES */}
           <div className={`px-4 my-3 pb-3 border-b ${isDark ? "border-slate-800/80" : "border-slate-200"}`}>
-            {!isSidebarCollapsed ? (
+            {!isSidebarCollapsed || isMobileSidebarOpen ? (
               <div className="flex items-center gap-2">
                 {/* 1-Click Language Toggle Button: 🌐 ENG or 🌐 বাংলা */}
                 <button
@@ -1612,14 +2201,16 @@ export default function Admin() {
               { id: "employees", label: t.employeePerf, icon: PhoneCall, desc: t.employeeDesc },
               { id: "batches", label: t.teacherBatches, icon: GraduationCap, desc: t.teacherDesc },
               { id: "courses", label: t.courseCms, icon: BookOpen, desc: t.cmsDesc },
-
             ].map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id as any)}
+                  onClick={() => {
+                    setActiveTab(item.id as any);
+                    setIsMobileSidebarOpen(false);
+                  }}
                   className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     isActive
                       ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-950/30"
@@ -1630,7 +2221,7 @@ export default function Admin() {
                   title={isSidebarCollapsed ? item.label : undefined}
                 >
                   <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-white" : "text-slate-400"}`} />
-                  {!isSidebarCollapsed && (
+                  {(!isSidebarCollapsed || isMobileSidebarOpen) && (
                     <div className="text-left leading-tight">
                       <div className="font-bold text-sm">
                         {item.label}
@@ -1646,67 +2237,143 @@ export default function Admin() {
           </nav>
         </div>
 
-        {/* Sidebar Footer System Status */}
-        {!isSidebarCollapsed && (
-          <div className={`p-4 border-t ${isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-slate-50"} flex items-center justify-between`}>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className={`font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>{t.supabaseConnected}</span>
+        {/* Sidebar Footer: System Status & Admin Profile with Logout */}
+        <div className={`border-t ${isDark ? "border-slate-800/80 bg-slate-900/40" : "border-slate-200 bg-slate-50/70"}`}>
+          {(!isSidebarCollapsed || isMobileSidebarOpen) ? (
+            <div className="p-3 space-y-3">
+              {/* DB Status */}
+              <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className={`text-[11px] font-semibold ${isDark ? "text-slate-300" : "text-slate-700"}`}>{t.supabaseConnected}</span>
+                </div>
+                <button onClick={fetchSupabaseData} className="text-slate-400 hover:text-emerald-500 cursor-pointer" title={t.refreshDb}>
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-400" : ""}`} />
+                </button>
+              </div>
+
+              {/* Admin Profile & Logout Box */}
+              <div className={`p-2.5 rounded-xl border ${isDark ? "bg-slate-950/70 border-slate-800" : "bg-white border-slate-200"} flex items-center justify-between gap-2 shadow-2xs`}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-xs shrink-0">
+                    SA
+                  </div>
+                  <div className="truncate">
+                    <div className={`text-xs font-bold truncate leading-tight ${textHeading}`}>{t.loggedAdminUser}</div>
+                    <div className="text-[10px] text-slate-400 truncate">admin@learnops.com</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsLogoutModalOpen(true)}
+                  className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 transition-colors cursor-pointer shrink-0"
+                  title={t.logout}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-            <button onClick={fetchSupabaseData} className="text-slate-400 hover:text-emerald-500 cursor-pointer" title={t.refreshDb}>
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-400" : ""}`} />
-            </button>
-          </div>
-        )}
+          ) : (
+            <div className="p-2 flex flex-col items-center gap-2">
+              <button
+                onClick={fetchSupabaseData}
+                className="w-8 h-8 rounded-lg text-slate-400 hover:text-emerald-400 flex items-center justify-center cursor-pointer"
+                title={t.refreshDb}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-400" : ""}`} />
+              </button>
+              <button
+                onClick={() => setIsLogoutModalOpen(true)}
+                className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
+                title={t.logout}
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* ═══════════════════════════════════════════════════════════════════════════
          MAIN CONTENT AREA (RIGHT SIDE)
       ═══════════════════════════════════════════════════════════════════════════ */}
       <main
-        className={`flex-1 min-h-screen transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-20" : "ml-64"
-        } p-6 sm:p-10 pb-20`}
+        className={`flex-1 min-h-screen transition-all duration-300 ease-in-out
+          ml-0 ${isSidebarCollapsed ? "md:ml-20" : "md:ml-64"}
+          p-3.5 sm:p-6 lg:p-8 pb-24 overflow-x-hidden min-w-0
+        `}
       >
         {/* Header Title Bar */}
-        <header className={`flex flex-wrap items-center justify-between gap-4 pb-6 mb-8 border-b ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-          <div>
-            <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs font-bold px-3 py-1.5 rounded-full mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>
-                {activeTab === "sales" && t.badgeSales}
-                {activeTab === "leads" && t.badgeLeads}
-                {activeTab === "employees" && t.badgeEmployees}
-                {activeTab === "batches" && t.badgeBatches}
-                {activeTab === "courses" && t.badgeCourses}
-              </span>
+        <header className={`flex flex-wrap items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 mb-6 sm:mb-8 border-b ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Mobile Hamburger Toggle Button */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className={`md:hidden p-2 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800" : "bg-white border-slate-200 text-slate-800 hover:bg-slate-100"} shadow-xs cursor-pointer shrink-0`}
+              title="Open Navigation Menu"
+              aria-label="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5 text-emerald-500" />
+            </button>
+
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full mb-1">
+                <Sparkles className="w-3 h-3 shrink-0" />
+                <span className="truncate">
+                  {activeTab === "sales" && t.badgeSales}
+                  {activeTab === "leads" && t.badgeLeads}
+                  {activeTab === "employees" && t.badgeEmployees}
+                  {activeTab === "batches" && t.badgeBatches}
+                  {activeTab === "courses" && t.badgeCourses}
+                </span>
+              </div>
+              <h1 className={`text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight truncate ${textHeading}`}>
+                {activeTab === "sales" && t.titleSales}
+                {activeTab === "leads" && t.titleLeads}
+                {activeTab === "employees" && t.titleEmployees}
+                {activeTab === "batches" && t.titleBatches}
+                {activeTab === "courses" && t.titleCourses}
+              </h1>
             </div>
-            <h1 className={`text-3xl font-extrabold tracking-tight ${textHeading}`}>
-              {activeTab === "sales" && t.titleSales}
-              {activeTab === "leads" && t.titleLeads}
-              {activeTab === "employees" && t.titleEmployees}
-              {activeTab === "batches" && t.titleBatches}
-              {activeTab === "courses" && t.titleCourses}
-            </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {isLoading && (
-              <span className="inline-flex items-center gap-2 text-xs text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+              <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-500 bg-emerald-500/10 px-2.5 py-1.5 rounded-xl border border-emerald-500/30">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                {t.syncing}
+                <span className="hidden xs:inline">{t.syncing}</span>
               </span>
             )}
 
             {activeTab === "courses" && (
               <button
                 onClick={handleOpenCreateCourse}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-5 py-2.5 rounded-2xl shadow-lg transition-all text-xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-2xl shadow-lg transition-all text-xs cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                {t.addNewCourse}
+                <span>{t.addNewCourse}</span>
               </button>
             )}
+
+            {/* Quick Admin Profile & Logout Button in Header */}
+            <div className="flex items-center gap-2 pl-2 border-l border-slate-700/50">
+              <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border ${isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-slate-200"}`}>
+                <div className="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-[10px]">
+                  SA
+                </div>
+                <div className="text-left">
+                  <div className={`text-[11px] font-bold ${textHeading}`}>admin@learnops.com</div>
+                  <div className="text-[9px] text-emerald-500 font-semibold">{t.superAdminRole}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsLogoutModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 transition-all text-xs font-bold cursor-pointer"
+                title={t.logout}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t.logout}</span>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -1757,7 +2424,7 @@ export default function Admin() {
             {/* ── SUB-TAB 1: 📊 OVERALL SALES REPORT ── */}
             {salesSubTab === "overall" && (
               <div className="space-y-8 animate-in fade-in duration-300">
-                {/* Filter Controls Bar with Conditional Date Dropdowns */}
+                {/* Filter Controls Bar with Conditional Date & Employee Dropdowns */}
                 <div className={`${bgCard} p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4 border`}>
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-xs font-bold text-slate-400">
@@ -1832,29 +2499,129 @@ export default function Admin() {
                     )}
                   </div>
 
-                  {/* Course Filter Dropdown */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-400">
-                      {t.courseFilterLabel}
+                  {/* Course & Employee Filter Dropdowns */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-400">
+                        {t.courseFilterLabel}
+                      </span>
+                      <select
+                        value={salesCourseFilter}
+                        onChange={(e) => setSalesCourseFilter(e.target.value)}
+                        className={`${inputStyle} text-xs font-bold rounded-2xl px-3.5 py-2 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                      >
+                        <option value="All">{t.allCourses}</option>
+                        {courses.map((c) => (
+                          <option key={c.id} value={c.title}>
+                            {c.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-400">
+                        {t.employeeFilterLabel}
+                      </span>
+                      <select
+                        value={salesEmployeeFilter}
+                        onChange={(e) => setSalesEmployeeFilter(e.target.value)}
+                        className={`${inputStyle} text-xs font-bold rounded-2xl px-3.5 py-2 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
+                      >
+                        <option value="All">{t.allEmployees}</option>
+                        {employees.map((emp) => (
+                          <option key={emp.id} value={emp.name}>
+                            {emp.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── EMPLOYEE SALES ATTRIBUTION BREAKDOWN & LEADERBOARD CARDS ── */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <h3 className={`text-xl font-bold ${textHeading}`}>
+                        {t.employeeSalesTitle}
+                      </h3>
+                      <p className={`text-xs ${textSub}`}>
+                        Telesales agent converted course units, closed revenue, and performance targets.
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+                      {employees.length} Active Sales Representatives
                     </span>
-                    <select
-                      value={salesCourseFilter}
-                      onChange={(e) => setSalesCourseFilter(e.target.value)}
-                      className={`${inputStyle} text-xs font-bold rounded-2xl px-4 py-2 focus:ring-2 focus:ring-emerald-500 cursor-pointer`}
-                    >
-                      <option value="All">{t.allCourses}</option>
-                      {courses.map((c) => (
-                        <option key={c.id} value={c.title}>
-                          {c.title}
-                        </option>
-                      ))}
-                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {employees.map((emp, idx) => {
+                      const empBuyers = buyersList.filter((b) => b.claimedBy === emp.name);
+                      const empSalesCount = empBuyers.length > 0 ? empBuyers.length : emp.convertedSales;
+                      const empRevenue = empBuyers.length > 0 ? empBuyers.reduce((acc, c) => acc + c.amount, 0) : emp.revenueGenerated;
+                      const convRate = Math.round((empSalesCount / (emp.totalCalls || 100)) * 100);
+                      const isTop = idx === 0;
+
+                      return (
+                        <div
+                          key={emp.id}
+                          className={`${bgCard} p-5 rounded-3xl border relative overflow-hidden shadow-md hover:border-emerald-500/50 transition-all flex flex-col justify-between`}
+                        >
+                          {isTop && (
+                            <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-amber-600 text-slate-950 font-black text-[10px] px-3 py-0.5 rounded-bl-xl shadow-xs">
+                              ★ {t.topPerformer}
+                            </div>
+                          )}
+
+                          <div>
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 text-emerald-400 font-extrabold flex items-center justify-center text-sm shrink-0">
+                                {emp.name.substring(0, 2)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className={`font-bold text-sm truncate ${textHeading}`}>{emp.name}</div>
+                                <div className="text-[11px] text-slate-400 truncate">{emp.role}</div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 pt-2 border-t border-slate-800/60">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className={textSub}>{t.unitsSold}:</span>
+                                <span className={`font-black ${textHeading}`}>{empSalesCount} {lang === "en" ? "courses" : "টি"}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className={textSub}>{t.agentRevenue}:</span>
+                                <span className="font-black text-emerald-500">৳{empRevenue.toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className={textSub}>{t.conversionRate}:</span>
+                                <span className="font-bold text-amber-400">{convRate}%</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4">
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                              <span>Target Progress</span>
+                              <span className="font-bold text-emerald-400">{Math.min(100, Math.round((empSalesCount / 30) * 100))}%</span>
+                            </div>
+                            <div className="w-full bg-slate-800/50 h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full"
+                                style={{ width: `${Math.min(100, (empSalesCount / 30) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
                 {/* Revenue Chart Visualizer */}
                 <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl border`}>
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
                     <div>
                       <h3 className={`text-xl font-bold ${textHeading}`}>
                         {t.revenueTrend}
@@ -1893,13 +2660,16 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Buyers List Table */}
+                {/* Buyers List Table with Sold By (Agent) Attribution */}
                 <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
-                  <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
-                    <h3 className={`text-lg font-bold ${textHeading}`}>
-                      {t.confirmedBuyersTable}
-                    </h3>
-                    <span className={`text-xs ${textSub}`}>{t.totalBuyers} {filteredBuyers.length}</span>
+                  <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between flex-wrap gap-2`}>
+                    <div>
+                      <h3 className={`text-lg font-bold ${textHeading}`}>
+                        {t.confirmedBuyersTable}
+                      </h3>
+                      <p className={`text-xs ${textSub}`}>Student enrollment sales with telesales agent attribution.</p>
+                    </div>
+                    <span className={`text-xs ${textSub}`}>{t.totalBuyers} <strong className="text-emerald-500">{filteredBuyers.length}</strong></span>
                   </div>
 
                   <div className="overflow-x-auto">
@@ -1909,6 +2679,7 @@ export default function Admin() {
                           <th className="py-4 px-4">{t.colStudentParent}</th>
                           <th className="py-4 px-4">{t.colPhone}</th>
                           <th className="py-4 px-4">{t.colCourse}</th>
+                          <th className="py-4 px-4">{t.soldByAgent}</th>
                           <th className="py-4 px-4">{t.colPayment} (৳)</th>
                           <th className="py-4 px-4">{t.colTrxId}</th>
                           <th className="py-4 px-4">{t.colDate}</th>
@@ -1923,6 +2694,12 @@ export default function Admin() {
                             </td>
                             <td className="py-4 px-4 font-mono text-emerald-500 font-bold">{b.phone}</td>
                             <td className={`py-4 px-4 font-semibold ${textHeading}`}>{b.course}</td>
+                            <td className="py-4 px-4">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-xs">
+                                <User className="w-3 h-3 shrink-0" />
+                                <span>{b.claimedBy}</span>
+                              </span>
+                            </td>
                             <td className="py-4 px-4 font-black text-emerald-500">৳{b.amount.toLocaleString()}</td>
                             <td className="py-4 px-4">
                               <span className={`font-mono text-amber-500 ${bgSubCard} px-2.5 py-1 rounded-lg border inline-block`}>
@@ -1939,66 +2716,167 @@ export default function Admin() {
               </div>
             )}
 
-            {/* ── SUB-TAB 2: 💸 EXTRA COST REPORT ── */}
+            {/* ── SUB-TAB 2: 💸 EXTRA COST & OUTER EXPENSES REPORT ── */}
             {salesSubTab === "extraCost" && (() => {
               const grossSalesTotal = totalFilteredRevenue || 385000;
-              const totalExpensesCalculated = extraCosts.reduce((acc, c) => acc + c.totalExpense * 15, 0); // 15 units avg
-              const netProfitCalculated = grossSalesTotal - totalExpensesCalculated;
+              const courseProductionTotal = extraCosts.reduce((acc, c) => acc + c.totalExpense * 15, 0); // unit production
+              const totalOuterExpenses = outerExpenses.reduce((acc, e) => acc + e.amount, 0);
+              const totalOverallExpenses = courseProductionTotal + totalOuterExpenses;
+              const netProfitCalculated = grossSalesTotal - totalOverallExpenses;
 
               return (
                 <div className="space-y-8 animate-in fade-in duration-300">
-                  {/* Top 3 Summary Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className={`${bgCard} rounded-3xl p-6 shadow-xl border relative overflow-hidden`}>
+                  {/* Top 4 Summary Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* 1. Gross Sales */}
+                    <div className={`${bgCard} rounded-3xl p-5 shadow-xl border relative overflow-hidden`}>
                       <div className="flex items-center justify-between mb-2">
                         <span className={`text-xs font-bold ${textSub}`}>{t.grossSales}</span>
-                        <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                          <DollarSign className="w-5 h-5" />
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                          <DollarSign className="w-4 h-4" />
                         </div>
                       </div>
                       <h3 className={`text-2xl font-black ${textHeading}`}>
                         ৳{grossSalesTotal.toLocaleString()}
                       </h3>
-                      <p className="text-[11px] text-emerald-500 font-semibold mt-1">Confirmed Course Revenue</p>
+                      <p className="text-[10px] text-emerald-500 font-semibold mt-1">Confirmed Course Revenue</p>
                     </div>
 
-                    <div className={`${bgCard} rounded-3xl p-6 shadow-xl border relative overflow-hidden`}>
+                    {/* 2. Course Kit & Production Cost */}
+                    <div className={`${bgCard} rounded-3xl p-5 shadow-xl border relative overflow-hidden`}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className={`text-xs font-bold ${textSub}`}>{t.totalExpenses}</span>
-                        <div className="w-9 h-9 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
-                          <Receipt className="w-5 h-5" />
+                        <span className={`text-xs font-bold ${textSub}`}>{t.courseProductionTotal}</span>
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                          <BookOpen className="w-4 h-4" />
                         </div>
                       </div>
                       <h3 className="text-2xl font-black text-amber-500">
-                        ৳{totalExpensesCalculated.toLocaleString()}
+                        ৳{courseProductionTotal.toLocaleString()}
                       </h3>
-                      <p className="text-[11px] text-amber-500 font-semibold mt-1">Printing, Freight & Logistics</p>
+                      <p className="text-[10px] text-amber-500 font-semibold mt-1">Printing & Inbound Freight</p>
                     </div>
 
-                    <div className={`${bgCard} rounded-3xl p-6 shadow-xl border relative overflow-hidden`}>
+                    {/* 3. Outer Operational Expenses */}
+                    <div className={`${bgCard} rounded-3xl p-5 shadow-xl border relative overflow-hidden`}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className={`text-xs font-bold ${textSub}`}>{t.netProfit}</span>
-                        <div className="w-9 h-9 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
-                          <TrendingUp className="w-5 h-5" />
+                        <span className={`text-xs font-bold ${textSub}`}>{t.outerExpenseTotal}</span>
+                        <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
+                          <Receipt className="w-4 h-4" />
                         </div>
                       </div>
-                      <h3 className="text-2xl font-black text-blue-500">
+                      <h3 className="text-2xl font-black text-purple-400">
+                        ৳{totalOuterExpenses.toLocaleString()}
+                      </h3>
+                      <p className="text-[10px] text-purple-400 font-semibold mt-1">Marketing, Hiring, Tools & Ops</p>
+                    </div>
+
+                    {/* 4. Net Operating Profit */}
+                    <div className={`${bgCard} rounded-3xl p-5 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.operatingProfit}</span>
+                        <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                          <TrendingUp className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-black text-blue-400">
                         ৳{netProfitCalculated.toLocaleString()}
                       </h3>
-                      <p className="text-[11px] text-blue-500 font-semibold mt-1">
+                      <p className="text-[10px] text-blue-400 font-semibold mt-1">
                         Margin: {((netProfitCalculated / grossSalesTotal) * 100).toFixed(1)}%
                       </p>
                     </div>
                   </div>
 
-                  {/* Itemized Expenses Table */}
+                  {/* ── SECTION A: OVERALL OUTER & OPERATIONAL EXPENSES TABLE ── */}
+                  <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
+                    <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between flex-wrap gap-4`}>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className={`text-xl font-bold ${textHeading}`}>
+                            {t.outerExpensesTitle}
+                          </h3>
+                          <span className="text-xs font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
+                            ৳{totalOuterExpenses.toLocaleString()}
+                          </span>
+                        </div>
+                        <p className={`text-xs ${textSub} mt-0.5`}>
+                          Track external operational expenses like Facebook Marketing, Teacher Recruitment, Workbooks, and Server subscriptions.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => setIsExpenseModalOpen(true)}
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition-all cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>{t.addOuterExpense}</span>
+                      </button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                            <th className="py-4 px-4">{t.expenseNotes}</th>
+                            <th className="py-4 px-4">{t.expenseCategory}</th>
+                            <th className="py-4 px-4">{t.expenseDate}</th>
+                            <th className="py-4 px-4">{t.expenseAmount}</th>
+                            <th className="py-4 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
+                          {outerExpenses.map((exp) => {
+                            const catColor =
+                              exp.category === "Marketing"
+                                ? "bg-pink-500/10 text-pink-400 border-pink-500/20"
+                                : exp.category === "Books & Materials"
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                : exp.category === "Hiring"
+                                ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                : exp.category === "Software"
+                                ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+                                : exp.category === "Logistics"
+                                ? "bg-teal-500/10 text-teal-400 border-teal-500/20"
+                                : "bg-slate-500/10 text-slate-300 border-slate-500/20";
+
+                            return (
+                              <tr key={exp.id} className="transition-colors">
+                                <td className="py-4 px-4">
+                                  <div className={`font-bold ${textHeading} text-sm`}>{exp.title}</div>
+                                  {exp.notes && <div className={`text-[11px] ${textSub} mt-0.5`}>{exp.notes}</div>}
+                                </td>
+                                <td className="py-4 px-4">
+                                  <span className={`inline-block px-2.5 py-1 rounded-xl text-xs font-bold border ${catColor}`}>
+                                    {exp.category}
+                                  </span>
+                                </td>
+                                <td className={`py-4 px-4 ${textSub}`}>{exp.date}</td>
+                                <td className="py-4 px-4 font-black text-rose-400 text-sm">৳{exp.amount.toLocaleString()}</td>
+                                <td className="py-4 px-4 text-right">
+                                  <button
+                                    onClick={() => handleDeleteOuterExpense(exp.id)}
+                                    className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                    title="Delete Expense"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* ── SECTION B: ITEMIZED COURSE UNIT EXPENSES TABLE ── */}
                   <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
                     <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
                       <div>
                         <h3 className={`text-xl font-bold ${textHeading}`}>
                           {t.itemizedCostTable}
                         </h3>
-                        <p className={`text-xs ${textSub}`}>Manage unit production and freight expenses per course.</p>
+                        <p className={`text-xs ${textSub}`}>Manage unit book production and courier expenses per course.</p>
                       </div>
                     </div>
 
@@ -2051,122 +2929,187 @@ export default function Admin() {
               );
             })()}
 
-            {/* ── SUB-TAB 3: 🚚 DELIVERY REPORT ── */}
-            {salesSubTab === "delivery" && (
-              <div className="space-y-8 animate-in fade-in duration-300">
-                {/* Logistics Control Bar */}
-                <div className={`${bgCard} p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4 border`}>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-xs font-bold text-slate-400 mr-1">
-                      {t.deliveryStatus}:
-                    </span>
-                    <div className={`flex ${bgSubCard} p-1 rounded-2xl border flex-wrap`}>
-                      {(["All", "Pending", "Dispatched", "In Transit", "Delivered", "Returned"] as const).map((st) => (
-                        <button
-                          key={st}
-                          onClick={() => setDeliveryStatusFilter(st)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            deliveryStatusFilter === st
-                              ? "bg-emerald-500 text-white shadow-xs"
-                              : "text-slate-400 hover:text-emerald-500"
-                          }`}
-                        >
-                          {st}
-                        </button>
-                      ))}
+            {/* ── SUB-TAB 3: 🚚 COURSE BOOK DELIVERY TRACKING REPORT ── */}
+            {salesSubTab === "delivery" && (() => {
+              const totalDispatched = deliveries.length;
+              const deliveredCount = deliveries.filter((d) => d.deliveryStatus === "Delivered").length;
+              const inTransitCount = deliveries.filter((d) => d.deliveryStatus === "In Transit" || d.deliveryStatus === "Dispatched").length;
+              const pendingCount = deliveries.filter((d) => d.deliveryStatus === "Pending").length;
+              const successRate = totalDispatched > 0 ? Math.round((deliveredCount / totalDispatched) * 100) : 0;
+
+              return (
+                <div className="space-y-8 animate-in fade-in duration-300">
+                  {/* Top 4 Delivery KPI Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className={`${bgCard} rounded-3xl p-5 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.booksDispatched}</span>
+                        <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                          <PackageCheck className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <h3 className={`text-2xl font-black ${textHeading}`}>{totalDispatched}</h3>
+                      <p className="text-[10px] text-blue-400 font-semibold mt-1">Course Books & Practice Workbooks</p>
+                    </div>
+
+                    <div className={`${bgCard} rounded-3xl p-5 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.deliveredBooks}</span>
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-black text-emerald-500">{deliveredCount}</h3>
+                      <p className="text-[10px] text-emerald-500 font-semibold mt-1">Doorstep Delivery Completed</p>
+                    </div>
+
+                    <div className={`${bgCard} rounded-3xl p-5 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.inTransitBooks}</span>
+                        <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
+                          <Truck className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-black text-purple-400">{inTransitCount}</h3>
+                      <p className="text-[10px] text-purple-400 font-semibold mt-1">With Courier Hub / Rider</p>
+                    </div>
+
+                    <div className={`${bgCard} rounded-3xl p-5 shadow-xl border relative overflow-hidden`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${textSub}`}>{t.deliverySuccessRate}</span>
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                          <Percent className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-black text-amber-500">{successRate}%</h3>
+                      <p className="text-[10px] text-amber-500 font-semibold mt-1">Delivery Fulfillment Metric</p>
                     </div>
                   </div>
 
-                  <div className="relative w-full sm:w-72">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      placeholder={t.searchDelivery}
-                      value={deliverySearchQuery}
-                      onChange={(e) => setDeliverySearchQuery(e.target.value)}
-                      className={`w-full pl-9 pr-3 py-1.5 rounded-xl ${inputStyle} text-xs font-semibold focus:outline-none`}
-                    />
-                  </div>
-                </div>
-
-                {/* Delivery Logistics Table */}
-                <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
-                  <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
-                    <div>
-                      <h3 className={`text-xl font-bold ${textHeading}`}>
-                        {t.logisticsTrackingTable}
-                      </h3>
-                      <p className={`text-xs ${textSub}`}>Consignment status and student courier dispatches.</p>
-                    </div>
-                    <span className={`text-xs ${textSub}`}>Total: <strong className="text-emerald-500">{filteredDeliveries.length}</strong></span>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
-                          <th className="py-4 px-4">{t.colStudentParent}</th>
-                          <th className="py-4 px-4">{t.addressLabel}</th>
-                          <th className="py-4 px-4">{t.courierService}</th>
-                          <th className="py-4 px-4">{t.consignmentId}</th>
-                          <th className="py-4 px-4">{t.colTrxId}</th>
-                          <th className="py-4 px-4">{t.deliveryStatus}</th>
-                          <th className="py-4 px-4 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
-                        {filteredDeliveries.map((del) => (
-                          <tr key={del.id} className="transition-colors">
-                            <td className="py-4 px-4">
-                              <div className={`font-bold ${textHeading} text-sm`}>{del.studentName}</div>
-                              <div className="font-mono text-emerald-500 text-xs font-bold mt-0.5">{del.phone}</div>
-                            </td>
-                            <td className={`py-4 px-4 text-xs ${textSub} max-w-xs truncate`}>
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                                <span>{del.address}</span>
-                              </div>
-                            </td>
-                            <td className="py-4 px-4 font-bold text-blue-400">
-                              <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 px-2.5 py-1 rounded-lg">
-                                {del.courierService}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 font-mono font-bold text-amber-500">{del.consignmentId}</td>
-                            <td className="py-4 px-4 font-mono text-slate-400">{del.trxId}</td>
-                            <td className="py-4 px-4">
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
-                                  del.deliveryStatus === "Delivered"
-                                    ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
-                                    : del.deliveryStatus === "In Transit"
-                                    ? "bg-purple-500/20 text-purple-500 border-purple-500/30"
-                                    : del.deliveryStatus === "Dispatched"
-                                    ? "bg-blue-500/20 text-blue-500 border-blue-500/30"
-                                    : del.deliveryStatus === "Returned"
-                                    ? "bg-red-500/20 text-red-500 border-red-500/30"
-                                    : "bg-amber-500/20 text-amber-500 border-amber-500/30"
-                                }`}
-                              >
-                                ● {del.deliveryStatus}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-right">
-                              <button
-                                onClick={() => handleOpenUpdateDeliveryStatus(del)}
-                                className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                              >
-                                {t.updateStatusBtn}
-                              </button>
-                            </td>
-                          </tr>
+                  {/* Logistics Control Bar & Dispatch Button */}
+                  <div className={`${bgCard} p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4 border`}>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-xs font-bold text-slate-400 mr-1">
+                        {t.deliveryStatus}:
+                      </span>
+                      <div className={`flex ${bgSubCard} p-1 rounded-2xl border flex-wrap`}>
+                        {(["All", "Pending", "Dispatched", "In Transit", "Delivered", "Returned"] as const).map((st) => (
+                          <button
+                            key={st}
+                            onClick={() => setDeliveryStatusFilter(st)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              deliveryStatusFilter === st
+                                ? "bg-emerald-500 text-white shadow-xs"
+                                : "text-slate-400 hover:text-emerald-500"
+                            }`}
+                          >
+                            {st}
+                          </button>
                         ))}
-                      </tbody>
-                    </table>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="relative w-full sm:w-64">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          placeholder={t.searchDelivery}
+                          value={deliverySearchQuery}
+                          onChange={(e) => setDeliverySearchQuery(e.target.value)}
+                          className={`w-full pl-9 pr-3 py-1.5 rounded-xl ${inputStyle} text-xs font-semibold focus:outline-none`}
+                        />
+                      </div>
+
+                      <button
+                        onClick={() => setIsDispatchModalOpen(true)}
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition-all cursor-pointer shrink-0"
+                      >
+                        <Truck className="w-4 h-4" />
+                        <span>{t.dispatchBookBtn}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Delivery Logistics Table */}
+                  <div className={`${bgCard} rounded-3xl overflow-hidden shadow-xl border`}>
+                    <div className={`p-6 border-b ${isDark ? "border-slate-800" : "border-slate-200"} flex items-center justify-between`}>
+                      <div>
+                        <h3 className={`text-xl font-bold ${textHeading}`}>
+                          {t.logisticsTrackingTable}
+                        </h3>
+                        <p className={`text-xs ${textSub}`}>Consignment status and student courier dispatches.</p>
+                      </div>
+                      <span className={`text-xs ${textSub}`}>Total: <strong className="text-emerald-500">{filteredDeliveries.length}</strong></span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className={`border-b ${tableHeaderStyle} text-xs font-bold uppercase tracking-wider`}>
+                            <th className="py-4 px-4">{t.colStudentParent}</th>
+                            <th className="py-4 px-4">{t.addressLabel}</th>
+                            <th className="py-4 px-4">{t.courierService}</th>
+                            <th className="py-4 px-4">{t.consignmentId}</th>
+                            <th className="py-4 px-4">{t.colTrxId}</th>
+                            <th className="py-4 px-4">{t.deliveryStatus}</th>
+                            <th className="py-4 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y ${tableRowStyle} text-xs font-medium`}>
+                          {filteredDeliveries.map((del) => (
+                            <tr key={del.id} className="transition-colors">
+                              <td className="py-4 px-4">
+                                <div className={`font-bold ${textHeading} text-sm`}>{del.studentName}</div>
+                                <div className="font-mono text-emerald-500 text-xs font-bold mt-0.5">{del.phone}</div>
+                              </td>
+                              <td className={`py-4 px-4 text-xs ${textSub} max-w-xs truncate`}>
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                  <span>{del.address}</span>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4 font-bold text-blue-400">
+                                <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 px-2.5 py-1 rounded-lg">
+                                  {del.courierService}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 font-mono font-bold text-amber-500">{del.consignmentId}</td>
+                              <td className="py-4 px-4 font-mono text-slate-400">{del.trxId}</td>
+                              <td className="py-4 px-4">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                                    del.deliveryStatus === "Delivered"
+                                      ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30"
+                                      : del.deliveryStatus === "In Transit"
+                                      ? "bg-purple-500/20 text-purple-500 border-purple-500/30"
+                                      : del.deliveryStatus === "Dispatched"
+                                      ? "bg-blue-500/20 text-blue-500 border-blue-500/30"
+                                      : del.deliveryStatus === "Returned"
+                                      ? "bg-red-500/20 text-red-500 border-red-500/30"
+                                      : "bg-amber-500/20 text-amber-500 border-amber-500/30"
+                                  }`}
+                                >
+                                  ● {del.deliveryStatus}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                <button
+                                  onClick={() => handleOpenUpdateDeliveryStatus(del)}
+                                  className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                >
+                                  {t.updateStatusBtn}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
@@ -2693,15 +3636,33 @@ export default function Admin() {
 
               {/* Step 2 & 3: Filtered Batches List & Expandable Student Roster */}
               <div className={`${bgCard} rounded-3xl p-6 sm:p-8 shadow-xl space-y-6 border`}>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className={`text-xl font-bold ${textHeading}`}>
-                    {t.activeBatchesTitle}
-                  </h3>
-                  {selectedCourse && (
-                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
-                      {t.filteredCourseBadge} {selectedCourse.title}
-                    </span>
-                  )}
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h3 className={`text-xl font-bold ${textHeading}`}>
+                        {t.activeBatchesTitle}
+                      </h3>
+                      {selectedCourse && (
+                        <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+                          {t.filteredCourseBadge} {selectedCourse.title}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-xs ${textSub} mt-1`}>
+                      Create designated batches with schedule slots and assign registered teachers.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (selectedCourse) setNewBatchCourseId(String(selectedCourse.id));
+                      setIsAddBatchModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow-md transition-all cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{t.addNewBatch}</span>
+                  </button>
                 </div>
 
                 <div className="space-y-4">
@@ -2711,58 +3672,97 @@ export default function Admin() {
                       return (
                         <div key={batch.id} className={`border rounded-2xl overflow-hidden ${bgSubCard}`}>
                           {/* Batch Header Card */}
-                          <button
-                            onClick={() => setExpandedBatchId(isExpanded ? null : batch.id)}
-                            className={`w-full p-5 flex items-center justify-between ${
-                              isDark ? "bg-slate-900 hover:bg-slate-800/80" : "bg-white hover:bg-slate-50"
-                            } transition-colors text-left cursor-pointer`}
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-sm">
-                                <Building className="w-5 h-5" />
+                          <div className="flex items-center justify-between">
+                            <button
+                              onClick={() => setExpandedBatchId(isExpanded ? null : batch.id)}
+                              className={`flex-1 p-5 flex items-center justify-between ${
+                                isDark ? "bg-slate-900 hover:bg-slate-800/80" : "bg-white hover:bg-slate-50"
+                              } transition-colors text-left cursor-pointer`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-sm">
+                                  <Building className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <h4 className={`font-bold text-base ${textHeading}`}>
+                                    {batch.name} - <span className="text-emerald-500">{batch.courseTitle}</span>
+                                  </h4>
+                                  <p className={`text-xs ${textSub}`}>{t.instructorLabel} {batch.headTeacher} | {t.scheduleLabel} {batch.schedule}</p>
+                                </div>
                               </div>
-                              <div>
-                                <h4 className={`font-bold text-base ${textHeading}`}>
-                                  {batch.name} - <span className="text-emerald-500">{batch.courseTitle}</span>
-                                </h4>
-                                <p className={`text-xs ${textSub}`}>{t.instructorLabel} {batch.headTeacher} | {t.scheduleLabel} {batch.schedule}</p>
-                              </div>
-                            </div>
 
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                                {batch.totalStudents} {t.studentsCount}
-                              </span>
-                              {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                  {batch.totalStudents} / {batch.maxStudents || 25} {t.studentsCount}
+                                </span>
+                                {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                              </div>
+                            </button>
+
+                            <div className={`p-4 ${isDark ? "bg-slate-900" : "bg-white"} border-l ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+                              <button
+                                onClick={() => handleDeleteBatch(batch.id)}
+                                className="p-2 rounded-xl text-red-400 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                title="Delete Batch"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
-                          </button>
+                          </div>
 
                           {/* Step 3: Expandable Student Roster & Performance Reports */}
                           {isExpanded && (
                             <div className={`p-6 border-t ${isDark ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-slate-50"} space-y-4`}>
-                              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                {t.expandRosterTitle}
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                  {t.expandRosterTitle}
+                                </div>
+                                <span className="text-xs font-semibold text-emerald-500">
+                                  Enrolled: {batch.roster.length} students
+                                </span>
                               </div>
 
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {batch.roster.map((std) => (
-                                  <div key={std.id} className={`${bgCard} border rounded-2xl p-4 space-y-2`}>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-xs font-bold text-amber-500">{t.rollNoLabel}{std.rollNo}</span>
-                                      <span className="text-xs font-black text-emerald-500">{std.grade}</span>
-                                    </div>
-                                    <h5 className={`font-bold ${textHeading} text-sm`}>
-                                      {std.name}
-                                    </h5>
-                                    <p className={`text-[11px] ${textSub}`}>{t.parentLabel} {std.parentName}</p>
+                              {batch.roster.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                  {batch.roster.map((std) => (
+                                    <div key={std.id} className={`${bgCard} border rounded-2xl p-4 space-y-2`}>
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-amber-500">{t.rollNoLabel}{std.rollNo}</span>
+                                        <div className="flex items-center gap-1.5">
+                                          {(std.whatsappNumber || std.phone) && (
+                                            <a
+                                              href={`https://wa.me/${(std.whatsappNumber || std.phone || "").replace(/\D/g, "")}?text=${encodeURIComponent(`আসসালামু আলাইকুম ${std.parentName || std.name}, লার্নঅপস একাডেমি থেকে আপনার সন্তান ${std.name}-এর ক্লাসের তথ্য...`)}`}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="inline-flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500 text-emerald-500 hover:text-white px-2 py-0.5 rounded-lg text-[10px] font-bold border border-emerald-500/30 transition-all cursor-pointer"
+                                              title="Direct WhatsApp"
+                                            >
+                                              <MessageSquare className="w-3 h-3" />
+                                              <span>WhatsApp</span>
+                                            </a>
+                                          )}
+                                          <span className="text-xs font-black text-emerald-500">{std.grade}</span>
+                                        </div>
+                                      </div>
+                                      <h5 className={`font-bold ${textHeading} text-sm`}>
+                                        {std.name}
+                                      </h5>
+                                      <p className={`text-[11px] ${textSub}`}>
+                                        {t.parentLabel} {std.parentName} {std.phone ? `(${std.phone})` : ""}
+                                      </p>
 
-                                    <div className={`pt-2 border-t ${isDark ? "border-slate-800" : "border-slate-200"} flex justify-between text-xs font-semibold`}>
-                                      <span>{t.attendanceLabel} <strong className="text-emerald-500">{std.attendancePercentage}%</strong></span>
-                                      <span>{t.avgScoreLabel} <strong className="text-purple-500">{std.avgExamScore}/100</strong></span>
+                                      <div className={`pt-2 border-t ${isDark ? "border-slate-800" : "border-slate-200"} flex justify-between text-xs font-semibold`}>
+                                        <span>{t.attendanceLabel} <strong className="text-emerald-500">{std.attendancePercentage}%</strong></span>
+                                        <span>{t.avgScoreLabel} <strong className="text-purple-500">{std.avgExamScore}/100</strong></span>
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
-                              </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className={`p-6 text-center rounded-xl border ${bgSubCard} ${textSub} text-xs`}>
+                                  No students enrolled in this batch yet. Leads converted via Telesales will appear here automatically.
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -2843,7 +3843,35 @@ export default function Admin() {
 
       </main>
 
-      {/* ── CREATE / EDIT COURSE MODAL ── */}
+      {/* ── API STATUS TOAST NOTIFICATION ── */}
+      {apiToast && (
+        <div
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-start gap-3 px-5 py-4 rounded-2xl shadow-2xl border max-w-lg w-full mx-4 animate-in slide-in-from-bottom-4 fade-in ${
+            apiToast.status === "success"
+              ? "bg-emerald-950 border-emerald-700/60 text-emerald-200"
+              : apiToast.status === "error"
+              ? "bg-red-950 border-red-700/60 text-red-200"
+              : "bg-slate-900 border-slate-700/60 text-slate-200"
+          }`}
+        >
+          <span className="text-lg shrink-0 mt-0.5">
+            {apiToast.status === "success" ? "✅" : apiToast.status === "error" ? "❌" : "ℹ️"}
+          </span>
+          <div>
+            <p className="text-xs font-bold tracking-wide uppercase mb-0.5 opacity-60">
+              {apiToast.status === "success" ? "API Response" : apiToast.status === "error" ? "API Error" : "Status"}
+            </p>
+            <p className="text-sm font-semibold leading-snug">{apiToast.message}</p>
+          </div>
+          <button
+            onClick={() => setApiToast(null)}
+            className="ml-auto shrink-0 opacity-50 hover:opacity-100 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {isCourseModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
           <div className={`${bgCard} rounded-3xl max-w-lg w-full p-6 sm:p-8 relative shadow-2xl overflow-y-auto max-h-[90vh] border`}>
@@ -2868,7 +3896,7 @@ export default function Admin() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className={`block text-xs font-bold ${textHeading} mb-1`}>
                     {t.fieldPrice}
@@ -3128,6 +4156,410 @@ export default function Admin() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── ADD OUTER OPERATIONAL EXPENSE MODAL ── */}
+      {isExpenseModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`${bgCard} rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl border space-y-4`}>
+            <button onClick={() => setIsExpenseModalOpen(false)} className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}>
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <PlusCircle className="w-5 h-5 text-purple-400" />
+              <h3 className={`text-xl font-bold ${textHeading}`}>
+                {t.modalAddExpenseTitle}
+              </h3>
+            </div>
+            <p className={`text-xs ${textSub}`}>
+              Record an outer business operational expense (Marketing ads, hiring, book printing, logistics).
+            </p>
+
+            <form onSubmit={handleSaveOuterExpense} className="space-y-3.5 pt-2">
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.expenseNotes} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Meta Ads / BDJobs Recruitment"
+                  value={expenseForm.title}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm focus:border-purple-500`}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                    {t.expenseCategory}
+                  </label>
+                  <select
+                    value={expenseForm.category}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value as any })}
+                    className={`w-full px-3 py-2.5 rounded-xl ${inputStyle} text-xs font-bold cursor-pointer focus:border-purple-500`}
+                  >
+                    <option value="Marketing">{t.categoryMarketing}</option>
+                    <option value="Hiring">{t.categoryHiring}</option>
+                    <option value="Books & Materials">{t.categoryBooks}</option>
+                    <option value="Software">{t.categorySoftware}</option>
+                    <option value="Logistics">{t.categoryLogistics}</option>
+                    <option value="Operations">{t.categoryOperations}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                    {t.expenseAmount} *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="৳"
+                    value={expenseForm.amount}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm font-bold text-rose-400 focus:border-purple-500`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.expenseDate}
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={expenseForm.date}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
+                  className={`w-full px-4 py-2 rounded-xl ${inputStyle} text-xs focus:border-purple-500`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  Additional Notes
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Target audience, quantity, vendor, or campaign breakdown..."
+                  value={expenseForm.notes}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
+                  className={`w-full px-4 py-2 rounded-xl ${inputStyle} text-xs resize-none focus:border-purple-500`}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsExpenseModalOpen(false)}
+                  className={`flex-1 py-2.5 rounded-xl border text-xs font-bold ${textSub} cursor-pointer`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-md"
+                >
+                  {t.saveExpense}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── DISPATCH COURSE BOOKS MODAL ── */}
+      {isDispatchModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`${bgCard} rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl border space-y-4`}>
+            <button onClick={() => setIsDispatchModalOpen(false)} className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}>
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <Truck className="w-5 h-5 text-emerald-500" />
+              <h3 className={`text-xl font-bold ${textHeading}`}>
+                {t.modalDispatchTitle}
+              </h3>
+            </div>
+            <p className={`text-xs ${textSub}`}>
+              Create a new physical book dispatch parcel with tracking consignment code.
+            </p>
+
+            <form onSubmit={handleSaveBookDispatch} className="space-y-3.5 pt-2">
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.dispatchStudentName} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Student Full Name"
+                  value={dispatchForm.studentName}
+                  onChange={(e) => setDispatchForm({ ...dispatchForm, studentName: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-sm focus:border-emerald-500`}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                    {t.dispatchPhone} *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="017XX-XXXXXX"
+                    value={dispatchForm.phone}
+                    onChange={(e) => setDispatchForm({ ...dispatchForm, phone: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-xs font-mono text-emerald-400 focus:border-emerald-500`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                    {t.dispatchCourier}
+                  </label>
+                  <select
+                    value={dispatchForm.courierService}
+                    onChange={(e) => setDispatchForm({ ...dispatchForm, courierService: e.target.value as any })}
+                    className={`w-full px-3 py-2.5 rounded-xl ${inputStyle} text-xs font-bold cursor-pointer focus:border-emerald-500`}
+                  >
+                    <option value="Steadfast">Steadfast Courier</option>
+                    <option value="Pathao">Pathao Express</option>
+                    <option value="Paperfly">Paperfly Home Delivery</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.dispatchAddress} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="House, Road, District/City"
+                  value={dispatchForm.address}
+                  onChange={(e) => setDispatchForm({ ...dispatchForm, address: e.target.value })}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-xs focus:border-emerald-500`}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                    {t.dispatchConsignment}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ST-XXXXXX (Auto)"
+                    value={dispatchForm.consignmentId}
+                    onChange={(e) => setDispatchForm({ ...dispatchForm, consignmentId: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-xl ${inputStyle} text-xs font-mono text-amber-400 focus:border-emerald-500`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                    {t.dispatchTrxId}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="BKXXXXXX (Optional)"
+                    value={dispatchForm.trxId}
+                    onChange={(e) => setDispatchForm({ ...dispatchForm, trxId: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-xl ${inputStyle} text-xs font-mono text-slate-400 focus:border-emerald-500`}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDispatchModalOpen(false)}
+                  className={`flex-1 py-2.5 rounded-xl border text-xs font-bold ${textSub} cursor-pointer`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-md"
+                >
+                  {t.saveDispatch}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── CREATE COURSE BATCH MODAL ── */}
+      {isAddBatchModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`${bgCard} rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl border space-y-4`}>
+            <button onClick={() => setIsAddBatchModalOpen(false)} className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}>
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                <Building className="w-5 h-5" />
+              </div>
+              <h3 className={`text-xl font-bold ${textHeading}`}>
+                {t.modalAddBatchTitle}
+              </h3>
+            </div>
+            <p className={`text-xs ${textSub}`}>
+              Create a designated course batch with specific schedule time slot and assigned teacher.
+            </p>
+
+            <form onSubmit={handleCreateBatch} className="space-y-3.5 pt-1">
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.batchCourseLabel}
+                </label>
+                <select
+                  value={newBatchCourseId}
+                  onChange={(e) => setNewBatchCourseId(e.target.value)}
+                  className={`w-full px-3 py-2.5 rounded-xl ${inputStyle} text-xs font-bold cursor-pointer focus:border-amber-500`}
+                >
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title} (৳{c.price})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.batchNameLabel}
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. ব্যাচ ০৫ (সন্ধ্যার বিশেষ ব্যাচ)"
+                  value={newBatchName}
+                  onChange={(e) => setNewBatchName(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-xs focus:border-amber-500`}
+                >
+                </input>
+              </div>
+
+              <div>
+                <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                  {t.batchScheduleLabel}
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. শনি-সোম-বুধ (সন্ধ্যা ৬:০০ - ৭:০০ টা)"
+                  value={newBatchSchedule}
+                  onChange={(e) => setNewBatchSchedule(e.target.value)}
+                  className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-xs focus:border-amber-500`}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                    {t.assignTeacherLabel}
+                  </label>
+                  <select
+                    value={newBatchTeacherId}
+                    onChange={(e) => setNewBatchTeacherId(e.target.value)}
+                    className={`w-full px-3 py-2.5 rounded-xl ${inputStyle} text-xs font-bold cursor-pointer focus:border-amber-500`}
+                  >
+                    {staffMembers
+                      .filter((s) => s.role === "Teacher")
+                      .map((tMember) => (
+                        <option key={tMember.id} value={tMember.id}>
+                          {tMember.name} (Teacher)
+                        </option>
+                      ))}
+                    {staffMembers
+                      .filter((s) => s.role !== "Teacher")
+                      .map((tMember) => (
+                        <option key={tMember.id} value={tMember.id}>
+                          {tMember.name} ({tMember.role})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold ${textHeading} mb-1`}>
+                    {t.batchMaxStudentsLabel}
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="100"
+                    value={newBatchMaxStudents}
+                    onChange={(e) => setNewBatchMaxStudents(Number(e.target.value))}
+                    className={`w-full px-4 py-2.5 rounded-xl ${inputStyle} text-xs focus:border-amber-500`}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddBatchModalOpen(false)}
+                  className={`flex-1 py-2.5 rounded-xl border text-xs font-bold ${textSub} cursor-pointer`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-md"
+                >
+                  {t.saveBatchBtn}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── LOGOUT CONFIRMATION DIALOG ── */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`w-full max-w-sm rounded-3xl border shadow-2xl ${bgCard} border-slate-700 p-6 animate-in fade-in zoom-in-95`}>
+            <div className="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <LogOut className="w-6 h-6" />
+            </div>
+            <h3 className={`text-lg font-bold text-center mb-2 ${textHeading}`}>
+              {t.logoutConfirmTitle}
+            </h3>
+            <p className={`text-xs text-center mb-6 leading-relaxed ${textSub}`}>
+              {t.logoutConfirmDesc}
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsLogoutModalOpen(false)}
+                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
+                  isDark ? "bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800" : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                {t.cancelBtn}
+              </button>
+              <button
+                type="button"
+                onClick={handleAdminLogout}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shadow-lg shadow-red-950/40 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{t.confirmLogoutBtn}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

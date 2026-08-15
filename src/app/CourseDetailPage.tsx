@@ -25,6 +25,7 @@ import { ALL_COURSES, Course } from "./App";
 import { GOOGLE_FORM_URL } from "./CourseListPage";
 import Course1DetailsModal from "../components/Course1DetailsModal";
 import Course2DetailsModal from "../components/Course2DetailsModal";
+import { getStoredCourses } from "../services/courseStore";
 import { Button } from "./components/ui/button";
 
 function StarRating({ rating, size = "md" }: { rating: number; size?: "sm" | "md" }) {
@@ -226,7 +227,9 @@ export default function CourseDetailPage({ dark, toggleDark, lang = "BN" }: Cour
   }
 
   const isEnglish = lang === "EN";
-  const course: Course = ALL_COURSES.find((c) => c.id === Number(id)) ?? ALL_COURSES[0];
+  const storedCourses = getStoredCourses();
+  const matchedDynamic = storedCourses.find((c) => String(c.id) === String(id));
+  const course: Course = ALL_COURSES.find((c) => String(c.id) === String(id)) || (matchedDynamic as any) || ALL_COURSES[0];
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
