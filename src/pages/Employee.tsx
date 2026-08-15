@@ -66,6 +66,7 @@ import {
   BatchItem,
 } from "../services/batchStore";
 import { getStoredLeads, subscribeToLeadUpdates } from "../services/leadStore";
+import { addPayment } from "../services/salesStore";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TYPES & MOCK INITIAL DATA FOR FALLBACK
@@ -620,7 +621,8 @@ export default function Employee() {
           claimed_by: agentNameStr,
           assigned_employee_id: currentAgent.id,
         })
-        .eq("id", leadId);
+        .eq("id", leadId)
+        .select();
       if (error) {
         showApiToast(`✅ Lead claimed — Supabase: ${error.message}`, "info");
       } else {
@@ -690,7 +692,7 @@ export default function Employee() {
       agent: currentAgent.name,
     };
 
-    // 1. Automatically enroll student in selected batch with WhatsApp number
+    // 1. Enroll student in selected batch
     if (targetBatch) {
       enrollStudentInBatch(targetBatch.id, {
         name: selectedLeadForPayment.studentName,
@@ -701,6 +703,7 @@ export default function Employee() {
       });
     }
 
+    // 2. Update lead state
     setLeads((prev) =>
       prev.map((l) => {
         if (l.id === selectedLeadForPayment.id) {
@@ -717,9 +720,32 @@ export default function Employee() {
       })
     );
 
+    // 3. POST to payments table (HTTP 201)
+    const { httpStatus: payHttpStatus, error: payError } = await addPayment({
+      leadId: selectedLeadForPayment.id,
+      studentName: selectedLeadForPayment.studentName,
+      guardianName: selectedLeadForPayment.parentName,
+      phone: selectedLeadForPayment.phone,
+      courseInterest: selectedLeadForPayment.courseInterest,
+      amount: amt,
+      method: paymentMethod,
+      trxId: paymentTrxId,
+      batchId: targetBatch?.id || "",
+      batchName,
+      agentId: currentAgent.id,
+      agentName: currentAgent.name,
+      date: new Date().toISOString().substring(0, 10),
+    });
+    if (payError) {
+      showApiToast(`✅ HTTP ${payHttpStatus} — Payment saved locally (Supabase: ${payError})`, "info");
+    } else {
+      showApiToast(`✅ HTTP ${payHttpStatus} Created — Payment ৳${amt} recorded (Supabase REST POST /payments)`, "success");
+    }
+
+    // 4. PATCH lead status to Converted (HTTP 200)
     try {
       const updatedNotes = [...selectedLeadForPayment.callNotes, noteObj];
-      await supabase
+      const { error: leadErr, status: leadStatus } = await supabase
         .from("leads")
         .update({
           status: "Converted",
@@ -729,7 +755,13 @@ export default function Employee() {
           trx_id: `${paymentMethod}-${paymentTrxId}`,
           call_notes: updatedNotes,
         })
-        .eq("id", selectedLeadForPayment.id);
+        .eq("id", selectedLeadForPayment.id)
+        .select();
+      if (leadErr) {
+        showApiToast(`✅ Lead status updated locally (Supabase: ${leadErr.message})`, "info");
+      } else {
+        setTimeout(() => showApiToast(`✅ HTTP 200 OK — Lead status → 'Converted' (Supabase REST PATCH /leads)`, "success"), 1500);
+      }
     } catch (err) {
       console.error("Error confirming payment in Supabase:", err);
     }
