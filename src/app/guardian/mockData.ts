@@ -1,0 +1,226 @@
+import {
+  StudentProfile,
+  AchievementBadge,
+  HomeworkSubmission,
+  NotificationItem,
+  WorkGalleryItem,
+  BillingInvoice,
+} from "./types";
+
+// Target next class time 1 hour and 45 minutes from current date for live countdown testing
+const targetCountdownDate = new Date(Date.now() + (1 * 3600 + 45 * 60 + 20) * 1000).toISOString();
+
+export const mockStudentData: StudentProfile = {
+  studentId: "std-1",
+  parentId: "parent-8824",
+  studentName: "আরাফ হোসেন",
+  studentNameEN: "Araf Hossain",
+  avatar: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=150&h=150&fit=crop&crop=faces",
+  gradeLevel: "শ্রেণী ৩",
+  batch: "ব্যাচ ০৪",
+  batchEN: "Batch 04",
+  courseName: "২৫ দিনে সুন্দর হাতের লেখা (ব্যাচ ০৪)",
+  courseNameEN: "Beautiful Handwriting in 25 Days (Batch 04)",
+  attendancePercentage: 94,
+  totalClasses: 16,
+  attendedClasses: 15,
+  handwritingScore: 92,
+  speedScore: 88,
+  overallGrade: "A+",
+  starsEarned: 18,
+  totalStars: 20,
+  teacherName: "রাহেলা খাতুন",
+  teacherTitle: "Senior Handwriting Specialist & Mentor",
+  teacherPhone: "8801700000000",
+  teacherAvatar: "https://images.unsplash.com/photo-1619852182277-79aa23f82c8e?w=150&h=150&fit=crop&crop=faces",
+  teacherRemarks: "আরাফের হাতের লেখা এখন অনেক পরিচ্ছন্ন ও বর্ণমালার মাত্রা সোজা। প্রতিদিন ১৫ মিনিট রেগুলার প্র্যাকটিস ধরে রাখতে হবে। পেন্সিল গ্রিপে দারুণ উন্নতি চোখে পড়ছে!",
+  teacherRemarksEN: "Araf's handwriting is now clean with straight alignment. Please keep up 15 mins daily practice. Great improvement observed in pencil grip!",
+  upcomingClassTime: "আজ বিকাল ৪:০০ টা (লাইভ জুম ক্লাস)",
+  upcomingClassTimeEN: "Today at 4:00 PM (Live Zoom Class)",
+  nextClassDateISO: targetCountdownDate,
+  zoomLink: "https://zoom.us/j/9876543210",
+};
+
+export const mockBadges: AchievementBadge[] = [
+  {
+    id: "badge-1",
+    title: "নিয়মিত শিক্ষার্থী",
+    titleEN: "Perfect Attendance",
+    description: "৯৪% এর বেশি ক্লাসে উপস্থিতির জন্য প্রাপ্ত",
+    descriptionEN: "Earned for attending over 94% of live classes",
+    icon: "Award",
+    color: "text-amber-500",
+    bg: "bg-amber-500/10 border-amber-500/20",
+    unlockedAt: "১২ আগস্ট, ২০২৪",
+  },
+  {
+    id: "badge-2",
+    title: "সোজা মাত্রার জাদুকর",
+    titleEN: "Straight Alignment Master",
+    description: "টানা ১০টি অ্যাসাইনমেন্টে নিখুঁত মাত্রা রক্ষা",
+    descriptionEN: "Maintained perfect line alignment in 10 consecutive tasks",
+    icon: "Sparkles",
+    color: "text-purple-500",
+    bg: "bg-purple-500/10 border-purple-500/20",
+    unlockedAt: "১৮ আগস্ট, ২০২৪",
+  },
+  {
+    id: "badge-3",
+    title: "স্পিড স্টার",
+    titleEN: "Speed Star",
+    description: "হাতের লেখার গতি প্রতি মিনিটে ২৫ শব্দ অতিক্রম",
+    descriptionEN: "Achieved writing speed over 25 words per minute",
+    icon: "Zap",
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+    unlockedAt: "২৪ আগস্ট, ২০২৪",
+  },
+  {
+    id: "badge-4",
+    title: "স্টার পারফর্মার",
+    titleEN: "Star Performer",
+    description: "সাপ্তাহিক হোমওয়ার্কে সর্বোচ্চ নাম্বার লাভ",
+    descriptionEN: "Achieved highest score in weekly homework evaluations",
+    icon: "Star",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10 border-blue-500/20",
+    unlockedAt: "৩০ আগস্ট, ২০২৪",
+  },
+];
+
+export const mockHomeworkList: HomeworkSubmission[] = [
+  {
+    id: "hw-1",
+    studentId: "std-1",
+    title: "লেসন ১২: স্বরবর্ণ যুক্তাক্ষর প্র্যাকটিস",
+    titleEN: "Lesson 12: Vowel Conjunction Practice",
+    lessonNo: 12,
+    dueDate: "আজ, রাত ১০:০০ টা",
+    status: "Pending",
+  },
+  {
+    id: "hw-2",
+    studentId: "std-1",
+    title: "লেসন ১১: ক থেকে ঙ নিখুঁত মাত্রা অনুশীলনী",
+    titleEN: "Lesson 11: Perfect Line Alignment (Ka to Nga)",
+    lessonNo: 11,
+    dueDate: "গতকাল",
+    submittedDate: "০৫ আগস্ট, ২০২৬",
+    reviewDate: "০৬ আগস্ট, ২০২৬",
+    status: "Graded",
+    score: 95,
+    maxScore: 100,
+    grade: "A+",
+    teacherSummary: "খুব চমৎকার হয়েছে! মাত্রার সোজা ভাব ও অক্ষর গঠন পুরোপুরি নিখুঁত।",
+    teacherInspection: "পেন্সিল গ্রিপ কারেকশন ও লাইনের সোজাভাব নিখুঁত। প্রতিনিয়ত ১৫ মিনিট অনুশীলন অব্যাহত রাখুন।",
+    feedback: "খুব চমৎকার হয়েছে! মাত্রার সোজা ভাব ধরে রাখবে।",
+    previewUrl: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=500&h=350&fit=crop",
+  },
+  {
+    id: "hw-3",
+    studentId: "std-1",
+    title: "লেসন ১০: দ্রুত বাক্য লিখন ও পেন্সিল গ্রিপ টেস্ট",
+    titleEN: "Lesson 10: Fast Sentence Writing & Pencil Grip Test",
+    lessonNo: 10,
+    dueDate: "০৩ আগস্ট",
+    submittedDate: "০৩ আগস্ট, ২০২৬",
+    reviewDate: "০৪ আগস্ট, ২০২৬",
+    status: "Graded",
+    score: 90,
+    maxScore: 100,
+    grade: "A",
+    teacherSummary: "লেখার গতি অনেক ভালো, শব্দের মাঝের দূরত্ব সমান রাখার চেষ্টা করো।",
+    teacherInspection: "গতির দিক থেকে লক্ষণীয় উন্নতি। বাক্যের পরিচ্ছন্নতা চমৎকার।",
+    feedback: "গতি ভালো, শব্দের মাঝের দূরত্ব সমান রাখার চেষ্টা করো।",
+    previewUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=500&h=350&fit=crop",
+  },
+];
+
+export const mockNotifications: NotificationItem[] = [
+  {
+    id: "notif-1",
+    type: "homework",
+    title: "হোমওয়ার্ক রিমাইন্ডার",
+    titleEN: "Homework Reminder",
+    message: "লেসন ১২ এর হোমওয়ার্ক জমা দেওয়ার শেষ সময় আজ রাত ১০:০০ টা।",
+    messageEN: "Lesson 12 homework deadline is today at 10:00 PM.",
+    timestamp: "১০ মিনিট আগে",
+    read: false,
+    linkTab: "homework-upload",
+  },
+  {
+    id: "notif-2",
+    type: "class",
+    title: "পরবর্তী লাইভ ক্লাস",
+    titleEN: "Upcoming Live Class",
+    message: "আজ বিকাল ৪:০০ টায় রাহেলা খাতুনের সাথে জুম ক্লাস শুরু হবে।",
+    messageEN: "Zoom live class with Rahila Khatun starts today at 4:00 PM.",
+    timestamp: "১ ঘণ্টা আগে",
+    read: false,
+    linkTab: "live-classes",
+  },
+  {
+    id: "notif-3",
+    type: "feedback",
+    title: "নতুন টিচার ফিডব্যাক",
+    titleEN: "Teacher Feedback",
+    message: "লেসন ১১ হোমওয়ার্কের ওপর শিক্ষক পরিদর্শনের বিবরণ দিয়েছেন।",
+    messageEN: "Teacher left feedback on Lesson 11 homework.",
+    timestamp: "গতকাল",
+    read: true,
+    linkTab: "dashboard",
+  },
+];
+
+export const mockWorkGallery: WorkGalleryItem[] = [
+  {
+    id: "wg-1",
+    title: "কোর্সের ১ম দিন বনাম ১৫তম দিনের তুলনা",
+    titleEN: "Day 1 vs Day 15 Handwriting Comparison",
+    date: "১৫ আগস্ট, ২০২৬",
+    score: 92,
+    beforeImg: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&h=350&fit=crop",
+    afterImg: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=500&h=350&fit=crop",
+    remarks: "মাত্রার সোজাভাব ও অক্ষরের আকার পূর্বের তুলনায় অনেক সুন্দর হয়েছে।",
+    remarksEN: "Line alignment and letter sizing improved significantly.",
+  },
+];
+
+export const mockInvoices: BillingInvoice[] = [
+  {
+    id: "inv-101",
+    invoiceNo: "INV-2026-0881",
+    courseName: "২৫ দিনে সুন্দর হাতের লেখা (ব্যাচ ০৪)",
+    method: "bKash Auto-Pay",
+    date: "০১ আগস্ট, ২০২৬",
+    amount: "৳২,৫০০",
+    status: "Paid",
+  },
+];
+
+export const mockWeeklyPracticeData = [
+  { day: "সোম", dayEN: "Mon", minutes: 25 },
+  { day: "মঙ্গল", dayEN: "Tue", minutes: 30 },
+  { day: "বুধ", dayEN: "Wed", minutes: 20 },
+  { day: "বৃহঃ", dayEN: "Thu", minutes: 35 },
+  { day: "শুক্র", dayEN: "Fri", minutes: 40 },
+  { day: "শনি", dayEN: "Sat", minutes: 15 },
+  { day: "রবি", dayEN: "Sun", minutes: 25 },
+];
+
+export const mockMonthlyProgressData = [
+  { week: "সপ্তাহ ১", weekEN: "Wk 1", score: 65, speed: 15 },
+  { week: "সপ্তাহ ২", weekEN: "Wk 2", score: 75, speed: 18 },
+  { week: "সপ্তাহ ৩", weekEN: "Wk 3", score: 85, speed: 22 },
+  { week: "সপ্তাহ ৪", weekEN: "Wk 4", score: 92, speed: 25 },
+];
+
+export const mockSkillRadarData = [
+  { skill: "মাত্রা সোজা", skillEN: "Line Straightness", score: 90 },
+  { skill: "অক্ষরের আকার", skillEN: "Letter Size", score: 85 },
+  { skill: "পেন্সিল গ্রিপ", skillEN: "Pencil Grip", score: 88 },
+  { skill: "লেখার গতি", skillEN: "Writing Speed", score: 82 },
+  { skill: "শব্দের দূরত্ব", skillEN: "Word Spacing", score: 86 },
+  { skill: "পরিচ্ছন্নতা", skillEN: "Neatness", score: 92 },
+];
+

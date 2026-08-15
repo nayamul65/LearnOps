@@ -1,5 +1,12 @@
 /* ── COURSES DATA FILE (Isolated for Course ID 3 & Course ID 4) ── */
 
+export const COURSE_1_YOUTUBE_URL = "https://www.youtube.com/embed/E_WC6BxHIpE";
+
+export const COURSE_1_DATA = {
+  youtubeReviewUrl: "https://www.youtube.com/embed/E_WC6BxHIpE",
+  enrollUrl: "https://forms.gle/gMzsJJxmq9RqpSW66"
+};
+
 export interface Course3Data {
   courseId: number;
   title: string;
@@ -110,7 +117,7 @@ export const COURSE_5_DATA: Course5Data = {
   duration: "৩ মাস",
   enrolledStudents: "৫২০ শিক্ষার্থী",
   rating: "5 (143 রিভিউ)",
-  price: "৳৩,০০০",
+  price: "৳২,৫০০",
   youtubeReviewUrl: "https://youtu.be/kiwCdNcVks4?si=RzmhEd969uDPweWV",
   helpline: "09611-678344",
   programHighlights: [

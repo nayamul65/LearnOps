@@ -63,7 +63,7 @@ function cn(...c: (string | undefined | false)[]) {
 function useDarkMode() {
   const [dark, setDark] = useState(false);
   const toggle = () =>
-    setDark((d) => {
+    setDark((d: any) => {
       const next = !d;
       document.documentElement.classList.toggle("dark", next);
       return next;
@@ -288,7 +288,7 @@ export const ALL_COURSES: Course[] = [
     rating: 5.0,
     reviews: 143,
     students: "৫২০",
-    img: "https://images.unsplash.com/photo-1609599006353-e629f1d40968?w=600&h=400&fit=crop&auto=format",
+    img: "https://unsplash.com",
     heroImg: "https://images.unsplash.com/photo-1609599006353-e629f1d40968?w=1400&h=700&fit=crop&auto=format",
     level: "বিগিনার",
     levelColor: "bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300",
@@ -341,9 +341,12 @@ function Navbar({
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shadow-lg shadow-green-300/30">
               <PenLine className="w-5 h-5 text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-xl text-foreground tracking-tight">Learn<span className="text-primary">Ops</span></span>
+            <span className="font-bold text-xl text-foreground tracking-tight">
+              Learn<span className="text-primary">Ops</span>
+            </span>
           </button>
 
+          {/* Desktop Navigation Links */}
           <div className="hidden lg:flex items-center gap-8">
             {links.map((l) => (
               <button key={l.target} onClick={() => setPage(l.target)}
@@ -357,8 +360,8 @@ function Navbar({
             ))}
           </div>
 
+          {/* Desktop Action Buttons */}
           <div className="hidden lg:flex items-center gap-3">
-            {/* Top Bar Dedicated Language Switcher Toggle */}
             <button
               onClick={toggleLang}
               className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border border-border bg-card text-foreground hover:bg-muted transition-all cursor-pointer shadow-2xs"
@@ -372,13 +375,16 @@ function Navbar({
               {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             <button onClick={() => setPage("login")} style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
-              className="text-sm font-semibold text-foreground border border-border px-4 py-2 rounded-full hover:bg-muted transition-colors cursor-pointer">{t("login")}</button>
+              className="text-sm font-semibold text-foreground border border-border px-4 py-2 rounded-full hover:bg-muted transition-colors cursor-pointer">
+              {t("login")}
+            </button>
             <button onClick={() => setPage("courses")} style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
               className="inline-flex items-center gap-1.5 text-sm font-semibold bg-primary text-white px-5 py-2 rounded-full hover:bg-green-600 transition-all shadow-lg shadow-green-200/50 cursor-pointer">
               {t("getStarted")} <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
+          {/* Mobile Controls */}
           <div className="flex lg:hidden items-center gap-2">
             <button
               onClick={toggleLang}
@@ -396,6 +402,8 @@ function Navbar({
           </div>
         </div>
       </div>
+
+      {/* Mobile Responsive Dropdown Container */}
       {open && (
         <div className="lg:hidden bg-background border-t border-border px-4 pb-5 pt-3 space-y-1">
           {links.map((l) => (
@@ -535,8 +543,8 @@ function Carousel() {
     { img: "https://images.unsplash.com/photo-1778338790249-a2f033a11b99?w=1400&h=700&fit=crop&auto=format", tag: isEnglish ? "Certificate" : "সার্টিফিকেট", title: isEnglish ? "Recognition of Success" : "সাফল্যের স্বীকৃতি", desc: isEnglish ? "Your child receives an official certificate upon course completion." : "কোর্স সম্পন্ন করলে স্বীকৃত সার্টিফিকেট পাবে আপনার সন্তান।" },
   ];
 
-  const next = useCallback(() => setCurrent((c) => (c + 1) % slides.length), [slides.length]);
-  const prev = () => setCurrent((c) => (c - 1 + slides.length) % slides.length);
+  const next = useCallback(() => setCurrent((c: number) => (c + 1) % slides.length), [slides.length]);
+  const prev = () => setCurrent((c: number) => (c - 1 + slides.length) % slides.length);
 
   useEffect(() => {
     if (paused) return;
@@ -699,10 +707,16 @@ function Footer({ setPage, contactInfo = mockContactInfo }: { setPage: (p: Page)
             </div>
             <div className="flex gap-3 mt-5">
               {contactInfo.socialLinks.map((s) => (
-                <a key={s.platform} href={s.url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 hover:bg-primary flex items-center justify-center transition-colors cursor-pointer text-white">
+                <a
+                  key={s.platform}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-[#22c55e] flex items-center justify-center transition-all duration-200 cursor-pointer text-white"
+                >
                   {s.platform === "facebook" && <Facebook className="w-4 h-4" />}
-                  {s.platform === "youtube" && <Youtube className="w-4 h-4" />}
                   {s.platform === "instagram" && <Instagram className="w-4 h-4" />}
+                  {s.platform === "youtube" && <Youtube className="w-4 h-4" />}
                   {s.platform === "whatsapp" && <MessageCircle className="w-4 h-4" />}
                 </a>
               ))}

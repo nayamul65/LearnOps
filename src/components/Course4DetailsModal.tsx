@@ -83,17 +83,23 @@ export default function Course4DetailsModal({
 
   /* Helper to convert YouTube URL to embed format */
   const getYouTubeEmbedUrl = (url: string) => {
-    if (!url) return "https://www.youtube.com/embed/QEKrbAwiSrs?autoplay=0&rel=0";
-    if (url.includes("embed/")) return url;
+    if (!url) return "https://www.youtube.com/embed/QEKrbAwiSrs";
     let videoId = "";
-    if (url.includes("youtu.be/")) {
-      videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
-    } else if (url.includes("v=")) {
-      videoId = url.split("v=")[1]?.split("&")[0] || "";
+    const trimmed = url.trim();
+    if (trimmed.length === 11 && !trimmed.includes("/") && !trimmed.includes("?")) {
+      videoId = trimmed;
+    } else {
+      if (trimmed.includes("youtu.be/")) {
+        videoId = trimmed.split("youtu.be/")[1]?.split("?")[0]?.split("&")[0] || "";
+      } else if (trimmed.includes("v=")) {
+        videoId = trimmed.split("v=")[1]?.split("&")[0]?.split("?")[0] || "";
+      } else if (trimmed.includes("embed/")) {
+        videoId = trimmed.split("embed/")[1]?.split("?")[0]?.split("&")[0] || "";
+      }
     }
     return videoId
-      ? `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`
-      : "https://www.youtube.com/embed/QEKrbAwiSrs?autoplay=0&rel=0";
+      ? `https://www.youtube.com/embed/${videoId}`
+      : "https://www.youtube.com/embed/QEKrbAwiSrs";
   };
 
   const handleAdminSave = (e: React.FormEvent) => {
@@ -446,7 +452,7 @@ export default function Course4DetailsModal({
               <div className="bg-muted/60 px-5 py-3 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-2 text-red-600 font-bold text-xs sm:text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
                   <Youtube className="w-5 h-5 fill-red-600 text-white" />
-                  <span>🎥 ফোনিক্স রিভিউ ও ডেমো ভিডিও (YouTube Review Player)</span>
+                  <span>🎥 Course Review Video</span>
                 </div>
                 <span className="text-[11px] text-muted-foreground">HD 1080p</span>
               </div>

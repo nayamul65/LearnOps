@@ -12,7 +12,6 @@ import {
   Moon,
   ChevronRight,
   TrendingUp,
-  Play,
   X,
 } from "lucide-react";
 import { ImageWithFallback } from "./components/figma/ImageWithFallback";
@@ -26,7 +25,7 @@ import Course4DetailsModal from "../components/Course4DetailsModal";
 import { getStoredCourses, subscribeToCourseUpdates, UnifiedCourse } from "../services/courseStore";
 import { submitInboundLead } from "../services/leadStore";
 
-export const GOOGLE_FORM_URL = "https://forms.google.com/demo-enrollment-form";
+export const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScfUbFTmOUymZ1QDIq7hF3TllwPWphLrCixclCQJ8_WSKHVBw/viewform";
 
 export interface Course {
   id: number | string;
@@ -195,7 +194,7 @@ export const COURSES: Course[] = [
     reviews: 143,
     students: "৫২০",
     studentsEN: "520",
-    img: "https://images.unsplash.com/photo-1609599006353-e629f1d40968?w=600&h=400&fit=crop&auto=format",
+    img: "https://unsplash.com",
     badge: "🕌",
     gradient: "from-teal-700 to-emerald-800",
     bgLight: "bg-teal-50 dark:bg-teal-950/20",
@@ -527,16 +526,6 @@ export default function CourseListPage({ dark, toggleDark, lang: propsLang }: Co
                         {lang === "BN" ? course.level : course.levelEN}
                       </span>
                     </div>
-
-                    {/* Video Demo Button Overlay */}
-                    <button
-                      onClick={() => setDemoCourse(course)}
-                      className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                    >
-                      <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-xl hover:scale-110 transition-transform">
-                        <Play className="w-6 h-6 fill-white ml-1" />
-                      </div>
-                    </button>
 
                     {/* Emoji Floating Badge with dynamic theme accent shadow */}
                     <div

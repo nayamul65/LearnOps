@@ -42,7 +42,7 @@ export const DEFAULT_COURSE1_DATA: Course1DetailsData = {
   courseId: 1,
   courseTitle: "২৫ দিনে সুন্দর হাতের লেখা",
   totalEnrolled: "৬,২৪০+",
-  youtubeDemoLink: "https://youtu.be/E_WC6BxHIpE",
+  youtubeDemoLink: "https://www.youtube.com/embed/E_WC6BxHIpE",
   facebookVideoLink: "https://www.facebook.com/share/v/1859syYPUS/",
   helplineNumber: "09611-678344",
   promoText:
@@ -100,15 +100,22 @@ export default function Course1DetailsModal({
 
   /* Helper to convert YouTube URL to embed format */
   const getYouTubeEmbedUrl = (url: string) => {
-    if (url.includes("embed/")) return url;
+    if (!url) return "https://www.youtube.com/embed/E_WC6BxHIpE";
     let videoId = "";
-    if (url.includes("youtu.be/")) {
-      videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
-    } else if (url.includes("v=")) {
-      videoId = url.split("v=")[1]?.split("&")[0] || "";
+    const trimmed = url.trim();
+    if (trimmed.length === 11 && !trimmed.includes("/") && !trimmed.includes("?")) {
+      videoId = trimmed;
+    } else {
+      if (trimmed.includes("youtu.be/")) {
+        videoId = trimmed.split("youtu.be/")[1]?.split("?")[0]?.split("&")[0] || "";
+      } else if (trimmed.includes("v=")) {
+        videoId = trimmed.split("v=")[1]?.split("&")[0]?.split("?")[0] || "";
+      } else if (trimmed.includes("embed/")) {
+        videoId = trimmed.split("embed/")[1]?.split("?")[0]?.split("&")[0] || "";
+      }
     }
     return videoId
-      ? `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`
+      ? `https://www.youtube.com/embed/${videoId}`
       : "https://www.youtube.com/embed/E_WC6BxHIpE";
   };
 
@@ -355,7 +362,7 @@ export default function Course1DetailsModal({
               <div className="bg-muted/60 px-5 py-3 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-2 text-red-600 font-bold text-xs sm:text-sm" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
                   <Youtube className="w-5 h-5 fill-red-600 text-white" />
-                  <span>🎥 ফ্রি ডেমো ক্লাস দেখুন (YouTube Demo Video)</span>
+                  <span>🎥 কোর্স রিভিউ ভিডিও (Course Review Video)</span>
                 </div>
                 <span className="text-[11px] text-muted-foreground">এইচডি ভিডিও প্লেয়ার</span>
               </div>
@@ -467,7 +474,7 @@ export default function Course1DetailsModal({
                 </button>
 
                 <button
-                  onClick={onEnroll ? onEnroll : onClose}
+                  onClick={onEnroll ? onEnroll : () => window.open("https://forms.gle/gMzsJJxmq9RqpSW66", "_blank", "noopener,noreferrer")}
                   className="bg-white hover:bg-amber-50 text-amber-900 font-extrabold px-6 py-3.5 rounded-2xl text-sm transition-all shadow-lg hover:scale-105 cursor-pointer flex items-center gap-2"
                   style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
                 >
