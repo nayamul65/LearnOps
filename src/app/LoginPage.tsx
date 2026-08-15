@@ -81,19 +81,32 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       if (matchedStaff.role === "Telesales") targetRole = "sales";
       else if (matchedStaff.role === "Teacher") targetRole = "teacher";
     } else if (matchedGuardian) {
+      if (!matchedGuardian.paymentConfirmed && matchedGuardian.status === "Pending") {
+        setLoading(false);
+        setErrors({
+          email: "লগইন অনুমতি নেই: পেমেন্ট কনফার্মেশন স্থগিত রয়েছে। (Login Denied: Purchase confirmation pending)",
+        });
+        return;
+      }
       targetRole = "guardian";
       localStorage.setItem("learnops_guardian_session", JSON.stringify(matchedGuardian));
     } else if (role === "guardian") {
       const guardianByPhone = findGuardianByPhoneOrId(cleanInput);
       if (guardianByPhone) {
-        if (guardianByPhone.tempPass.trim() === password.trim()) {
-          targetRole = "guardian";
-          localStorage.setItem("learnops_guardian_session", JSON.stringify(guardianByPhone));
-        } else {
+        if (guardianByPhone.tempPass.trim() !== password.trim()) {
           setLoading(false);
           setErrors({ password: "পাসওয়ার্ড সঠিক নয়" });
           return;
         }
+        if (!guardianByPhone.paymentConfirmed && guardianByPhone.status === "Pending") {
+          setLoading(false);
+          setErrors({
+            email: "লগইন অনুমতি নেই: পেমেন্ট কনফার্মেশন স্থগিত রয়েছে। (Login Denied: Purchase confirmation pending)",
+          });
+          return;
+        }
+        targetRole = "guardian";
+        localStorage.setItem("learnops_guardian_session", JSON.stringify(guardianByPhone));
       } else {
         // Allow general access for demo if guardian tab is selected
         targetRole = "guardian";
