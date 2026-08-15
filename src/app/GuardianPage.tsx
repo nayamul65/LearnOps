@@ -150,6 +150,18 @@ export default function GuardianPage() {
           </div>
         </div>
 
+        {/* ── PENDING PURCHASE WARNING BANNER ── */}
+        {activeGuardian && !activeGuardian.paymentConfirmed && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-3 shadow-sm">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+            <span>
+              {isEnglish
+                ? "⚠️ Account Pending Purchase Confirmation — Live class access & evaluations will activate upon Telesales payment verification."
+                : "⚠️ অ্যাকাউন্ট ক্রয় নিশ্চিতকরণের অপেক্ষায় — সেলস পেমেন্ট ভেরিফিকেশনের পর লাইভ ক্লাস ও মূল্যায়নের পূর্ণ সুবিধা সক্রিয় হবে।"}
+            </span>
+          </div>
+        )}
+
         {/* ── HEADER ── */}
         <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-8 relative overflow-hidden">
           <div className="absolute right-0 top-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />

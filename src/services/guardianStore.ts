@@ -11,6 +11,11 @@ export interface GuardianAccountRecord {
   tempPass: string;
   magicLink: string;
   createdAt: string;
+  paymentConfirmed: boolean;
+  status: "Pending" | "Confirmed";
+  trxId?: string;
+  amountPaid?: number;
+  paymentMethod?: string;
 }
 
 export const DEFAULT_GUARDIAN_ACCOUNTS: GuardianAccountRecord[] = [
@@ -25,6 +30,11 @@ export const DEFAULT_GUARDIAN_ACCOUNTS: GuardianAccountRecord[] = [
     tempPass: "pass1234",
     magicLink: `${typeof window !== "undefined" ? window.location.origin : ""}/guardian?student_id=std-1&phone=01711223344`,
     createdAt: "2026-08-05",
+    paymentConfirmed: true,
+    status: "Confirmed",
+    trxId: "BK892310X",
+    amountPaid: 2500,
+    paymentMethod: "bKash",
   },
 ];
 
@@ -58,36 +68,94 @@ export function saveAllGuardians(records: GuardianAccountRecord[]): void {
 }
 
 export async function addGuardianAccount(record: GuardianAccountRecord): Promise<GuardianAccountRecord[]> {
+  const newRecord: GuardianAccountRecord = {
+    ...record,
+    paymentConfirmed: record.paymentConfirmed ?? false,
+    status: record.status ?? "Pending",
+  };
+
   const current = getStoredGuardians();
-  const updated = [record, ...current.filter((g) => g.id !== record.id)];
+  const updated = [newRecord, ...current.filter((g) => g.id !== newRecord.id)];
   saveAllGuardians(updated);
 
   // Sync to Supabase `students` & `users` tables
   try {
     await supabase.from("students").insert([
       {
-        id: record.id,
-        name: record.studentName,
-        guardian_name: record.guardianName,
-        phone: record.guardianPhone,
-        batch_id: record.batchId,
-        temp_password: record.tempPass,
-        magic_link: record.magicLink,
+        id: newRecord.id,
+        name: newRecord.studentName,
+        guardian_name: newRecord.guardianName,
+        phone: newRecord.guardianPhone,
+        batch_id: newRecord.batchId,
+        temp_password: newRecord.tempPass,
+        magic_link: newRecord.magicLink,
+        payment_confirmed: newRecord.paymentConfirmed,
+        status: newRecord.status,
       },
     ]);
 
     await supabase.from("users").insert([
       {
-        name: record.guardianName,
-        phone: record.guardianPhone,
+        name: newRecord.guardianName,
+        phone: newRecord.guardianPhone,
         role: "guardian",
-        temp_password: record.tempPass,
-        student_name: record.studentName,
-        batch_id: record.batchId,
+        temp_password: newRecord.tempPass,
+        student_name: newRecord.studentName,
+        batch_id: newRecord.batchId,
+        payment_confirmed: newRecord.paymentConfirmed,
+        status: newRecord.status,
       },
     ]);
   } catch (err) {
     console.warn("Non-fatal error syncing guardian to Supabase:", err);
+  }
+
+  return updated;
+}
+
+export async function confirmGuardianPayment(
+  guardianId: string,
+  paymentData: { trxId: string; amount: number; method: string; batchId?: string; batchName?: string }
+): Promise<GuardianAccountRecord[]> {
+  const current = getStoredGuardians();
+  const updated = current.map((g) => {
+    if (g.id === guardianId) {
+      return {
+        ...g,
+        paymentConfirmed: true,
+        status: "Confirmed" as const,
+        trxId: paymentData.trxId,
+        amountPaid: paymentData.amount,
+        paymentMethod: paymentData.method,
+        batchId: paymentData.batchId || g.batchId,
+        batchName: paymentData.batchName || g.batchName,
+      };
+    }
+    return g;
+  });
+
+  saveAllGuardians(updated);
+
+  try {
+    await supabase
+      .from("students")
+      .update({
+        payment_confirmed: true,
+        status: "Confirmed",
+        trx_id: paymentData.trxId,
+        amount_paid: paymentData.amount,
+      })
+      .eq("id", guardianId);
+
+    await supabase
+      .from("users")
+      .update({
+        payment_confirmed: true,
+        status: "Confirmed",
+      })
+      .eq("phone", current.find((g) => g.id === guardianId)?.guardianPhone || "");
+  } catch (err) {
+    console.warn("Non-fatal error updating guardian payment in Supabase:", err);
   }
 
   return updated;

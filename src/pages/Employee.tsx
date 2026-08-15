@@ -70,6 +70,7 @@ import { addPayment } from "../services/salesStore";
 import {
   getStoredGuardians,
   addGuardianAccount,
+  confirmGuardianPayment,
   subscribeToGuardianUpdates,
   GuardianAccountRecord,
 } from "../services/guardianStore";
@@ -209,8 +210,8 @@ const employeeTranslations = {
     pipelineDesc: "Claim Leads & Call Logs",
     paymentsTab: "Confirm Payments",
     paymentsDesc: "Verify Sales & Revenue",
-    guardianTab: "Guardian Account & Magic Link",
-    guardianDesc: "Onboard & WhatsApp Share",
+    guardianTab: "Guardian Registration and Course Enroll",
+    guardianDesc: "Register Guardian & Student (Pending Purchase)",
 
     // Overview Tab
     kpiCallsMade: "Total Calls Made",
@@ -273,17 +274,17 @@ const employeeTranslations = {
 
     // Confirm Payments Tab
     paymentsTitle: "Sales & Payment Confirmation Desk",
-    paymentsSectionDesc: "Record bKash/Nagad/Bank transactions and convert leads instantly.",
+    paymentsSectionDesc: "Record bKash/Nagad/Bank transactions and convert leads & pending guardians instantly.",
     totalConfirmedSales: "Total Confirmed Sales",
     confirmedRevenue: "Confirmed Revenue",
-    selectLeadLabel: "Select Lead / Student *",
+    selectLeadLabel: "Select Lead / Registered Pending Guardian *",
     selectCourseBatchLabel: "Select Course & Batch *",
     whatsappNumberLabel: "WhatsApp Number (For Direct Automated Teacher Messaging) *",
     paymentMethodLabel: "Payment Method *",
     amountPaidLabel: "Amount Paid (৳) *",
     trxIdLabel: "Transaction ID (TrxID / Reference) *",
     confirmAndEnrollBtn: "Verify Payment & Confirm Sale ✓",
-    paymentConfirmedSuccess: "Payment confirmed, student enrolled in batch, and lead converted successfully!",
+    paymentConfirmedSuccess: "Payment confirmed, student enrolled in batch, and login access granted successfully!",
     confirmedBuyersTableTitle: "Confirmed Sales & Transactions History",
     colStudent: "Student & Parent",
     colCourseBatch: "Course & Batch",
@@ -291,25 +292,25 @@ const employeeTranslations = {
     colAmount: "Amount Paid",
     colDate: "Date",
 
-    // Guardian Account & Magic Link Tab
-    guardianAccountTitle: "Guardian Account & Shareable Magic Link Generator",
-    guardianAccountDesc: "Register a student & guardian, create portal credentials, and generate direct WhatsApp links.",
-    registerGuardianFormTitle: "Register New Guardian & Student",
+    // Guardian Registration and Course Enroll Tab
+    guardianAccountTitle: "Guardian Registration and Course Enroll",
+    guardianAccountDesc: "Register a student & guardian. Accounts remain in Pending status until payment is verified in Confirm Payments.",
+    registerGuardianFormTitle: "Register New Guardian & Student (Pending Purchase)",
     guardianNameLabel: "Guardian Full Name *",
     guardianPhoneLabel: "Guardian Phone / WhatsApp Number *",
     studentNameLabel: "Student Name *",
     assignBatchLabel: "Assign Course & Batch *",
-    createAccountBtn: "Create Guardian Account & Generate Link 🚀",
+    createAccountBtn: "Register Guardian & Generate Link (Pending) 🚀",
 
     magicLinkGeneratedTitle: "Shareable Direct Portal Link Generated!",
-    magicLinkDesc: "Send this direct link via WhatsApp or SMS. Guardians can open their child's portal without manual password entry.",
+    magicLinkDesc: "Send this direct link via WhatsApp or SMS. Note: Login permission is held pending payment confirmation.",
     copyLinkBtn: "Copy Shareable Link",
     copyWhatsAppMsgBtn: "Copy WhatsApp Message",
     openWhatsAppBtn: "Send via WhatsApp Direct 📲",
     linkCopiedAlert: "Shareable link copied to clipboard!",
     msgCopiedAlert: "WhatsApp ready message copied to clipboard!",
 
-    createdGuardiansTableTitle: "Registered Guardians & Active Links Roster",
+    createdGuardiansTableTitle: "Registered Guardians & Active Links Roster (Pending purchase Confirmation)",
     loginIdLabel: "Login ID:",
     tempPassLabel: "Temp Password:",
     actionShare: "Share Link",
@@ -325,12 +326,12 @@ const employeeTranslations = {
     // Sidebar Tabs
     overviewTab: "ওভারভিউ",
     overviewDesc: "ব্যক্তিগত পরিসংখ্যান ও কেপিআই",
-    pipelineTab: "লিড পাইপলাইন ও কল ডেস্ক",
+    pipelineTab: "লিড পাইপлайн ও কল ডেস্ক",
     pipelineDesc: "লিড ক্লেম ও কল লগ",
     paymentsTab: "পেমেন্ট কনফার্মেশন",
     paymentsDesc: "সেলস ও রেভিনিউ ভেরিফাই",
-    guardianTab: "গার্জিয়ান অ্যাকাউন্ট ও ম্যাজিক লিঙ্ক",
-    guardianDesc: "অনবোর্ডিং ও হোয়াটসঅ্যাপ শেয়ার",
+    guardianTab: "গার্জিয়ান রেজিস্ট্রেশন ও কোর্স এনরোল",
+    guardianDesc: "অভিভাবক ও শিক্ষার্থী নিবন্ধন (পেন্ডিং)",
 
     // Overview Tab
     kpiCallsMade: "মোট সম্পন্ন কল",
@@ -393,17 +394,17 @@ const employeeTranslations = {
 
     // Confirm Payments Tab
     paymentsTitle: "সেলস ও পেমেন্ট কনফার্মেশন ডেস্ক",
-    paymentsSectionDesc: "বিকাশ/নগদ/ব্যাংক ট্রানজেকশন রেকর্ড করুন এবং ভর্তি সম্পন্ন করুন।",
+    paymentsSectionDesc: "বিকাশ/নগদ/ব্যাংক ট্রানজেকশন রেকর্ড করুন এবং লিড ও নিবন্ধিত পেমেন্ট ভেরিফাই করুন।",
     totalConfirmedSales: "মোট কনফার্মড সেলস",
     confirmedRevenue: "কনফার্মড রেভিনিউ",
-    selectLeadLabel: "লিড / শিক্ষার্থী নির্বাচন করুন *",
+    selectLeadLabel: "লিড / নিবন্ধিত পেন্ডিং অভিভাবক নির্বাচন করুন *",
     selectCourseBatchLabel: "কোর্স ও ব্যাচ নির্বাচন করুন *",
     whatsappNumberLabel: "হোয়াটসঅ্যাপ নম্বর (শিক্ষক পোর্টাল থেকে অটোমেটেড মেসেজিং) *",
     paymentMethodLabel: "পেমেন্ট মেথড *",
     amountPaidLabel: "পেমেন্ট পরিমাণ (টাকা) *",
     trxIdLabel: "ট্রানজেকশন আইডি (TrxID / রেফারেন্স) *",
     confirmAndEnrollBtn: "পেমেন্ট ভেরিফাই ও সেলস কনফার্ম করুন ✓",
-    paymentConfirmedSuccess: "পেমেন্ট ভেরিফাই হয়েছে, ব্যাচে এনরোল সম্পন্ন ও স্ট্যাটাস কনভার্টেড করা হয়েছে!",
+    paymentConfirmedSuccess: "পেমেন্ট ভেরিফাই হয়েছে, ব্যাচে এনরোল সম্পন্ন ও লগইন অ্যাক্সেস সক্রিয় করা হয়েছে!",
     confirmedBuyersTableTitle: "কনফার্মড সেলস ও ট্রানজেকশন হিস্টোরি",
     colStudent: "শিক্ষার্থী ও অভিভাবক",
     colCourseBatch: "কোর্স ও ব্যাচ",
@@ -412,24 +413,24 @@ const employeeTranslations = {
     colDate: "তারিখ",
 
     // Guardian Account & Magic Link Tab
-    guardianAccountTitle: "গার্জিয়ান অ্যাকাউন্ট ও ম্যাজিক লিঙ্ক জেনারেটর",
-    guardianAccountDesc: "শিক্ষার্থী ও অভিভাবক নিবন্ধন করুন, পোর্টাল ক্রেডেনশিয়াল তৈরি করুন এবং সরাসরি হোয়াটসঅ্যাপ লিঙ্ক তৈরি করুন।",
-    registerGuardianFormTitle: "নতুন অভিভাবক ও শিক্ষার্থী অনবোর্ডিং",
+    guardianAccountTitle: "গার্জিয়ান রেজিস্ট্রেশন ও কোর্স এনরোল",
+    guardianAccountDesc: "শিক্ষার্থী ও অভিভাবক নিবন্ধন করুন। পেমেন্ট ভেরিফিকেশনের পূর্বে একাউন্ট পেন্ডিং থাকবে।",
+    registerGuardianFormTitle: "নতুন অভিভাবক ও শিক্ষার্থী নিবন্ধন (পেন্ডিং)",
     guardianNameLabel: "অভিভাবকের পুরো নাম *",
     guardianPhoneLabel: "অভিভাবকের ফোন / হোয়াটসঅ্যাপ নম্বর *",
     studentNameLabel: "শিক্ষার্থীর নাম *",
     assignBatchLabel: "কোর্স ও ব্যাচ সিলেক্ট করুন *",
-    createAccountBtn: "গার্জিয়ান অ্যাকাউন্ট তৈরি ও লিঙ্ক জেনারেট করুন 🚀",
+    createAccountBtn: "গার্জিয়ান নিবন্ধন ও লিঙ্ক জেনারেট করুন (পেন্ডিং) 🚀",
 
     magicLinkGeneratedTitle: "শেয়ারেবল ডাইরেক্ট পোর্টাল লিঙ্ক তৈরি হয়েছে!",
-    magicLinkDesc: "এই ডাইরেক্ট লিঙ্কটি হোয়াটসঅ্যাপ বা এসএমএস-এর মাধ্যমে পাঠান। অভিভাবকরা ম্যানুয়াল লগইন ছাড়াই সন্তানের পোর্টাল দেখতে পাবেন।",
+    magicLinkDesc: "এই ডাইরেক্ট লিঙ্কটি হোয়াটসঅ্যাপ বা এসএমএস-এর মাধ্যমে পাঠান। দ্রষ্টব্য: পেমেন্ট নিশ্চিত না হওয়া পর্যন্ত লগইন অনুমতি স্থগিত থাকবে।",
     copyLinkBtn: "ডাইরেক্ট লিঙ্ক কপি করুন",
     copyWhatsAppMsgBtn: "হোয়াটসঅ্যাপ মেসেজ কপি করুন",
     openWhatsAppBtn: "সরাসরি হোয়াটসঅ্যাপে পাঠান 📲",
     linkCopiedAlert: "লিঙ্কটি ক্লিপবোর্ডে কপি করা হয়েছে!",
     msgCopiedAlert: "হোয়াটসঅ্যাপ মেসেজ ক্লিপবোর্ডে কপি করা হয়েছে!",
 
-    createdGuardiansTableTitle: "নিবন্ধিত অভিভাবক ও সক্রিয় লিঙ্ক তালিকা",
+    createdGuardiansTableTitle: "নিবন্ধিত অভিভাবক ও সক্রিয় লিঙ্ক তালিকা (ক্রয় নিশ্চিতকরণের অপেক্ষায়)",
     loginIdLabel: "লগইন আইডি:",
     tempPassLabel: "টেম্প পাসওয়ার্ড:",
     actionShare: "লিঙ্ক শেয়ার",
@@ -688,7 +689,20 @@ export default function Employee() {
       agent: currentAgent.name,
     };
 
-    // 1. Enroll student in selected batch
+    // 1. Check if selected item is a pending guardian account
+    const pendingGuardian = guardianAccounts.find((g) => g.id === selectedLeadForPayment.id || g.guardianPhone === selectedLeadForPayment.phone);
+    if (pendingGuardian) {
+      await confirmGuardianPayment(pendingGuardian.id, {
+        trxId: paymentTrxId,
+        amount: amt,
+        method: paymentMethod,
+        batchId: targetBatch?.id,
+        batchName: batchName,
+      });
+      showApiToast(`✅ HTTP 200 OK — Payment ৳${amt} verified! Guardian ${pendingGuardian.guardianName} converted & Login Access Granted ✓`, "success");
+    }
+
+    // 2. Enroll student in selected batch
     if (targetBatch) {
       enrollStudentInBatch(targetBatch.id, {
         name: selectedLeadForPayment.studentName,
@@ -699,10 +713,10 @@ export default function Employee() {
       });
     }
 
-    // 2. Update lead state
+    // 3. Update lead state if lead match exists
     setLeads((prev) =>
       prev.map((l) => {
-        if (l.id === selectedLeadForPayment.id) {
+        if (l.id === selectedLeadForPayment.id || l.phone === selectedLeadForPayment.phone) {
           return {
             ...l,
             status: "Converted",
@@ -716,7 +730,7 @@ export default function Employee() {
       })
     );
 
-    // 3. POST to payments table (HTTP 201)
+    // 4. POST to payments table (HTTP 201)
     const { httpStatus: payHttpStatus, error: payError } = await addPayment({
       leadId: selectedLeadForPayment.id,
       studentName: selectedLeadForPayment.studentName,
@@ -738,10 +752,10 @@ export default function Employee() {
       showApiToast(`✅ HTTP ${payHttpStatus} Created — Payment ৳${amt} recorded (Supabase REST POST /payments)`, "success");
     }
 
-    // 4. PATCH lead status to Converted (HTTP 200)
+    // 5. PATCH lead status to Converted (HTTP 200)
     try {
       const updatedNotes = [...selectedLeadForPayment.callNotes, noteObj];
-      const { error: leadErr, status: leadStatus } = await supabase
+      await supabase
         .from("leads")
         .update({
           status: "Converted",
@@ -751,13 +765,7 @@ export default function Employee() {
           trx_id: `${paymentMethod}-${paymentTrxId}`,
           call_notes: updatedNotes,
         })
-        .eq("id", selectedLeadForPayment.id)
-        .select();
-      if (leadErr) {
-        showApiToast(`✅ Lead status updated locally (Supabase: ${leadErr.message})`, "info");
-      } else {
-        setTimeout(() => showApiToast(`✅ HTTP 200 OK — Lead status → 'Converted' (Supabase REST PATCH /leads)`, "success"), 1500);
-      }
+        .eq("id", selectedLeadForPayment.id);
     } catch (err) {
       console.error("Error confirming payment in Supabase:", err);
     }
@@ -780,8 +788,8 @@ export default function Employee() {
     const magicLinkUrl = `${window.location.origin}/guardian?student_id=${generatedId}&phone=${cleanPhone}`;
 
     const formattedMsg = lang === "en"
-      ? `Assalamu Alaikum ${guardianNameInput}! Your child ${studentNameInput} has been registered at LearnOps.\n\n📚 Batch: ${batchObj.name}\n🔑 Login Phone: ${cleanPhone}\n🔐 Temp Password: ${tempPass}\n\n👉 Direct Guardian Portal Link:\n${magicLinkUrl}\n\nClick the link above to view live class schedules, attendance, and exam grades.`
-      : `আসসালামু আলাইকুম ${guardianNameInput}! লার্নঅপস-এ আপনার সন্তান ${studentNameInput}-এর এনরোলমেন্ট সম্পন্ন হয়েছে।\n\n📚 ব্যাচ: ${batchObj.name}\n🔑 মোবাইল নম্বর: ${cleanPhone}\n🔐 টেম্পোরারি পাসওয়ার্ড: ${tempPass}\n\n👉 সরাসরি গার্জিয়ান পোর্টাল লিঙ্ক:\n${magicLinkUrl}\n\nউপরের লিঙ্কে ক্লিক করে ক্লাসের সময়সূচি, উপস্থিতি ও পরীক্ষার রেজাল্ট দেখতে পারবেন।`;
+      ? `Assalamu Alaikum ${guardianNameInput}! Your child ${studentNameInput} has been registered at LearnOps.\n\n📚 Batch: ${batchObj.name}\n🔑 Login Phone: ${cleanPhone}\n🔐 Temp Password: ${tempPass}\n\n👉 Direct Guardian Portal Link:\n${magicLinkUrl}\n\nNote: Login access will activate upon payment confirmation.`
+      : `আসসালামু আলাইকুম ${guardianNameInput}! লার্নঅপস-এ আপনার সন্তান ${studentNameInput}-এর অনলাইন রেজিস্ট্রেশন সম্পন্ন হয়েছে।\n\n📚 ব্যাচ: ${batchObj.name}\n🔑 মোবাইল নম্বর: ${cleanPhone}\n🔐 টেম্পোরারি পাসওয়ার্ড: ${tempPass}\n\n👉 সরাসরি গার্জিয়ান পোর্টাল লিঙ্ক:\n${magicLinkUrl}\n\nদ্রষ্টব্য: পেমেন্ট নিশ্চিত হওয়ার পর পোর্টাল এক্সেস সক্রিয় করা হবে।`;
 
     const newRecord: GuardianAccountRecord = {
       id: `grd-${Date.now()}`,
@@ -794,6 +802,8 @@ export default function Employee() {
       tempPass: tempPass,
       magicLink: magicLinkUrl,
       createdAt: new Date().toISOString().substring(0, 10),
+      paymentConfirmed: false,
+      status: "Pending",
     };
 
     await addGuardianAccount(newRecord);
@@ -809,7 +819,7 @@ export default function Employee() {
       tempPass: tempPass,
     });
 
-    showApiToast("✅ HTTP 201 Created — Guardian Account saved locally & synced to Supabase (students & users tables)", "success");
+    showApiToast("✅ Guardian Registered (Pending Purchase Confirmation) — Login permission held until payment confirmation in Confirm Payments", "info");
 
     setGuardianNameInput("");
     setGuardianPhoneInput("");
@@ -1548,22 +1558,52 @@ export default function Employee() {
                         required
                         value={selectedLeadForPayment?.id || ""}
                         onChange={(e) => {
-                          const found = myLeads.find((l) => l.id === e.target.value);
-                          setSelectedLeadForPayment(found || null);
-                          if (found) {
-                            setPaymentWhatsappNumber(found.phone || "");
-                            const matchedBatch = batches.find((b) => b.courseTitle === found.courseInterest) || batches[0];
+                          const val = e.target.value;
+                          const foundLead = myLeads.find((l) => l.id === val);
+                          if (foundLead) {
+                            setSelectedLeadForPayment(foundLead);
+                            setPaymentWhatsappNumber(foundLead.phone || "");
+                            const matchedBatch = batches.find((b) => b.courseTitle === foundLead.courseInterest) || batches[0];
                             if (matchedBatch) setPaymentSelectedBatchId(matchedBatch.id);
+                          } else {
+                            const foundGuardian = guardianAccounts.find((g) => g.id === val);
+                            if (foundGuardian) {
+                              setSelectedLeadForPayment({
+                                id: foundGuardian.id,
+                                studentName: foundGuardian.studentName,
+                                parentName: foundGuardian.guardianName,
+                                phone: foundGuardian.guardianPhone,
+                                courseInterest: foundGuardian.batchName,
+                                status: "In Progress",
+                                callNotes: [],
+                                date: foundGuardian.createdAt,
+                              });
+                              setPaymentWhatsappNumber(foundGuardian.guardianPhone);
+                              if (foundGuardian.batchId) setPaymentSelectedBatchId(foundGuardian.batchId);
+                            } else {
+                              setSelectedLeadForPayment(null);
+                            }
                           }
                         }}
                         className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold ${inputBg}`}
                       >
-                        <option value="">-- Select Claimed Student Lead --</option>
-                        {myLeads.map((l) => (
-                          <option key={l.id} value={l.id}>
-                            {l.studentName} ({l.phone}) - {l.courseInterest}
-                          </option>
-                        ))}
+                        <option value="">-- Select Claimed Lead or Pending Registered Guardian --</option>
+                        {guardianAccounts.filter(g => !g.paymentConfirmed).length > 0 && (
+                          <optgroup label="📋 Registered Guardians (Pending Purchase Confirmation)">
+                            {guardianAccounts.filter(g => !g.paymentConfirmed).map((g) => (
+                              <option key={g.id} value={g.id}>
+                                [PENDING] Guardian: {g.guardianName} (Student: {g.studentName}, Phone: {g.guardianPhone})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="📞 Claimed CRM Student Leads">
+                          {myLeads.map((l) => (
+                            <option key={l.id} value={l.id}>
+                              {l.studentName} ({l.phone}) - {l.courseInterest}
+                            </option>
+                          ))}
+                        </optgroup>
                       </select>
                     </div>
 
@@ -1670,6 +1710,27 @@ export default function Employee() {
                       </tr>
                     </thead>
                     <tbody className={`divide-y text-xs ${isDark ? "divide-slate-800/60" : "divide-slate-200"}`}>
+                      {guardianAccounts
+                        .filter((g) => g.paymentConfirmed)
+                        .map((g) => (
+                          <tr key={g.id} className={`${tableRowHover} transition-colors bg-emerald-500/5`}>
+                            <td className={`p-3 font-bold ${textHeading}`}>
+                              <div className="flex items-center gap-1.5">
+                                <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
+                                <span>{g.studentName}</span>
+                              </div>
+                              <div className={`text-[11px] font-normal ${textSub}`}>Guardian: {g.guardianName} ({g.guardianPhone})</div>
+                            </td>
+                            <td className={`p-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{g.batchName}</td>
+                            <td className="p-3">
+                              <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950 px-2 py-1 rounded-md border border-emerald-200 dark:border-emerald-800">
+                                {g.paymentMethod || "bKash"}-{g.trxId || "BK892310X"}
+                              </span>
+                            </td>
+                            <td className="p-3 font-extrabold text-emerald-600 dark:text-emerald-400">৳{g.amountPaid || 2500}</td>
+                            <td className={`p-3 ${textSub}`}>{g.createdAt}</td>
+                          </tr>
+                        ))}
                       {myLeads
                         .filter((l) => l.paymentConfirmed || l.status === "Converted")
                         .map((b) => (
@@ -1847,6 +1908,7 @@ export default function Employee() {
                           <th className="p-3 rounded-l-xl">Guardian & Student</th>
                           <th className="p-3">WhatsApp / Phone</th>
                           <th className="p-3">Assigned Batch</th>
+                          <th className="p-3">Purchase Status</th>
                           <th className="p-3">Login Credentials</th>
                           <th className="p-3 rounded-r-xl">Share Action</th>
                         </tr>
@@ -1860,6 +1922,17 @@ export default function Employee() {
                             </td>
                             <td className="p-3 font-semibold text-emerald-600 dark:text-emerald-400">{g.guardianPhone}</td>
                             <td className={`p-3 ${isDark ? "text-slate-300" : "text-slate-700"}`}>{g.batchName}</td>
+                            <td className="p-3">
+                              {g.paymentConfirmed ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+                                  <CheckCircle2 className="w-3 h-3" /> Confirmed
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800">
+                                  <Clock className="w-3 h-3" /> Pending Purchase
+                                </span>
+                              )}
+                            </td>
                             <td className={`p-3 font-mono text-[11px] ${textSub}`}>
                               <div>ID: {g.loginId}</div>
                               <div>Pass: {g.tempPass}</div>
