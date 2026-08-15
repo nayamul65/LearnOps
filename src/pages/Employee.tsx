@@ -860,15 +860,26 @@ export default function Employee() {
     return true;
   });
 
-  // KPI Performance metrics calculation
+  // KPI Performance metrics calculation (Combined CRM Leads + Guardian Accounts Database)
   const totalCallsCount = myLeads.reduce((acc, l) => acc + (l.callNotes ? l.callNotes.length : 0), 0);
-  const convertedDealsCount = myLeads.filter((l) => l.status === "Converted" || l.paymentConfirmed).length;
-  const pendingFollowupsCount = myLeads.filter(
+
+  const convertedLeadDeals = myLeads.filter((l) => l.status === "Converted" || l.paymentConfirmed).length;
+  const confirmedGuardianDeals = guardianAccounts.filter((g) => g.paymentConfirmed).length;
+  const convertedDealsCount = convertedLeadDeals + confirmedGuardianDeals;
+
+  const pendingLeadFollowups = myLeads.filter(
     (l) => l.status === "In Progress" || l.status === "Follow-up" || l.status === "Called" || l.status === "Interested"
   ).length;
-  const totalRevenueAmount = myLeads
+  const pendingGuardianRegistrations = guardianAccounts.filter((g) => !g.paymentConfirmed).length;
+  const pendingFollowupsCount = pendingLeadFollowups + pendingGuardianRegistrations;
+
+  const leadRevenue = myLeads
     .filter((l) => l.status === "Converted" || l.paymentConfirmed)
     .reduce((acc, l) => acc + (l.paymentAmount || 2500), 0);
+  const guardianRevenue = guardianAccounts
+    .filter((g) => g.paymentConfirmed)
+    .reduce((acc, g) => acc + (g.amountPaid || 2500), 0);
+  const totalRevenueAmount = leadRevenue + guardianRevenue;
 
   // Performance Chart Mock Data
   const callingPerformanceData = [
@@ -1498,7 +1509,7 @@ export default function Employee() {
                       <div className={`pt-3 border-t flex flex-wrap gap-2 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                         <button
                           onClick={() => setSelectedLeadForNote(lead)}
-                          className={`flex-1 inline-flex items-center justify-center gap-1.5 border text-xs font-bold py-2.5 px-3 rounded-xl transition-all cursor-pointer ${
+                          className={`flex-1 inline-flex items-center justify-center gap-1.5 border text-xs font-bold py-2 px-2.5 rounded-xl transition-all cursor-pointer ${
                             isDark
                               ? "bg-slate-900 border-slate-700 text-white hover:bg-slate-800"
                               : "bg-white border-slate-300 text-slate-800 hover:bg-slate-100"
@@ -1510,12 +1521,31 @@ export default function Employee() {
 
                         <button
                           onClick={() => {
+                            setGuardianNameInput(lead.parentName || "");
+                            setGuardianPhoneInput(lead.phone || "");
+                            setStudentNameInput(lead.studentName || "");
+                            setActiveTab("guardian");
+                            showApiToast(`📋 Pre-filled Stage 1 Registration for ${lead.studentName}`, "info");
+                          }}
+                          className={`inline-flex items-center justify-center gap-1.5 border text-xs font-bold py-2 px-2.5 rounded-xl transition-all cursor-pointer ${
+                            isDark
+                              ? "bg-teal-950/60 border-teal-800/80 text-teal-300 hover:bg-teal-900"
+                              : "bg-teal-50 border-teal-300 text-teal-800 hover:bg-teal-100"
+                          }`}
+                        >
+                          <UserPlus className="w-3.5 h-3.5 text-teal-500" />
+                          <span>{t.createGuardianBtn}</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
                             setSelectedLeadForPayment(lead);
                             setPaymentWhatsappNumber(lead.phone || "");
                             const matchedBatch = batches.find((b) => b.courseTitle === lead.courseInterest) || batches[0];
                             if (matchedBatch) setPaymentSelectedBatchId(matchedBatch.id);
+                            setActiveTab("payments");
                           }}
-                          className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 px-3 rounded-xl transition-all cursor-pointer ${
+                          className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-2.5 rounded-xl transition-all cursor-pointer ${
                             lead.paymentConfirmed
                               ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"
                               : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs"

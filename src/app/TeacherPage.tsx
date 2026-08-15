@@ -38,6 +38,7 @@ import {
 } from "../services/batchStore";
 import { upsertAttendance } from "../services/attendanceStore";
 import { addAssignment, saveGrade as saveGradeToStore } from "../services/homeworkStore";
+import { getStoredGuardians } from "../services/guardianStore";
 import { supabase } from "../lib/supabase";
 
 /* ── DATA TYPES ── */
@@ -605,12 +606,47 @@ export default function TeacherPage() {
   const [currentLang, setCurrentLang] = useState<"bn" | "en">("bn");
   const t = dictionary[currentLang];
 
-  /* ── BATCH & ROSTER SYNC FROM BATCH STORE ── */
+  /* ── DYNAMIC LOGGED-IN TEACHER SESSION ── */
+  const [loggedTeacherName, setLoggedTeacherName] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const userRaw = localStorage.getItem("learnops_user");
+      if (userRaw) {
+        try {
+          const u = JSON.parse(userRaw);
+          if (u.name) return u.name;
+        } catch (e) {}
+      }
+    }
+    return "Rahela Khatun (Lead Mentor)";
+  });
+
+  /* ── BATCH & ROSTER SYNC FROM BATCH STORE & GUARDIAN STORE ── */
   const [batches, setBatches] = useState<BatchItem[]>(() => getStoredBatches());
 
-  // Function to build unified student list from live batchStore + INITIAL_STUDENTS
+  // Function to build unified student list from live guardianStore + batchStore
   const buildStudentsFromBatches = (batchList: BatchItem[]): Student[] => {
-    const list: Student[] = [...INITIAL_STUDENTS];
+    const list: Student[] = [];
+
+    // 1. Include registered guardians from guardianStore
+    const storedGuardians = getStoredGuardians();
+    storedGuardians.forEach((g, idx) => {
+      list.push({
+        id: g.id,
+        name: { bn: g.studentName, en: g.studentName },
+        rollNo: String(idx + 1).padStart(2, "0"),
+        batch: { bn: g.batchName, en: g.batchName },
+        batchId: g.batchId,
+        courseId: 1,
+        phone: g.guardianPhone,
+        whatsappNumber: g.guardianPhone,
+        attendanceStatus: "Present",
+        submittedHwCount: 4,
+        totalHwCount: 5,
+        progressPercent: g.paymentConfirmed ? 95 : 75,
+      });
+    });
+
+    // 2. Include roster items from batches
     batchList.forEach((b, bIdx) => {
       b.roster.forEach((r) => {
         if (!list.some((s) => s.id === r.id || s.phone === r.phone)) {
@@ -631,6 +667,12 @@ export default function TeacherPage() {
         }
       });
     });
+
+    // 3. Fallback to initial mock list if empty
+    if (list.length === 0) {
+      return INITIAL_STUDENTS;
+    }
+
     return list;
   };
 
@@ -720,7 +762,7 @@ export default function TeacherPage() {
         batchId: student.batchId || "batch-101",
         date: today,
         status: student.attendanceStatus || "Present",
-        markedBy: t.teacherName || "Mentor",
+        markedBy: loggedTeacherName || "Mentor",
       });
       if (!error) { successCount++; lastStatus = httpStatus; }
     }
@@ -782,7 +824,7 @@ export default function TeacherPage() {
     );
   };
 
-  const handleSaveGrade = (e: React.FormEvent) => {
+  const handleSaveGrade = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedHw) return;
 
@@ -792,7 +834,7 @@ export default function TeacherPage() {
     else if (scoreNum < 75) gradeLetter = "B";
     else if (scoreNum < 90) gradeLetter = "A";
 
-    const studentNameStr = getLocalizedText(selectedHw.studentName, currentLang);
+    const feedbackText = feedbackInput.trim() || (currentLang === "en" ? "Great effort! Keep practicing." : "খুব সুন্দর চেষ্টা করা হয়েছে! নিয়মিত অনুশীলন করতে হবে।");
 
     setHomeworks((prev) =>
       prev.map((hw) =>
@@ -802,14 +844,29 @@ export default function TeacherPage() {
               score: scoreNum,
               grade: gradeLetter,
               feedback: {
-                bn: feedbackInput || "খুব সুন্দর চেষ্টা করা হয়েছে!",
-                en: feedbackInput || "Great effort!"
+                bn: feedbackText,
+                en: feedbackText,
               },
               status: "Graded",
             }
           : hw
       )
     );
+
+    // Call homeworkStore saveGradeToStore (saves to localStorage & Supabase)
+    const { httpStatus, error } = await saveGradeToStore({
+      submissionId: selectedHw.id,
+      studentId: selectedHw.studentId,
+      score: scoreNum,
+      grade: gradeLetter,
+      feedback: feedbackText,
+    });
+
+    if (error) {
+      showApiToast(`✅ Grade saved locally (Supabase: ${error})`, "info");
+    } else {
+      showApiToast(`✅ HTTP ${httpStatus} OK — Grade ${gradeLetter} (${scoreNum}/100) saved & Guardian portal synced (Supabase REST PATCH /homework_submissions)`, "success");
+    }
 
     // Add notification
     setNotifications((prev) => [
@@ -2098,6 +2155,23 @@ export default function TeacherPage() {
                   style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                 />
               </div>
+
+              {/* WhatsApp Direct Grade Dispatch Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const studentName = getLocalizedText(selectedHw.studentName, currentLang);
+                  const title = getLocalizedText(selectedHw.title, currentLang);
+                  const score = scoreInput;
+                  const feedback = feedbackInput || "খুব সুন্দর চেষ্টা করা হয়েছে!";
+                  const msg = `📚 *LearnOps - হোমওয়ার্ক রিপোর্ট কার্ড* 🎓\n\n👤 *শিক্ষার্থী:* ${studentName}\n📖 *অ্যাসাইনমেন্ট:* ${title}\n📊 *প্রাপ্ত নম্বর:* ${score}/১০০\n✍️ *শিক্ষকের মতামত:* ${feedback}\n\nধন্যবাদ,\n${loggedTeacherName}`;
+                  openWhatsAppDirect("8801711223344", msg);
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Send Grade Report via WhatsApp Direct 📲</span>
+              </button>
 
               <div className="flex gap-2">
                 <button
