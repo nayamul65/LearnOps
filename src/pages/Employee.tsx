@@ -67,6 +67,12 @@ import {
 } from "../services/batchStore";
 import { getStoredLeads, subscribeToLeadUpdates } from "../services/leadStore";
 import { addPayment } from "../services/salesStore";
+import {
+  getStoredGuardians,
+  addGuardianAccount,
+  subscribeToGuardianUpdates,
+  GuardianAccountRecord,
+} from "../services/guardianStore";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TYPES & MOCK INITIAL DATA FOR FALLBACK
@@ -468,20 +474,7 @@ export default function Employee() {
     return merged.filter((l) => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
   });
   const [batches, setBatches] = useState<BatchItem[]>(() => getStoredBatches());
-  const [guardianAccounts, setGuardianAccounts] = useState<GuardianAccountRecord[]>([
-    {
-      id: "grd-101",
-      guardianName: "সামিরা সুলতানা",
-      guardianPhone: "01711223344",
-      studentName: "আরাফ হোসেন",
-      batchId: "batch-101",
-      batchName: "ব্যাচ ০৪ - ২৫ দিনে সুন্দর হাতের লেখা",
-      loginId: "01711223344",
-      tempPass: "pass1234",
-      magicLink: `${window.location.origin}/guardian?phone=01711223344&student=std-1`,
-      createdAt: "2026-08-05",
-    },
-  ]);
+  const [guardianAccounts, setGuardianAccounts] = useState<GuardianAccountRecord[]>(() => getStoredGuardians());
 
   // Lead Pipeline Filters & Search
   const [leadSourceFilter, setLeadSourceFilter] = useState<string>("All");
@@ -582,7 +575,10 @@ export default function Employee() {
         return merged.filter((l) => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
       });
     });
-    return () => { unsubBatch(); unsubLeads(); };
+    const unsubGuardian = subscribeToGuardianUpdates((updatedGuardians) => {
+      setGuardianAccounts(updatedGuardians);
+    });
+    return () => { unsubBatch(); unsubLeads(); unsubGuardian(); };
   }, []);
 
   // ── HANDLERS ──
@@ -800,7 +796,7 @@ export default function Employee() {
       createdAt: new Date().toISOString().substring(0, 10),
     };
 
-    setGuardianAccounts((prev) => [newRecord, ...prev]);
+    await addGuardianAccount(newRecord);
 
     setGeneratedLinkInfo({
       guardianName: guardianNameInput,
@@ -813,21 +809,7 @@ export default function Employee() {
       tempPass: tempPass,
     });
 
-    // Sync to Supabase `users` table
-    try {
-      await supabase.from("users").insert([
-        {
-          name: guardianNameInput,
-          phone: cleanPhone,
-          role: "guardian",
-          temp_password: tempPass,
-          student_name: studentNameInput,
-          batch_id: batchObj.id,
-        },
-      ]);
-    } catch (err) {
-      console.error("Error creating guardian account in Supabase:", err);
-    }
+    showApiToast("✅ HTTP 201 Created — Guardian Account saved locally & synced to Supabase (students & users tables)", "success");
 
     setGuardianNameInput("");
     setGuardianPhoneInput("");

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Video,
   CheckCircle2,
@@ -10,22 +11,57 @@ import {
   BookOpen,
   Star,
   MessageCircle,
+  LogOut,
+  UserCheck,
 } from "lucide-react";
 import { useLanguage } from "./context/LanguageContext";
 import { getBatchZoomInfo, subscribeToBatchUpdates } from "../services/batchStore";
 import { getAttendanceRate, subscribeToAttendanceUpdates } from "../services/attendanceStore";
 import { getStoredAssignments, getLatestGrade, subscribeToHomeworkUpdates } from "../services/homeworkStore";
+import { findGuardianByPhoneOrId, getStoredGuardians, GuardianAccountRecord } from "../services/guardianStore";
 
 export default function GuardianPage() {
   const { isEnglish } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // ── STATIC MOCK (fallback base data) ──
-  const mockBase = {
-    studentId: "std-1",
-    studentName: "আরাফ হোসেন",
-    studentNameEN: "Araf Hossain",
-    courseName: "২৫ দিনে সুন্দর হাতের লেখা (ব্যাচ ০৪)",
-    courseNameEN: "Beautiful Handwriting in 25 Days (Batch 04)",
+  // Active guardian account from Magic Link URL params or localStorage session
+  const [activeGuardian, setActiveGuardian] = useState<GuardianAccountRecord | null>(() => {
+    const params = new URLSearchParams(location.search);
+    const phone = params.get("phone");
+    const studentId = params.get("student_id") || params.get("student");
+    const loginId = params.get("login_id");
+
+    const query = phone || studentId || loginId;
+    if (query) {
+      const found = findGuardianByPhoneOrId(query);
+      if (found) {
+        localStorage.setItem("learnops_guardian_session", JSON.stringify(found));
+        return found;
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      const raw = localStorage.getItem("learnops_guardian_session");
+      if (raw) {
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+
+    return getStoredGuardians()[0] || null;
+  });
+
+  const studentInfo = {
+    studentId: activeGuardian?.id || "std-1",
+    studentName: activeGuardian?.studentName || "আরাফ হোসেন",
+    studentNameEN: activeGuardian?.studentName || "Araf Hossain",
+    guardianName: activeGuardian?.guardianName || "সামিরা সুলতানা",
+    courseName: activeGuardian?.batchName || "২৫ দিনে সুন্দর হাতের লেখা (ব্যাচ ০৪)",
+    courseNameEN: activeGuardian?.batchName || "Beautiful Handwriting in 25 Days (Batch 04)",
     totalClasses: 16,
     teacherPhone: "8801711223344",
   };
@@ -34,9 +70,9 @@ export default function GuardianPage() {
   const [zoomLink, setZoomLink] = useState(() => getBatchZoomInfo().zoomLink);
   const [zoomSchedule, setZoomSchedule] = useState(() => getBatchZoomInfo().zoomSchedule);
   const [zoomScheduleEN, setZoomScheduleEN] = useState(() => getBatchZoomInfo().zoomScheduleEN);
-  const [attendanceRate, setAttendanceRate] = useState(() => getAttendanceRate(mockBase.studentId));
+  const [attendanceRate, setAttendanceRate] = useState(() => getAttendanceRate(studentInfo.studentId));
   const [assignments, setAssignments] = useState(() => getStoredAssignments());
-  const [latestGrade, setLatestGrade] = useState(() => getLatestGrade(mockBase.studentId));
+  const [latestGrade, setLatestGrade] = useState(() => getLatestGrade(studentInfo.studentId));
   const [lastRefresh, setLastRefresh] = useState(new Date().toLocaleTimeString());
 
   // Subscribe to live updates from Teacher Portal
@@ -51,32 +87,37 @@ export default function GuardianPage() {
       }
     });
     const unsubAttendance = subscribeToAttendanceUpdates(() => {
-      setAttendanceRate(getAttendanceRate(mockBase.studentId));
+      setAttendanceRate(getAttendanceRate(studentInfo.studentId));
       setLastRefresh(new Date().toLocaleTimeString());
     });
     const unsubHomework = subscribeToHomeworkUpdates((store) => {
       setAssignments(store.assignments);
-      setLatestGrade(getLatestGrade(mockBase.studentId));
+      setLatestGrade(getLatestGrade(studentInfo.studentId));
       setLastRefresh(new Date().toLocaleTimeString());
     });
     return () => { unsubBatch(); unsubAttendance(); unsubHomework(); };
-  }, []);
+  }, [studentInfo.studentId]);
 
-  const attendedClasses = Math.round((attendanceRate / 100) * mockBase.totalClasses);
+  const handleLogout = () => {
+    localStorage.removeItem("learnops_guardian_session");
+    navigate("/login");
+  };
+
+  const attendedClasses = Math.round((attendanceRate / 100) * studentInfo.totalClasses);
   const displayGrade = latestGrade?.grade || "A+";
   const displayScore = latestGrade?.score || 92;
   const displayFeedback = latestGrade?.feedback
     || (isEnglish
-      ? "Araf's handwriting is now clean with straight alignment. Please keep up 15 mins daily practice."
-      : "আরাফের হাতের লেখা এখন অনেক পরিচ্ছন্ন ও বর্ণমালার মাত্রা সোজা। প্রতিদিন ১৫ মিনিট রেগুলার প্র্যাকটিস ধরে রাখতে হবে।");
+      ? `${studentInfo.studentNameEN}'s handwriting is now clean with straight alignment. Please keep up 15 mins daily practice.`
+      : `${studentInfo.studentName}-এর হাতের লেখা এখন অনেক পরিচ্ছন্ন ও বর্ণমালার মাত্রা সোজা। প্রতিদিন ১৫ মিনিট রেগুলার প্র্যাকটিস ধরে রাখতে হবে।`);
 
   const handlePrintReport = () => window.print();
 
   const handleWhatsAppHomework = (assignmentTitle: string) => {
     const msg = isEnglish
-      ? `📚 Homework Submission - ${assignmentTitle}\n\nStudent: ${mockBase.studentNameEN}\nSubmission attached.`
-      : `📚 হোমওয়ার্ক জমা দেওয়া হচ্ছে - ${assignmentTitle}\n\nছাত্র: ${mockBase.studentName}\nসাবমিশন সংযুক্ত।`;
-    const url = `https://wa.me/${mockBase.teacherPhone}?text=${encodeURIComponent(msg)}`;
+      ? `📚 Homework Submission - ${assignmentTitle}\n\nStudent: ${studentInfo.studentNameEN}\nSubmission attached.`
+      : `📚 হোমওয়ার্ক জমা দেওয়া হচ্ছে - ${assignmentTitle}\n\nছাত্র: ${studentInfo.studentName}\nসাবমিশন সংযুক্ত।`;
+    const url = `https://wa.me/${studentInfo.teacherPhone}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   };
 
@@ -84,12 +125,29 @@ export default function GuardianPage() {
     <div className="min-h-screen bg-background pt-8 sm:pt-10 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* ── LIVE SYNC INDICATOR ── */}
-        <div className="flex items-center justify-end gap-2 mb-4 text-xs text-muted-foreground">
-          <RefreshCw className="w-3 h-3 animate-spin-slow opacity-60" />
-          <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-            {isEnglish ? `Live sync active · Updated ${lastRefresh}` : `লাইভ সিঙ্ক চালু · আপডেট: ${lastRefresh}`}
-          </span>
+        {/* ── LIVE SYNC INDICATOR & ACTIVE GUARDIAN BADGE ── */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full shadow-2xs">
+            <UserCheck className="w-3.5 h-3.5 text-primary" />
+            <span className="font-bold text-foreground">
+              {isEnglish ? `Guardian: ${studentInfo.guardianName}` : `অভিভাবক: ${studentInfo.guardianName}`}
+            </span>
+            <span className="text-muted-foreground">({studentInfo.studentName})</span>
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-600 font-bold ml-2 cursor-pointer"
+              title="Logout"
+            >
+              <LogOut className="w-3 h-3" />
+              {isEnglish ? "Logout" : "লগ আউট"}
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <RefreshCw className="w-3 h-3 animate-spin-slow opacity-60" />
+            <span style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
+              {isEnglish ? `Live sync active · Updated ${lastRefresh}` : `লাইভ সিঙ্ক চালু · আপডেট: ${lastRefresh}`}
+            </span>
+          </div>
         </div>
 
         {/* ── HEADER ── */}
@@ -102,10 +160,10 @@ export default function GuardianPage() {
                 <span>{isEnglish ? "Parent & Guardian Portal" : "অভিভাবক পোর্টাল"}</span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                {isEnglish ? `${mockBase.studentNameEN}'s Academic Dashboard` : `${mockBase.studentName}-এর একাডেমি ট্র্যাকিং`}
+                {isEnglish ? `${studentInfo.studentNameEN}'s Academic Dashboard` : `${studentInfo.studentName}-এর একাডেমি ট্র্যাকিং`}
               </h1>
               <p className="text-blue-100 text-sm mt-1" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
-                {isEnglish ? mockBase.courseNameEN : mockBase.courseName}
+                {isEnglish ? studentInfo.courseNameEN : studentInfo.courseName}
               </p>
             </div>
             {/* Live Zoom Button — reads from batchStore */}
@@ -171,8 +229,8 @@ export default function GuardianPage() {
               </div>
               <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
                 {isEnglish
-                  ? `${attendedClasses} of ${mockBase.totalClasses} classes attended`
-                  : `মোট ${mockBase.totalClasses}টির মধ্যে ${attendedClasses}টিতে উপস্থিত`}
+                  ? `${attendedClasses} of ${studentInfo.totalClasses} classes attended`
+                  : `মোট ${studentInfo.totalClasses}টির মধ্যে ${attendedClasses}টিতে উপস্থিত`}
               </p>
             </div>
             <div className="mt-4 text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200/50">

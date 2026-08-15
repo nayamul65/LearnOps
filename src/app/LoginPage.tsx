@@ -4,6 +4,7 @@ import {
   Users, BookOpen, TrendingUp, Star, CheckCircle2,
 } from "lucide-react";
 import { getStoredStaff } from "../services/staffStore";
+import { findGuardianByCreds, findGuardianByPhoneOrId } from "../services/guardianStore";
 
 function cn(...c: (string | undefined | false)[]) {
   return c.filter(Boolean).join(" ");
@@ -40,10 +41,18 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
   function validate() {
     const e: typeof errors = {};
-    if (!email) e.email = "ইমেইল প্রবেশ করুন";
-    else if (!/\S+@\S+\.\S+/.test(email)) e.email = "সঠিক ইমেইল দিন";
-    if (!password) e.password = "পাসওয়ার্ড প্রবেশ করুন";
-    else if (password.length < 6) e.password = "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর";
+    const clean = email.trim();
+    const cleanDigits = clean.replace(/\D/g, "");
+    if (!clean) {
+      e.email = "ইমেইল বা মোবাইল নম্বর প্রবেশ করুন";
+    } else if (cleanDigits.length < 6 && !/\S+@\S+\.\S+/.test(clean)) {
+      e.email = "সঠিক ইমেইল বা ১১ ডিজিটের মোবাইল নম্বর দিন";
+    }
+    if (!password) {
+      e.password = "পাসওয়ার্ড প্রবেশ করুন";
+    } else if (password.length < 4) {
+      e.password = "পাসওয়ার্ড কমপক্ষে ৪ অক্ষর";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -53,20 +62,42 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     if (!validate()) return;
     setLoading(true);
 
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanInput = email.trim();
+    const cleanLower = cleanInput.toLowerCase();
     let targetRole: Role = role;
 
-    // Check against registered staff in staffStore
+    // 1. Check against staff
     const registeredStaff = getStoredStaff();
-    const matched = registeredStaff.find(
-      (s) => s.email.toLowerCase().trim() === cleanEmail
+    const matchedStaff = registeredStaff.find(
+      (s) => s.email.toLowerCase().trim() === cleanLower || (cleanInput.replace(/\D/g, "") && s.phone.replace(/\D/g, "") === cleanInput.replace(/\D/g, ""))
     );
 
-    if (cleanEmail === "admin@learnops.com" || cleanEmail === "admin") {
+    // 2. Check against persistent guardianStore
+    const matchedGuardian = findGuardianByCreds(cleanInput, password);
+
+    if (cleanLower === "admin@learnops.com" || cleanLower === "admin") {
       targetRole = "admin";
-    } else if (matched) {
-      if (matched.role === "Telesales") targetRole = "sales";
-      else if (matched.role === "Teacher") targetRole = "teacher";
+    } else if (matchedStaff) {
+      if (matchedStaff.role === "Telesales") targetRole = "sales";
+      else if (matchedStaff.role === "Teacher") targetRole = "teacher";
+    } else if (matchedGuardian) {
+      targetRole = "guardian";
+      localStorage.setItem("learnops_guardian_session", JSON.stringify(matchedGuardian));
+    } else if (role === "guardian") {
+      const guardianByPhone = findGuardianByPhoneOrId(cleanInput);
+      if (guardianByPhone) {
+        if (guardianByPhone.tempPass.trim() === password.trim()) {
+          targetRole = "guardian";
+          localStorage.setItem("learnops_guardian_session", JSON.stringify(guardianByPhone));
+        } else {
+          setLoading(false);
+          setErrors({ password: "পাসওয়ার্ড সঠিক নয়" });
+          return;
+        }
+      } else {
+        // Allow general access for demo if guardian tab is selected
+        targetRole = "guardian";
+      }
     }
 
     setTimeout(() => {
@@ -241,13 +272,13 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 className="block text-sm font-semibold text-foreground mb-2"
                 style={{ fontFamily: "'Hind Siliguri', sans-serif" }}
               >
-                ইমেইল ঠিকানা
+                {role === "guardian" ? "মোবাইল নম্বর বা ইমেইল" : "ইমেইল বা মোবাইল নম্বর"}
               </label>
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors((er) => ({ ...er, email: undefined })); }}
-                placeholder="example@email.com"
+                placeholder={role === "guardian" ? "01711223344 বা user@email.com" : "user@email.com বা 01711223344"}
                 className={cn(
                   "w-full px-4 py-3.5 bg-muted border rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all",
                   errors.email ? "border-red-400 focus:border-red-400 focus:ring-red-200" : "border-border"
