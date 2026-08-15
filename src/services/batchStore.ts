@@ -29,6 +29,11 @@ export interface BatchItem {
   schedule: string;
   roster: StudentRosterItem[];
   createdAt?: string;
+  // Live class fields — updated by Teacher Portal
+  zoomLink?: string;
+  zoomSchedule?: string;  // e.g. "আজ বিকাল ৪:০০ টা (লাইভ জুম ক্লাস)"
+  zoomScheduleEN?: string; // e.g. "Today at 4:00 PM (Live Zoom Class)"
+  zoomUpdatedAt?: string;
 }
 
 export const DEFAULT_BATCHES: BatchItem[] = [
@@ -392,5 +397,43 @@ export function subscribeToBatchUpdates(
   return () => {
     window.removeEventListener(BATCHES_UPDATED_EVENT, handler);
     window.removeEventListener("storage", storageHandler);
+  };
+}
+
+/**
+ * Update zoom link and schedule for a batch (Teacher Portal → Guardian Portal sync)
+ */
+export function updateBatchZoom(
+  batchId: string,
+  zoomLink: string,
+  zoomSchedule: string,
+  zoomScheduleEN: string
+): BatchItem[] {
+  const current = getStoredBatches();
+  const idx = current.findIndex((b) => b.id === batchId);
+  if (idx < 0) return current;
+
+  const updated = [...current];
+  updated[idx] = {
+    ...updated[idx],
+    zoomLink,
+    zoomSchedule,
+    zoomScheduleEN,
+    zoomUpdatedAt: new Date().toISOString(),
+  };
+  saveAllBatches(updated);
+  return updated;
+}
+
+/**
+ * Get the zoom link for a specific batch (used by Guardian Portal)
+ */
+export function getBatchZoomInfo(batchId?: string): { zoomLink: string; zoomSchedule: string; zoomScheduleEN: string } {
+  const batches = getStoredBatches();
+  const batch = batchId ? batches.find((b) => b.id === batchId) : batches[0];
+  return {
+    zoomLink: batch?.zoomLink || "https://zoom.us/j/9876543210",
+    zoomSchedule: batch?.zoomSchedule || "আজ বিকাল ৪:০০ টা (লাইভ জুম ক্লাস)",
+    zoomScheduleEN: batch?.zoomScheduleEN || "Today at 4:00 PM (Live Zoom Class)",
   };
 }
