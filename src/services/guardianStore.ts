@@ -98,7 +98,7 @@ export async function addGuardianAccount(record: GuardianAccountRecord): Promise
       {
         name: newRecord.guardianName,
         phone: newRecord.guardianPhone,
-        role: "guardian",
+        role: "Guardian",
         temp_password: newRecord.tempPass,
         student_name: newRecord.studentName,
         batch_id: newRecord.batchId,

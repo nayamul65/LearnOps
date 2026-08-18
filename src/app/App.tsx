@@ -1,5 +1,84 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
+
+function ProtectedRoute({
+  allowedRoles,
+  children,
+}: {
+  allowedRoles: string[];
+  children: React.ReactNode;
+}) {
+  const location = useLocation();
+
+  // 1. Check general user session (updated dynamically by Role Switcher or Login)
+  const userSessionRaw = localStorage.getItem("learnops_user_session");
+  let userRole: string | null = null;
+  if (userSessionRaw) {
+    try {
+      const parsed = JSON.parse(userSessionRaw);
+      if (parsed?.authenticated) {
+        userRole = parsed.role;
+      }
+    } catch (e) {}
+  }
+
+  // 2. Check admin auth
+  const adminAuthRaw = localStorage.getItem("learnops_admin_auth") || sessionStorage.getItem("learnops_admin_auth");
+  let isAdmin = false;
+  if (adminAuthRaw) {
+    try {
+      const parsed = JSON.parse(adminAuthRaw);
+      if (parsed?.authenticated && parsed?.role === "admin") isAdmin = true;
+    } catch (e) {}
+  }
+
+  // 3. Check guardian session
+  const guardianSessionRaw = localStorage.getItem("learnops_guardian_session");
+  let isGuardian = false;
+  if (guardianSessionRaw) {
+    try {
+      const parsed = JSON.parse(guardianSessionRaw);
+      if (parsed?.id || parsed?.loginId) isGuardian = true;
+    } catch (e) {}
+  }
+
+  // Resolve current active role (userSessionRaw takes precedence)
+  let activeRole: string | null = null;
+  if (userRole) {
+    if (userRole === "sales" || userRole === "telesales" || userRole === "Salesman") activeRole = "sales";
+    else if (userRole === "teacher" || userRole === "Teacher") activeRole = "teacher";
+    else if (userRole === "guardian" || userRole === "Guardian") activeRole = "guardian";
+    else if (userRole === "admin" || userRole === "Admin") activeRole = "admin";
+    else activeRole = userRole;
+  } else if (isAdmin) {
+    activeRole = "admin";
+  } else if (isGuardian) {
+    activeRole = "guardian";
+  }
+
+  // Allow open access for demo fallback if no session exists but route was entered directly
+  if (!activeRole) {
+    return children;
+  }
+
+  // If role is allowed (or if admin) -> render portal
+  if (allowedRoles.includes(activeRole) || activeRole === "admin") {
+    return children;
+  }
+
+  // If role is NOT allowed -> STRICTLY redirect to authorized portal!
+  if (activeRole === "guardian") {
+    return <Navigate to="/guardian" replace />;
+  } else if (activeRole === "sales") {
+    return <Navigate to="/employee" replace />;
+  } else if (activeRole === "teacher") {
+    return <Navigate to="/teacher" replace />;
+  } else if (activeRole === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return <Navigate to="/login" replace />;
+}
 import LoginPage from "./LoginPage";
 import Dashboard from "./Dashboard";
 import CourseListPage from "./CourseListPage";
@@ -784,6 +863,51 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleSwitchRole = (targetRole: "admin" | "sales" | "teacher" | "guardian" | "courses") => {
+    if (targetRole === "courses") {
+      navigate("/courses");
+      return;
+    }
+    if (targetRole === "admin") {
+      localStorage.setItem(
+        "learnops_admin_auth",
+        JSON.stringify({ authenticated: true, role: "admin", email: "admin@learnops.com", name: "System Administrator" })
+      );
+      localStorage.setItem("learnops_user_session", JSON.stringify({ authenticated: true, role: "admin" }));
+      navigate("/admin");
+    } else if (targetRole === "sales") {
+      localStorage.removeItem("learnops_admin_auth");
+      sessionStorage.removeItem("learnops_admin_auth");
+      localStorage.setItem("learnops_user_session", JSON.stringify({ authenticated: true, role: "sales" }));
+      navigate("/employee");
+    } else if (targetRole === "teacher") {
+      localStorage.removeItem("learnops_admin_auth");
+      sessionStorage.removeItem("learnops_admin_auth");
+      localStorage.setItem("learnops_user_session", JSON.stringify({ authenticated: true, role: "teacher" }));
+      navigate("/teacher");
+    } else if (targetRole === "guardian") {
+      localStorage.removeItem("learnops_admin_auth");
+      sessionStorage.removeItem("learnops_admin_auth");
+      localStorage.setItem("learnops_user_session", JSON.stringify({ authenticated: true, role: "guardian" }));
+      if (!localStorage.getItem("learnops_guardian_session")) {
+        localStorage.setItem(
+          "learnops_guardian_session",
+          JSON.stringify({
+            id: "std-demo",
+            guardianName: "অভিভাবক (Guardian)",
+            guardianPhone: "01711223344",
+            studentName: "শিক্ষার্থী (Student)",
+            batchId: "b-handwriting-04",
+            batchName: "২৫ দিনে সুন্দর হাতের লেখা (ব্যাচ ০৪)",
+            paymentConfirmed: true,
+            status: "Active",
+          })
+        );
+      }
+      navigate("/guardian");
+    }
+  };
+
   return (
     <div style={{ fontFamily: "'Poppins', sans-serif" }} className="min-h-screen bg-background text-foreground">
       {/* Public Navbar rendered ONLY on public pages */}
@@ -791,57 +915,7 @@ function AppContent() {
         <Navbar dark={dark} toggleDark={toggle} page={page} setPage={handleNavigate} />
       )}
 
-      {/* ── FLOATING BOTTOM-RIGHT ROLE SWITCHER WIDGET ── */}
-      <div className="fixed bottom-4 right-4 z-[9999] transition-all">
-        {isRoleSwitcherOpen ? (
-          <div className="bg-slate-900/95 text-white backdrop-blur-lg border border-slate-700/80 p-3 rounded-2xl shadow-2xl max-w-xs sm:max-w-md animate-in fade-in slide-in-from-bottom-2">
-            <div className="flex items-center justify-between gap-3 mb-2 px-1">
-              <button
-                onClick={() => setIsRoleSwitcherOpen(false)}
-                className="flex items-center gap-1.5 font-bold text-[11px] text-amber-400 hover:text-amber-300 transition-colors cursor-pointer group text-left"
-                title="Click to close menu"
-              >
-                <Sparkles className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
-                <span>Role Portals Switcher</span>
-                <span className="text-[9px] text-slate-400 font-normal group-hover:text-slate-300 ml-1">(click to close)</span>
-              </button>
-              <button
-                onClick={() => setIsRoleSwitcherOpen(false)}
-                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-800 text-slate-400 hover:text-white text-xs cursor-pointer font-bold transition-colors"
-                title="Close"
-                aria-label="Close Role Switcher"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button onClick={() => navigate("/courses")} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${location.pathname === "/courses" ? "bg-primary text-white shadow-xs" : "bg-slate-800 hover:bg-slate-700 text-slate-300"}`}>
-                🎓 Public Courses
-              </button>
-              <button onClick={() => navigate("/employee")} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${location.pathname === "/employee" ? "bg-emerald-600 text-white shadow-xs" : "bg-slate-800 hover:bg-slate-700 text-slate-300"}`}>
-                📞 Telesales
-              </button>
-              <button onClick={() => navigate("/admin")} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${location.pathname === "/admin" ? "bg-indigo-600 text-white shadow-xs" : "bg-slate-800 hover:bg-slate-700 text-slate-300"}`}>
-                🔐 Admin
-              </button>
-              <button onClick={() => navigate("/teacher")} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${location.pathname === "/teacher" ? "bg-amber-600 text-white shadow-xs" : "bg-slate-800 hover:bg-slate-700 text-slate-300"}`}>
-                👨‍🏫 Teacher
-              </button>
-              <button onClick={() => navigate("/guardian")} className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${location.pathname === "/guardian" ? "bg-blue-600 text-white shadow-xs" : "bg-slate-800 hover:bg-slate-700 text-slate-300"}`}>
-                👨‍👩‍👧 Guardian
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsRoleSwitcherOpen(true)}
-            className="bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700/80 px-3.5 py-2 rounded-full shadow-2xl flex items-center gap-2 text-xs font-bold transition-all cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Role Switcher</span>
-          </button>
-        )}
-      </div>
+
 
       <PageTransition>
         <Routes location={location} key={location.pathname}>
@@ -883,10 +957,10 @@ function AppContent() {
               <Footer setPage={handleNavigate} />
             </>
           } />
-          <Route path="/employee" element={<TelesalesPage />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/teacher" element={<TeacherPage />} />
-          <Route path="/guardian" element={<GuardianPage />} />
+          <Route path="/employee" element={<ProtectedRoute allowedRoles={["sales"]}><TelesalesPage /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminPage /></ProtectedRoute>} />
+          <Route path="/teacher" element={<ProtectedRoute allowedRoles={["teacher"]}><TeacherPage /></ProtectedRoute>} />
+          <Route path="/guardian" element={<ProtectedRoute allowedRoles={["guardian"]}><GuardianPage /></ProtectedRoute>} />
           <Route path="/login" element={
             <LoginPage onLogin={(selectedRole) => {
               if (selectedRole === "admin") {
