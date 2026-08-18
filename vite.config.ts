@@ -21,7 +21,7 @@ function figmaAssetResolver() {
 }
 
 export default defineConfig({
-  base: '/LearnOps/',
+  base: '/',
 
   plugins: [
     figmaAssetResolver(),
