@@ -64,58 +64,109 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
     const cleanInput = email.trim();
     const cleanLower = cleanInput.toLowerCase();
-    let targetRole: Role = role;
+    let detectedRole: Role | null = null;
+    let guardianAccountRecord = null;
 
-    // 1. Check against staff
-    const registeredStaff = getStoredStaff();
-    const matchedStaff = registeredStaff.find(
-      (s) => s.email.toLowerCase().trim() === cleanLower || (cleanInput.replace(/\D/g, "") && s.phone.replace(/\D/g, "") === cleanInput.replace(/\D/g, ""))
-    );
+    // 1. If tab is Admin
+    if (role === "admin") {
+      if (cleanLower === "admin@learnops.com" || cleanLower === "admin") {
+        detectedRole = "admin";
+      } else {
+        const registeredStaff = getStoredStaff();
+        const matchedStaff = registeredStaff.find(
+          (s) => (s.email.toLowerCase().trim() === cleanLower || (cleanInput.replace(/\D/g, "") && s.phone.replace(/\D/g, "") === cleanInput.replace(/\D/g, "")))
+        );
+        if (matchedStaff) {
+          detectedRole = matchedStaff.role === "Telesales" ? "sales" : matchedStaff.role === "Teacher" ? "teacher" : "guardian";
+        }
+      }
+    }
 
-    // 2. Check against persistent guardianStore
-    const matchedGuardian = findGuardianByCreds(cleanInput, password);
+    // 2. If tab is Sales or Teacher
+    if ((role === "sales" || role === "teacher") && !detectedRole) {
+      const registeredStaff = getStoredStaff();
+      const matchedStaff = registeredStaff.find(
+        (s) => (s.email.toLowerCase().trim() === cleanLower || (cleanInput.replace(/\D/g, "") && s.phone.replace(/\D/g, "") === cleanInput.replace(/\D/g, "")))
+      );
+      if (matchedStaff) {
+        if (matchedStaff.role === "Telesales") detectedRole = "sales";
+        else if (matchedStaff.role === "Teacher") detectedRole = "teacher";
+        else if (matchedStaff.role === "Guardian" || matchedStaff.role === "guardian") detectedRole = "guardian";
+      } else {
+        const matchedGuardian = findGuardianByCreds(cleanInput, password) || findGuardianByPhoneOrId(cleanInput);
+        if (matchedGuardian) detectedRole = "guardian";
+      }
+    }
 
-    if (cleanLower === "admin@learnops.com" || cleanLower === "admin") {
-      targetRole = "admin";
-    } else if (matchedStaff) {
-      if (matchedStaff.role === "Telesales") targetRole = "sales";
-      else if (matchedStaff.role === "Teacher") targetRole = "teacher";
-    } else if (matchedGuardian) {
-      if (!matchedGuardian.paymentConfirmed && matchedGuardian.status === "Pending") {
+    // 3. If tab is Guardian
+    if (role === "guardian" && !detectedRole) {
+      const matchedGuardian = findGuardianByCreds(cleanInput, password);
+      if (matchedGuardian) {
+        detectedRole = "guardian";
+        guardianAccountRecord = matchedGuardian;
+      } else {
+        const guardianByPhone = findGuardianByPhoneOrId(cleanInput);
+        if (guardianByPhone) {
+          if (guardianByPhone.tempPass.trim() !== password.trim()) {
+            setLoading(false);
+            setErrors({ password: "পাসওয়ার্ড সঠিক নয়" });
+            return;
+          }
+          detectedRole = "guardian";
+          guardianAccountRecord = guardianByPhone;
+        } else {
+          // Check if phone belongs to an employee instead
+          const registeredStaff = getStoredStaff();
+          const matchedStaff = registeredStaff.find(
+            (s) => (s.email.toLowerCase().trim() === cleanLower || (cleanInput.replace(/\D/g, "") && s.phone.replace(/\D/g, "") === cleanInput.replace(/\D/g, "")))
+          );
+          if (matchedStaff) {
+            detectedRole = matchedStaff.role === "Telesales" ? "sales" : matchedStaff.role === "Teacher" ? "teacher" : "admin";
+          }
+        }
+      }
+    }
+
+    // Fallback if Tab is Guardian and no specific record match (Demo/Walk-in)
+    if (!detectedRole && role === "guardian") {
+      detectedRole = "guardian";
+    }
+
+    // If account role detected and mismatches active login portal tab -> BLOCK and DISPLAY ERROR
+    if (detectedRole && detectedRole !== role) {
+      const roleDisplayNames: Record<Role, string> = {
+        admin: "Admin (অ্যাডমিন)",
+        sales: "Salesman / Telesales (সেলস)",
+        teacher: "Teacher (শিক্ষক)",
+        guardian: "Guardian (অভিভাবক)",
+      };
+      setLoading(false);
+      setErrors({
+        email: `Invalid portal for this account type. This ID belongs to a ${roleDisplayNames[detectedRole]}. Please switch to the correct portal tab. (এই অ্যাকাউন্ট টাইপের জন্য পোর্টালটি সঠিক নয়। আপনার আইডিটি ${roleDisplayNames[detectedRole]}-এর অন্তর্ভুক্ত। অনুগ্রহ করে সঠিক পোর্টালে সুইচ করুন।)`
+      });
+      return;
+    }
+
+    const finalRole: Role = detectedRole || role;
+
+    // Additional Payment Status check for Guardians
+    if (finalRole === "guardian" && guardianAccountRecord) {
+      if (!guardianAccountRecord.paymentConfirmed && guardianAccountRecord.status === "Pending") {
         setLoading(false);
         setErrors({
           email: "লগইন অনুমতি নেই: পেমেন্ট কনফার্মেশন স্থগিত রয়েছে। (Login Denied: Purchase confirmation pending)",
         });
         return;
       }
-      targetRole = "guardian";
-      localStorage.setItem("learnops_guardian_session", JSON.stringify(matchedGuardian));
-    } else if (role === "guardian") {
-      const guardianByPhone = findGuardianByPhoneOrId(cleanInput);
-      if (guardianByPhone) {
-        if (guardianByPhone.tempPass.trim() !== password.trim()) {
-          setLoading(false);
-          setErrors({ password: "পাসওয়ার্ড সঠিক নয়" });
-          return;
-        }
-        if (!guardianByPhone.paymentConfirmed && guardianByPhone.status === "Pending") {
-          setLoading(false);
-          setErrors({
-            email: "লগইন অনুমতি নেই: পেমেন্ট কনফার্মেশন স্থগিত রয়েছে। (Login Denied: Purchase confirmation pending)",
-          });
-          return;
-        }
-        targetRole = "guardian";
-        localStorage.setItem("learnops_guardian_session", JSON.stringify(guardianByPhone));
-      } else {
-        // Allow general access for demo if guardian tab is selected
-        targetRole = "guardian";
-      }
+      localStorage.setItem("learnops_guardian_session", JSON.stringify(guardianAccountRecord));
     }
+
+    // Persist active session role
+    localStorage.setItem("learnops_user_session", JSON.stringify({ authenticated: true, role: finalRole }));
 
     setTimeout(() => {
       setLoading(false);
-      onLogin(targetRole);
+      onLogin(finalRole);
     }, 600);
   }
 

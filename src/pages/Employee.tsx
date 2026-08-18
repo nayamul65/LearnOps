@@ -65,6 +65,7 @@ import {
   subscribeToBatchUpdates,
   BatchItem,
 } from "../services/batchStore";
+import { getStoredCourses, normalizeCourse, UnifiedCourse } from "../services/courseStore";
 import { getStoredLeads, subscribeToLeadUpdates } from "../services/leadStore";
 import { addPayment } from "../services/salesStore";
 import {
@@ -74,6 +75,7 @@ import {
   subscribeToGuardianUpdates,
   GuardianAccountRecord,
 } from "../services/guardianStore";
+import { getStoredStaff } from "../services/staffStore";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TYPES & MOCK INITIAL DATA FOR FALLBACK
@@ -299,6 +301,13 @@ const employeeTranslations = {
     guardianNameLabel: "Guardian Full Name *",
     guardianPhoneLabel: "Guardian Phone / WhatsApp Number *",
     studentNameLabel: "Student Name *",
+    setPasswordLabel: "Set Password (Optional - Auto-generated if blank)",
+    selectPaidGuardianLabel: "Select Paid Guardian (Confirmed Purchases)",
+    customWalkinOption: "➕ Custom / New Walk-in Registration",
+    selectCourseLabel: "Select Course *",
+    selectBatchLabel: "Select Batch *",
+    selectCourseFirstPlaceholder: "-- Select Course First --",
+    selectBatchPlaceholder: "-- Select Batch --",
     assignBatchLabel: "Assign Course & Batch *",
     createAccountBtn: "Register Guardian & Generate Link (Pending) 🚀",
 
@@ -419,6 +428,13 @@ const employeeTranslations = {
     guardianNameLabel: "অভিভাবকের পুরো নাম *",
     guardianPhoneLabel: "অভিভাবকের ফোন / হোয়াটসঅ্যাপ নম্বর *",
     studentNameLabel: "শিক্ষার্থীর নাম *",
+    setPasswordLabel: "পাসওয়ার্ড সেট করুন (ঐচ্ছিক - ফাঁকা রাখলে স্বয়ংক্রিয়ভাবে জেনারেট হবে)",
+    selectPaidGuardianLabel: "পরিশোধিত অভিভাবক নির্বাচন করুন (কনফার্মড পারচেজ)",
+    customWalkinOption: "➕ কাস্টম / নতুন রেজিস্ট্রেশন (ওয়াক-ইন)",
+    selectCourseLabel: "কোর্স সিলেক্ট করুন *",
+    selectBatchLabel: "ব্যাচ সিলেক্ট করুন *",
+    selectCourseFirstPlaceholder: "-- প্রথমে কোর্স সিলেক্ট করুন --",
+    selectBatchPlaceholder: "-- ব্যাচ সিলেক্ট করুন --",
     assignBatchLabel: "কোর্স ও ব্যাচ সিলেক্ট করুন *",
     createAccountBtn: "গার্জিয়ান নিবন্ধন ও লিঙ্ক জেনারেট করুন (পেন্ডিং) 🚀",
 
@@ -474,6 +490,7 @@ export default function Employee() {
     const seen = new Set<string>();
     return merged.filter((l) => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
   });
+  const [courses, setCourses] = useState<UnifiedCourse[]>(() => getStoredCourses());
   const [batches, setBatches] = useState<BatchItem[]>(() => getStoredBatches());
   const [guardianAccounts, setGuardianAccounts] = useState<GuardianAccountRecord[]>(() => getStoredGuardians());
 
@@ -482,12 +499,38 @@ export default function Employee() {
   const [leadStatusFilter, setLeadStatusFilter] = useState<string>("All");
   const [leadSearchQuery, setLeadSearchQuery] = useState("");
 
+  // Helper to filter batches belonging to a specific selected course
+  const getBatchesForCourse = (courseId: string | number | undefined, courseTitle: string | undefined, batchesList: BatchItem[]): BatchItem[] => {
+    if (!courseId && !courseTitle) return [];
+    const cidStr = String(courseId || "").toLowerCase();
+    const cTitleStr = (courseTitle || "").toLowerCase();
+
+    return batchesList.filter((b) => {
+      const bCidStr = String(b.courseId || "").toLowerCase();
+      const bCTitleStr = (b.courseTitle || "").toLowerCase();
+
+      if (cidStr && bCidStr === cidStr) return true;
+      if (cidStr === "1" && (bCidStr === "c-101" || bCidStr === "1")) return true;
+      if (cidStr === "2" && (bCidStr === "c-102" || bCidStr === "2")) return true;
+      if (cidStr === "3" && (bCidStr === "c-103" || bCidStr === "3")) return true;
+      if (cidStr === "4" && (bCidStr === "c-104" || bCidStr === "4")) return true;
+      if (cidStr === "c-101" && (bCidStr === "c-101" || bCidStr === "1")) return true;
+      if (cidStr === "c-102" && (bCidStr === "c-102" || bCidStr === "2")) return true;
+      if (cidStr === "c-103" && (bCidStr === "c-103" || bCidStr === "3")) return true;
+      if (cidStr === "c-104" && (bCidStr === "c-104" || bCidStr === "4")) return true;
+
+      if (cTitleStr && bCTitleStr && (bCTitleStr.includes(cTitleStr) || cTitleStr.includes(bCTitleStr))) return true;
+      return false;
+    });
+  };
+
   // Modals state
   const [selectedLeadForNote, setSelectedLeadForNote] = useState<Lead | null>(null);
   const [newNoteText, setNewNoteText] = useState("");
   const [newNoteStatus, setNewNoteStatus] = useState<Lead["status"]>("Called");
 
   const [selectedLeadForPayment, setSelectedLeadForPayment] = useState<Lead | null>(null);
+  const [paymentSelectedCourseId, setPaymentSelectedCourseId] = useState<string>("");
   const [paymentSelectedBatchId, setPaymentSelectedBatchId] = useState<string>(() => (getStoredBatches()[0]?.id || "batch-101"));
   const [paymentWhatsappNumber, setPaymentWhatsappNumber] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState("bKash");
@@ -495,9 +538,12 @@ export default function Employee() {
   const [paymentTrxId, setPaymentTrxId] = useState("");
 
   // Guardian Account Form State
+  const [selectedConfirmedLeadId, setSelectedConfirmedLeadId] = useState("");
   const [guardianNameInput, setGuardianNameInput] = useState("");
   const [guardianPhoneInput, setGuardianPhoneInput] = useState("");
   const [studentNameInput, setStudentNameInput] = useState("");
+  const [guardianPasswordInput, setGuardianPasswordInput] = useState("");
+  const [guardianSelectedCourseId, setGuardianSelectedCourseId] = useState<string>("");
   const [selectedBatchId, setSelectedBatchId] = useState(() => (getStoredBatches()[0]?.id || "batch-101"));
 
   const [generatedLinkInfo, setGeneratedLinkInfo] = useState<{
@@ -547,12 +593,23 @@ export default function Employee() {
         );
       }
 
+      const { data: dbCourses, error: courseErr } = await supabase.from("courses").select("*");
+      if (!courseErr && dbCourses && dbCourses.length > 0) {
+        setCourses(dbCourses.map((c: any) => normalizeCourse(c)));
+      }
+
       const { data: dbBatches, error: batchErr } = await supabase.from("batches").select("*");
       if (!batchErr && dbBatches && dbBatches.length > 0) {
         setBatches(
           dbBatches.map((b: any) => ({
             id: b.id,
-            name: `${b.name || "ব্যাচ"} - ${b.course_title || b.courseTitle || ""}`,
+            courseId: b.course_id || b.courseId || "",
+            name: b.name || "ব্যাচ",
+            courseTitle: b.course_title || b.courseTitle || "",
+            schedule: b.schedule || "",
+            headTeacher: b.head_teacher || b.headTeacher || "",
+            totalStudents: b.total_students || 0,
+            roster: b.roster || [],
           }))
         );
       }
@@ -700,9 +757,59 @@ export default function Employee() {
         batchName: batchName,
       });
       showApiToast(`✅ HTTP 200 OK — Payment ৳${amt} verified! Guardian ${pendingGuardian.guardianName} converted & Login Access Granted ✓`, "success");
+    } else {
+      // Auto-create / activate Guardian Account if missing
+      const newGrd: GuardianAccountRecord = {
+        id: `grd-${Date.now()}`,
+        guardianName: selectedLeadForPayment.parentName || selectedLeadForPayment.studentName,
+        guardianPhone: selectedLeadForPayment.phone,
+        studentName: selectedLeadForPayment.studentName,
+        batchId: targetBatch?.id || "",
+        batchName: batchName,
+        loginId: selectedLeadForPayment.phone,
+        tempPass: "pass8392",
+        magicLink: `${window.location.origin}/guardian?student_id=${selectedLeadForPayment.id}&phone=${selectedLeadForPayment.phone}`,
+        createdAt: new Date().toISOString().substring(0, 10),
+        paymentConfirmed: true,
+        status: "Active",
+        trxId: paymentTrxId,
+        amountPaid: amt,
+        paymentMethod: paymentMethod,
+      };
+      await addGuardianAccount(newGrd);
     }
 
-    // 2. Enroll student in selected batch
+    // 2. Auto-Create / Activate Guardian User Account in Supabase `users` table
+    try {
+      await supabase.from("users").upsert(
+        {
+          phone: selectedLeadForPayment.phone,
+          name: selectedLeadForPayment.parentName || selectedLeadForPayment.studentName,
+          role: "Guardian",
+          password_hash: pendingGuardian?.tempPass || "pass8392",
+        },
+        { onConflict: "phone" }
+      );
+    } catch (err) {
+      console.error("Error upserting guardian user in Supabase:", err);
+    }
+
+    // 3. Auto-Link Student to Selected Batch (`enrollments` table & local batchStore)
+    try {
+      await supabase.from("enrollments").upsert({
+        student_name: selectedLeadForPayment.studentName,
+        guardian_name: selectedLeadForPayment.parentName || selectedLeadForPayment.studentName,
+        phone: selectedLeadForPayment.phone,
+        batch_id: targetBatch?.id || "",
+        course_id: targetBatch?.courseId || "",
+        payment_status: "Confirmed",
+        amount_paid: amt,
+        trx_id: paymentTrxId,
+      });
+    } catch (err) {
+      console.error("Error creating enrollment record in Supabase:", err);
+    }
+
     if (targetBatch) {
       enrollStudentInBatch(targetBatch.id, {
         name: selectedLeadForPayment.studentName,
@@ -773,6 +880,116 @@ export default function Employee() {
     setSelectedLeadForPayment(null);
     setPaymentTrxId("");
     setPaymentWhatsappNumber("");
+    setPaymentSelectedCourseId("");
+    setPaymentSelectedBatchId("");
+
+    // Trigger instant live re-fetch so dropdown updates immediately without manual page refresh
+    fetchSupabaseData();
+  };
+
+  // Unified list of all confirmed buyers & sales (from guardianAccounts and leads)
+  const confirmedBuyersList = (() => {
+    const list: {
+      id: string;
+      guardianName: string;
+      studentName: string;
+      phone: string;
+      courseInterest: string;
+      batchId?: string;
+    }[] = [];
+
+    const seenPhones = new Set<string>();
+
+    // 1. Confirmed guardian accounts (e.g. Samira Sultana - Araf Hossain)
+    guardianAccounts
+      .filter((g) => g.paymentConfirmed)
+      .forEach((g) => {
+        const cleanP = g.guardianPhone.replace(/\D/g, "");
+        if (cleanP && !seenPhones.has(cleanP)) {
+          seenPhones.add(cleanP);
+          list.push({
+            id: g.id,
+            guardianName: g.guardianName,
+            studentName: g.studentName,
+            phone: g.guardianPhone,
+            courseInterest: g.batchName,
+            batchId: g.batchId,
+          });
+        }
+      });
+
+    // 2. Confirmed / Converted leads
+    leads
+      .filter((l) => l.paymentConfirmed || l.status === "Converted")
+      .forEach((l) => {
+        const cleanP = l.phone.replace(/\D/g, "");
+        if (cleanP && !seenPhones.has(cleanP)) {
+          seenPhones.add(cleanP);
+          list.push({
+            id: l.id,
+            guardianName: l.parentName || l.studentName,
+            studentName: l.studentName,
+            phone: l.phone,
+            courseInterest: l.courseInterest,
+          });
+        } else if (!cleanP) {
+          list.push({
+            id: l.id,
+            guardianName: l.parentName || l.studentName,
+            studentName: l.studentName,
+            phone: l.phone,
+            courseInterest: l.courseInterest,
+          });
+        }
+      });
+
+    return list;
+  })();
+
+  // Auto-fill Guardian Form from Confirmed Lead Dropdown Selection
+  const handleSelectConfirmedLead = (leadId: string) => {
+    setSelectedConfirmedLeadId(leadId);
+    if (!leadId) {
+      setGuardianNameInput("");
+      setGuardianPhoneInput("");
+      setStudentNameInput("");
+      setGuardianPasswordInput("");
+      setGuardianSelectedCourseId("");
+      setSelectedBatchId("");
+      return;
+    }
+
+    const buyer = confirmedBuyersList.find((b) => b.id === leadId) || leads.find((l) => l.id === leadId);
+    if (buyer) {
+      const parentName = "guardianName" in buyer ? buyer.guardianName : (buyer as Lead).parentName;
+      const phoneNum = "phone" in buyer ? buyer.phone : (buyer as Lead).phone;
+      const studentName = "studentName" in buyer ? buyer.studentName : (buyer as Lead).studentName;
+      const courseInterest = "courseInterest" in buyer ? buyer.courseInterest : (buyer as Lead).courseInterest;
+
+      setGuardianNameInput(parentName || "");
+      setGuardianPhoneInput(phoneNum || "");
+      setStudentNameInput(studentName || "");
+
+      if (courseInterest) {
+        const query = courseInterest.toLowerCase();
+        const matchedCourse = courses.find(
+          (c) => c.title.toLowerCase().includes(query) || query.includes(c.title.toLowerCase()) || (c.category && c.category.toLowerCase().includes(query))
+        ) || courses[0];
+
+        if (matchedCourse) {
+          const cId = String(matchedCourse.id);
+          setGuardianSelectedCourseId(cId);
+          const availBatches = getBatchesForCourse(cId, matchedCourse.title, batches);
+          const matchedBatch = (buyer as any).batchId
+            ? batches.find((b) => b.id === (buyer as any).batchId)
+            : availBatches.find((b) => b.name.toLowerCase().includes(query) || query.includes(b.name.toLowerCase())) || availBatches[0] || batches[0];
+
+          if (matchedBatch) {
+            setSelectedBatchId(matchedBatch.id);
+          }
+        }
+      }
+    }
   };
 
   // Guardian Account Creation & Direct Magic Link Handler
@@ -781,32 +998,98 @@ export default function Employee() {
     if (!guardianNameInput.trim() || !guardianPhoneInput.trim() || !studentNameInput.trim()) return;
 
     const cleanPhone = guardianPhoneInput.replace(/\D/g, "");
+
+    // 1. Employee Phone Check (warn salesman if an internal employee's phone number is used)
+    const registeredStaff = getStoredStaff();
+    const staffMatch = registeredStaff.find(
+      (s) => s.phone.replace(/\D/g, "") === cleanPhone && (s.role === "Telesales" || s.role === "Teacher" || s.role === "Admin")
+    );
+    if (staffMatch) {
+      showApiToast(
+        `⚠️ Warning: Phone number ${cleanPhone} belongs to an internal employee (${staffMatch.name} - ${staffMatch.role}). Please verify customer's phone number.`,
+        "info"
+      );
+    }
+
     const batchObj = batches.find((b) => b.id === selectedBatchId) || batches[0];
     const generatedId = `std-${Date.now().toString().slice(-4)}`;
-    const tempPass = "pass1234";
+    const tempPass = guardianPasswordInput.trim()
+      ? guardianPasswordInput.trim()
+      : `pass${Math.floor(1000 + Math.random() * 9000)}`;
 
-    const magicLinkUrl = `${window.location.origin}/guardian?student_id=${generatedId}&phone=${cleanPhone}`;
+    // 2. Existing Guardian Phone Validation & Account Linking
+    const existingGuardian = guardianAccounts.find(
+      (g) => g.guardianPhone.replace(/\D/g, "") === cleanPhone || g.loginId.replace(/\D/g, "") === cleanPhone
+    );
+
+    let magicLinkUrl = `${window.location.origin}/guardian?student_id=${generatedId}&phone=${cleanPhone}`;
+    let newRecord: GuardianAccountRecord;
+
+    if (existingGuardian) {
+      // LINK / UPDATE existing guardian account instead of creating a conflicting duplicate user row!
+      magicLinkUrl = existingGuardian.magicLink || magicLinkUrl;
+      const combinedStudents = existingGuardian.studentName.includes(studentNameInput)
+        ? existingGuardian.studentName
+        : `${existingGuardian.studentName}, ${studentNameInput}`;
+
+      newRecord = {
+        ...existingGuardian,
+        guardianName: guardianNameInput || existingGuardian.guardianName,
+        studentName: combinedStudents,
+        batchId: batchObj.id,
+        batchName: batchObj.name,
+        tempPass: tempPass || existingGuardian.tempPass,
+      };
+
+      showApiToast(
+        `✅ Existing Guardian account linked! Linked student ${studentNameInput} to batch ${batchObj.name} ✓`,
+        "success"
+      );
+    } else {
+      newRecord = {
+        id: `grd-${Date.now()}`,
+        guardianName: guardianNameInput,
+        guardianPhone: cleanPhone,
+        studentName: studentNameInput,
+        batchId: batchObj.id,
+        batchName: batchObj.name,
+        loginId: cleanPhone,
+        tempPass: tempPass,
+        magicLink: magicLinkUrl,
+        createdAt: new Date().toISOString().substring(0, 10),
+        paymentConfirmed: false,
+        status: "Pending",
+      };
+    }
 
     const formattedMsg = lang === "en"
       ? `Assalamu Alaikum ${guardianNameInput}! Your child ${studentNameInput} has been registered at LearnOps.\n\n📚 Batch: ${batchObj.name}\n🔑 Login Phone: ${cleanPhone}\n🔐 Temp Password: ${tempPass}\n\n👉 Direct Guardian Portal Link:\n${magicLinkUrl}\n\nNote: Login access will activate upon payment confirmation.`
       : `আসসালামু আলাইকুম ${guardianNameInput}! লার্নঅপস-এ আপনার সন্তান ${studentNameInput}-এর অনলাইন রেজিস্ট্রেশন সম্পন্ন হয়েছে।\n\n📚 ব্যাচ: ${batchObj.name}\n🔑 মোবাইল নম্বর: ${cleanPhone}\n🔐 টেম্পোরারি পাসওয়ার্ড: ${tempPass}\n\n👉 সরাসরি গার্জিয়ান পোর্টাল লিঙ্ক:\n${magicLinkUrl}\n\nদ্রষ্টব্য: পেমেন্ট নিশ্চিত হওয়ার পর পোর্টাল এক্সেস সক্রিয় করা হবে।`;
 
-    const newRecord: GuardianAccountRecord = {
-      id: `grd-${Date.now()}`,
-      guardianName: guardianNameInput,
-      guardianPhone: cleanPhone,
-      studentName: studentNameInput,
-      batchId: batchObj.id,
-      batchName: batchObj.name,
-      loginId: cleanPhone,
-      tempPass: tempPass,
-      magicLink: magicLinkUrl,
-      createdAt: new Date().toISOString().substring(0, 10),
-      paymentConfirmed: false,
-      status: "Pending",
-    };
-
     await addGuardianAccount(newRecord);
+
+    if (selectedConfirmedLeadId) {
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === selectedConfirmedLeadId
+            ? { ...l, status: "Converted" as const, paymentConfirmed: true }
+            : l
+        )
+      );
+
+      try {
+        await supabase
+          .from("leads")
+          .update({
+            status: "Converted",
+            payment_confirmed: true,
+            payment_status: "Confirmed",
+          })
+          .eq("id", selectedConfirmedLeadId);
+      } catch (err) {
+        console.error("Error updating lead status on guardian registration:", err);
+      }
+    }
 
     setGeneratedLinkInfo({
       guardianName: guardianNameInput,
@@ -821,9 +1104,12 @@ export default function Employee() {
 
     showApiToast("✅ Guardian Registered (Pending Purchase Confirmation) — Login permission held until payment confirmation in Confirm Payments", "info");
 
+    setSelectedConfirmedLeadId("");
     setGuardianNameInput("");
     setGuardianPhoneInput("");
     setStudentNameInput("");
+    setGuardianPasswordInput("");
+    setGuardianSelectedCourseId("");
   };
 
   // Helper copy to clipboard
@@ -1437,126 +1723,139 @@ export default function Employee() {
                   </div>
                 </div>
 
-                {/* Leads Grid/Table */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredMyLeads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className={`border rounded-3xl p-6 flex flex-col justify-between space-y-4 hover:border-slate-400 dark:hover:border-slate-700 transition-all shadow-xs ${bgInnerCard}`}
-                    >
-                      <div>
-                        {/* Header Badge */}
-                        <div className={`flex items-center justify-between pb-3 border-b ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-                          <span
-                            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${
-                              lead.status === "Converted"
-                                ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"
-                                : lead.status === "Follow-up"
-                                ? "bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800"
-                                : "bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-400 border border-teal-300 dark:border-teal-800"
-                            }`}
-                          >
-                            {lead.status === "Converted" && <CheckCircle2 className="w-3.5 h-3.5" />}
-                            {lead.status}
-                          </span>
-                          <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg border ${
-                            isDark ? "text-slate-400 bg-slate-900 border-slate-800" : "text-slate-600 bg-white border-slate-200"
-                          }`}>
-                            {lead.source || "Ad Click"}
-                          </span>
+                {/* Leads List — Horizontal Row Layout */}
+                <div className="flex flex-col gap-3.5">
+                  {filteredMyLeads.map((lead) => {
+                    const lastNote = lead.callNotes.length > 0 ? lead.callNotes[lead.callNotes.length - 1] : null;
+                    return (
+                      <div
+                        key={lead.id}
+                        className={`border rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 hover:border-slate-400 dark:hover:border-slate-700 transition-all shadow-xs ${bgInnerCard}`}
+                      >
+                        {/* LEFT COLUMN: Badges + Student & Guardian Details */}
+                        <div className="lg:w-1/3 shrink-0 space-y-2 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-0.5 rounded-full ${
+                                lead.status === "Converted"
+                                  ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"
+                                  : lead.status === "Follow-up"
+                                  ? "bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800"
+                                  : "bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-400 border border-teal-300 dark:border-teal-800"
+                              }`}
+                            >
+                              {lead.status === "Converted" && <CheckCircle2 className="w-3.5 h-3.5" />}
+                              {lead.status}
+                            </span>
+                            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-lg border ${
+                              isDark ? "text-slate-400 bg-slate-900 border-slate-800" : "text-slate-600 bg-white border-slate-200"
+                            }`}>
+                              {lead.source || "Ad Click"}
+                            </span>
+                          </div>
+
+                          <div>
+                            <h3 className={`text-base sm:text-lg font-bold ${textHeading} truncate`}>{lead.studentName}</h3>
+                            <p className={`text-xs ${textSub}`}>
+                              {t.parentName}: <span className={`font-semibold ${textHeading}`}>{lead.parentName}</span>
+                            </p>
+                            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 pt-0.5">
+                              <PhoneCall className="w-3.5 h-3.5" />
+                              <a href={`tel:${lead.phone}`} className="hover:underline">{lead.phone}</a>
+                            </p>
+                          </div>
                         </div>
 
-                        {/* Student Details */}
-                        <div className="mt-4 space-y-1">
-                          <h3 className={`text-lg font-bold ${textHeading}`}>{lead.studentName}</h3>
-                          <p className={`text-xs ${textSub}`}>
-                            {t.parentName}: <span className={`font-semibold ${textHeading}`}>{lead.parentName}</span>
-                          </p>
-                          <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 pt-1">
-                            <PhoneCall className="w-3.5 h-3.5" />
-                            <a href={`tel:${lead.phone}`} className="hover:underline">{lead.phone}</a>
-                          </p>
-                          <div className="text-xs font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/50 px-3 py-1.5 rounded-xl mt-2">
+                        {/* MIDDLE COLUMN: Course Badge + Last Call Note Snippet */}
+                        <div className={`lg:w-2/5 flex-1 space-y-2 border-t lg:border-t-0 lg:border-l ${isDark ? "border-slate-800" : "border-slate-200"} pt-3 lg:pt-0 lg:pl-4 min-w-0`}>
+                          <div className="text-xs font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/50 px-3 py-1 rounded-xl inline-block max-w-full truncate">
                             🎓 {lead.courseInterest}
                           </div>
-                        </div>
 
-                        {/* Call Notes History */}
-                        <div className={`mt-4 p-3.5 rounded-2xl border space-y-2 max-h-36 overflow-y-auto ${bgSubCard}`}>
-                          <div className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 ${textSub}`}>
-                            <MessageSquare className="w-3 h-3 text-emerald-500" />
-                            {t.callNotesHistory} ({lead.callNotes.length})
+                          <div className={`p-2.5 rounded-xl border space-y-1 ${bgSubCard}`}>
+                            <div className={`text-[10px] font-bold uppercase tracking-wider flex items-center justify-between ${textSub}`}>
+                              <span className="flex items-center gap-1">
+                                <MessageSquare className="w-3 h-3 text-emerald-500" />
+                                {t.callNotesHistory} ({lead.callNotes.length})
+                              </span>
+                              {lastNote && <span className="text-[9px] opacity-75">{lastNote.date}</span>}
+                            </div>
+                            {lastNote ? (
+                              <p className={`text-xs ${isDark ? "text-slate-200" : "text-slate-800"} line-clamp-2 italic`}>
+                                "{lastNote.note}"
+                              </p>
+                            ) : (
+                              <p className={`text-xs italic ${textSub}`}>{t.noCallNotes}</p>
+                            )}
                           </div>
-                          {lead.callNotes.length === 0 ? (
-                            <p className={`text-xs italic ${textSub}`}>{t.noCallNotes}</p>
-                          ) : (
-                            lead.callNotes.map((note, idx) => (
-                              <div key={idx} className={`text-xs p-2 rounded-xl border space-y-0.5 ${
-                                isDark ? "text-slate-200 bg-slate-950 border-slate-800/60" : "text-slate-800 bg-slate-50 border-slate-200"
-                              }`}>
-                                <div className={`flex justify-between text-[10px] ${textSub}`}>
-                                  <span>{note.agent}</span>
-                                  <span>{note.date}</span>
-                                </div>
-                                <p>{note.note}</p>
-                              </div>
-                            ))
-                          )}
+                        </div>
+
+                        {/* RIGHT COLUMN: Horizontal Action Buttons */}
+                        <div className={`lg:w-auto shrink-0 border-t lg:border-t-0 lg:border-l ${isDark ? "border-slate-800" : "border-slate-200"} pt-3 lg:pt-0 lg:pl-4 flex flex-wrap lg:flex-nowrap items-center gap-2`}>
+                          <button
+                            onClick={() => setSelectedLeadForNote(lead)}
+                            className={`inline-flex items-center justify-center gap-1.5 border text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer ${
+                              isDark
+                                ? "bg-slate-900 border-slate-700 text-white hover:bg-slate-800"
+                                : "bg-white border-slate-300 text-slate-800 hover:bg-slate-100"
+                            }`}
+                          >
+                            <Plus className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>{t.addCallNoteBtn}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setGuardianNameInput(lead.parentName || "");
+                              setGuardianPhoneInput(lead.phone || "");
+                              setStudentNameInput(lead.studentName || "");
+                              setActiveTab("guardian");
+                              showApiToast(`📋 Pre-filled Stage 1 Registration for ${lead.studentName}`, "info");
+                            }}
+                            className={`inline-flex items-center justify-center gap-1.5 border text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer ${
+                              isDark
+                                ? "bg-teal-950/60 border-teal-800/80 text-teal-300 hover:bg-teal-900"
+                                : "bg-teal-50 border-teal-300 text-teal-800 hover:bg-teal-100"
+                            }`}
+                          >
+                            <UserPlus className="w-3.5 h-3.5 text-teal-500" />
+                            <span>{t.createGuardianBtn}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setSelectedLeadForPayment(lead);
+                              setPaymentWhatsappNumber(lead.phone || "");
+                              if (lead.courseInterest) {
+                                const query = lead.courseInterest.toLowerCase();
+                                const matchedCourse = courses.find(
+                                  (c) => c.title.toLowerCase().includes(query) || query.includes(c.title.toLowerCase()) || (c.category && c.category.toLowerCase().includes(query))
+                                ) || courses[0];
+                                if (matchedCourse) {
+                                  const cId = String(matchedCourse.id);
+                                  setPaymentSelectedCourseId(cId);
+                                  const availBatches = getBatchesForCourse(cId, matchedCourse.title, batches);
+                                  const matchedBatch = availBatches.find(
+                                    (b) => b.name.toLowerCase().includes(query) || query.includes(b.name.toLowerCase())
+                                  ) || availBatches[0] || batches[0];
+                                  if (matchedBatch) setPaymentSelectedBatchId(matchedBatch.id);
+                                }
+                              }
+                              setActiveTab("payments");
+                            }}
+                            className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer ${
+                              lead.paymentConfirmed
+                                ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"
+                                : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs"
+                            }`}
+                          >
+                            <CreditCard className="w-3.5 h-3.5" />
+                            <span>{lead.paymentConfirmed ? "Paid ✓" : t.confirmPaymentBtn}</span>
+                          </button>
                         </div>
                       </div>
-
-                      {/* Action Buttons */}
-                      <div className={`pt-3 border-t flex flex-wrap gap-2 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-                        <button
-                          onClick={() => setSelectedLeadForNote(lead)}
-                          className={`flex-1 inline-flex items-center justify-center gap-1.5 border text-xs font-bold py-2 px-2.5 rounded-xl transition-all cursor-pointer ${
-                            isDark
-                              ? "bg-slate-900 border-slate-700 text-white hover:bg-slate-800"
-                              : "bg-white border-slate-300 text-slate-800 hover:bg-slate-100"
-                          }`}
-                        >
-                          <Plus className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>{t.addCallNoteBtn}</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setGuardianNameInput(lead.parentName || "");
-                            setGuardianPhoneInput(lead.phone || "");
-                            setStudentNameInput(lead.studentName || "");
-                            setActiveTab("guardian");
-                            showApiToast(`📋 Pre-filled Stage 1 Registration for ${lead.studentName}`, "info");
-                          }}
-                          className={`inline-flex items-center justify-center gap-1.5 border text-xs font-bold py-2 px-2.5 rounded-xl transition-all cursor-pointer ${
-                            isDark
-                              ? "bg-teal-950/60 border-teal-800/80 text-teal-300 hover:bg-teal-900"
-                              : "bg-teal-50 border-teal-300 text-teal-800 hover:bg-teal-100"
-                          }`}
-                        >
-                          <UserPlus className="w-3.5 h-3.5 text-teal-500" />
-                          <span>{t.createGuardianBtn}</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setSelectedLeadForPayment(lead);
-                            setPaymentWhatsappNumber(lead.phone || "");
-                            const matchedBatch = batches.find((b) => b.courseTitle === lead.courseInterest) || batches[0];
-                            if (matchedBatch) setPaymentSelectedBatchId(matchedBatch.id);
-                            setActiveTab("payments");
-                          }}
-                          className={`inline-flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-2.5 rounded-xl transition-all cursor-pointer ${
-                            lead.paymentConfirmed
-                              ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"
-                              : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-xs"
-                          }`}
-                        >
-                          <CreditCard className="w-3.5 h-3.5" />
-                          <span>{lead.paymentConfirmed ? "Paid ✓" : t.confirmPaymentBtn}</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1593,8 +1892,21 @@ export default function Employee() {
                           if (foundLead) {
                             setSelectedLeadForPayment(foundLead);
                             setPaymentWhatsappNumber(foundLead.phone || "");
-                            const matchedBatch = batches.find((b) => b.courseTitle === foundLead.courseInterest) || batches[0];
-                            if (matchedBatch) setPaymentSelectedBatchId(matchedBatch.id);
+                            if (foundLead.courseInterest) {
+                              const query = foundLead.courseInterest.toLowerCase();
+                              const matchedCourse = courses.find(
+                                (c) => c.title.toLowerCase().includes(query) || query.includes(c.title.toLowerCase()) || (c.category && c.category.toLowerCase().includes(query))
+                              ) || courses[0];
+                              if (matchedCourse) {
+                                const cId = String(matchedCourse.id);
+                                setPaymentSelectedCourseId(cId);
+                                const avail = getBatchesForCourse(cId, matchedCourse.title, batches);
+                                const matchedBatch = avail.find(
+                                  (b) => b.name.toLowerCase().includes(query) || query.includes(b.name.toLowerCase())
+                                ) || avail[0] || batches[0];
+                                if (matchedBatch) setPaymentSelectedBatchId(matchedBatch.id);
+                              }
+                            }
                           } else {
                             const foundGuardian = guardianAccounts.find((g) => g.id === val);
                             if (foundGuardian) {
@@ -1609,9 +1921,19 @@ export default function Employee() {
                                 date: foundGuardian.createdAt,
                               });
                               setPaymentWhatsappNumber(foundGuardian.guardianPhone);
-                              if (foundGuardian.batchId) setPaymentSelectedBatchId(foundGuardian.batchId);
+                              if (foundGuardian.batchId) {
+                                const targetB = batches.find((b) => b.id === foundGuardian.batchId);
+                                if (targetB) {
+                                  const cId = String(targetB.courseId);
+                                  setPaymentSelectedCourseId(cId);
+                                  setPaymentSelectedBatchId(targetB.id);
+                                }
+                              }
                             } else {
                               setSelectedLeadForPayment(null);
+                              setPaymentWhatsappNumber("");
+                              setPaymentSelectedCourseId("");
+                              setPaymentSelectedBatchId("");
                             }
                           }
                         }}
@@ -1637,20 +1959,53 @@ export default function Employee() {
                       </select>
                     </div>
 
-                    <div>
-                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectCourseBatchLabel}</label>
-                      <select
-                        required
-                        value={paymentSelectedBatchId}
-                        onChange={(e) => setPaymentSelectedBatchId(e.target.value)}
-                        className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer ${inputBg}`}
-                      >
-                        {batches.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name} - {b.courseTitle} ({b.schedule})
-                          </option>
-                        ))}
-                      </select>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectCourseLabel}</label>
+                        <select
+                          required
+                          value={paymentSelectedCourseId}
+                          onChange={(e) => {
+                            const cId = e.target.value;
+                            setPaymentSelectedCourseId(cId);
+                            const courseObj = courses.find((c) => String(c.id) === cId);
+                            const avail = getBatchesForCourse(cId, courseObj?.title, batches);
+                            setPaymentSelectedBatchId(avail[0]?.id || "");
+                          }}
+                          className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer ${inputBg}`}
+                        >
+                          <option value="">{t.selectCourseFirstPlaceholder}</option>
+                          {courses.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectBatchLabel}</label>
+                        <select
+                          required
+                          disabled={!paymentSelectedCourseId}
+                          value={paymentSelectedBatchId}
+                          onChange={(e) => setPaymentSelectedBatchId(e.target.value)}
+                          className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer ${inputBg} ${
+                            !paymentSelectedCourseId ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
+                        >
+                          <option value="">{!paymentSelectedCourseId ? t.selectCourseFirstPlaceholder : t.selectBatchPlaceholder}</option>
+                          {(() => {
+                            const courseObj = courses.find((c) => String(c.id) === paymentSelectedCourseId);
+                            const filtered = getBatchesForCourse(paymentSelectedCourseId, courseObj?.title, batches);
+                            return filtered.map((b) => (
+                              <option key={b.id} value={b.id}>
+                                {b.name}{b.schedule ? ` (${b.schedule})` : ""}
+                              </option>
+                            ));
+                          })()}
+                        </select>
+                      </div>
                     </div>
 
                     <div>
@@ -1805,6 +2160,23 @@ export default function Employee() {
                     <span>{t.registerGuardianFormTitle}</span>
                   </h3>
 
+                  {/* Confirmed Buyers / Converted Leads Auto-Fill Dropdown */}
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectPaidGuardianLabel}</label>
+                    <select
+                      value={selectedConfirmedLeadId}
+                      onChange={(e) => handleSelectConfirmedLead(e.target.value)}
+                      className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold border-2 border-emerald-500/40 ${inputBg}`}
+                    >
+                      <option value="">{t.customWalkinOption}</option>
+                      {confirmedBuyersList.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.guardianName} - {b.studentName} ({b.phone})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.guardianNameLabel}</label>
@@ -1843,18 +2215,63 @@ export default function Employee() {
                     </div>
 
                     <div>
-                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.assignBatchLabel}</label>
-                      <select
-                        value={selectedBatchId}
-                        onChange={(e) => setSelectedBatchId(e.target.value)}
+                      <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.setPasswordLabel}</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. pass8392 (Leave blank for auto-generated)"
+                        value={guardianPasswordInput}
+                        onChange={(e) => setGuardianPasswordInput(e.target.value)}
                         className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold ${inputBg}`}
-                      >
-                        {batches.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectCourseLabel}</label>
+                        <select
+                          required
+                          value={guardianSelectedCourseId}
+                          onChange={(e) => {
+                            const cId = e.target.value;
+                            setGuardianSelectedCourseId(cId);
+                            const courseObj = courses.find((c) => String(c.id) === cId);
+                            const avail = getBatchesForCourse(cId, courseObj?.title, batches);
+                            setSelectedBatchId(avail[0]?.id || "");
+                          }}
+                          className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold ${inputBg}`}
+                        >
+                          <option value="">{t.selectCourseFirstPlaceholder}</option>
+                          {courses.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectBatchLabel}</label>
+                        <select
+                          required
+                          disabled={!guardianSelectedCourseId}
+                          value={selectedBatchId}
+                          onChange={(e) => setSelectedBatchId(e.target.value)}
+                          className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold ${inputBg} ${
+                            !guardianSelectedCourseId ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
+                        >
+                          <option value="">{!guardianSelectedCourseId ? t.selectCourseFirstPlaceholder : t.selectBatchPlaceholder}</option>
+                          {(() => {
+                            const courseObj = courses.find((c) => String(c.id) === guardianSelectedCourseId);
+                            const filtered = getBatchesForCourse(guardianSelectedCourseId, courseObj?.title, batches);
+                            return filtered.map((b) => (
+                              <option key={b.id} value={b.id}>
+                                {b.name}{b.schedule ? ` (${b.schedule})` : ""}
+                              </option>
+                            ));
+                          })()}
+                        </select>
+                      </div>
                     </div>
                   </div>
 
@@ -2049,118 +2466,7 @@ export default function Employee() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════════════
-         MODAL 2: CONFIRM PAYMENT MODAL
-      ═══════════════════════════════════════════════════════════════════════════ */}
-      {selectedLeadForPayment && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className={`border rounded-3xl max-w-lg w-full p-6 relative shadow-2xl space-y-4 ${modalBg}`}>
-            <button
-              onClick={() => setSelectedLeadForPayment(null)}
-              className={`absolute top-4 right-4 ${textSub} hover:${textHeading} cursor-pointer`}
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-              <ShieldCheck className="w-6 h-6" />
-              <h3 className={`text-lg font-bold ${textHeading}`}>Payment & Enrollment Confirmation</h3>
-            </div>
-            <p className={`text-xs ${textSub}`}>
-              Student: <strong className={textHeading}>{selectedLeadForPayment.studentName}</strong> ({selectedLeadForPayment.courseInterest})
-            </p>
 
-            <form onSubmit={handleConfirmPayment} className="space-y-3.5">
-              {/* Batch Selection Dropdown */}
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.selectCourseBatchLabel}</label>
-                <select
-                  required
-                  value={paymentSelectedBatchId}
-                  onChange={(e) => setPaymentSelectedBatchId(e.target.value)}
-                  className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer ${inputBg}`}
-                >
-                  {batches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name} - {b.courseTitle} ({b.schedule})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* WhatsApp Number Input Field */}
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.whatsappNumberLabel}</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. +8801711223344"
-                    value={paymentWhatsappNumber}
-                    onChange={(e) => setPaymentWhatsappNumber(e.target.value)}
-                    className={`w-full px-4 py-2.5 pl-9 rounded-xl text-xs font-mono font-bold text-emerald-400 ${inputBg}`}
-                  />
-                  <MessageSquare className="w-4 h-4 text-emerald-500 absolute left-3 top-3 pointer-events-none" />
-                </div>
-                <p className={`text-[10px] ${textSub} mt-1`}>Direct automated messaging will be enabled on Teacher Portal.</p>
-              </div>
-
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.paymentMethodLabel}</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {["bKash", "Nagad", "Bank", "Cash"].map((m) => (
-                    <button
-                      type="button"
-                      key={m}
-                      onClick={() => setPaymentMethod(m)}
-                      className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                        paymentMethod === m
-                          ? "bg-emerald-500 text-white border-emerald-500"
-                          : isDark
-                          ? "bg-slate-950 text-slate-400 border-slate-800"
-                          : "bg-slate-100 text-slate-600 border-slate-300"
-                      }`}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.amountPaidLabel}</label>
-                  <input
-                    type="number"
-                    required
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold ${inputBg}`}
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-xs font-bold mb-1.5 ${textLabel}`}>{t.trxIdLabel}</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. BK928301X"
-                    value={paymentTrxId}
-                    onChange={(e) => setPaymentTrxId(e.target.value)}
-                    className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold ${inputBg}`}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-emerald-500 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-600 transition-all text-xs cursor-pointer shadow-lg"
-              >
-                {t.confirmAndEnrollBtn}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ── API STATUS TOAST NOTIFICATION ── */}
       {apiToast && (

@@ -601,98 +601,193 @@ export const dictionary = {
   }
 };
 
-export default function TeacherPage() {
+function TeacherPageContent() {
   /* ── LANGUAGE STATE (BN / EN) ── */
   const [currentLang, setCurrentLang] = useState<"bn" | "en">("bn");
   const t = dictionary[currentLang];
 
-  /* ── DYNAMIC LOGGED-IN TEACHER SESSION ── */
+  /* ── DYNAMIC LOGGED-IN TEACHER SESSION (SAFE ROLE SWITCHER PREVIEW FALLBACK) ── */
   const [loggedTeacherName, setLoggedTeacherName] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      const userRaw = localStorage.getItem("learnops_user");
-      if (userRaw) {
-        try {
+      try {
+        const userSessionRaw = localStorage.getItem("learnops_user_session");
+        if (userSessionRaw) {
+          const parsed = JSON.parse(userSessionRaw);
+          if (parsed?.name) return parsed.name;
+        }
+
+        const userRaw = localStorage.getItem("learnops_user");
+        if (userRaw) {
           const u = JSON.parse(userRaw);
-          if (u.name) return u.name;
-        } catch (e) {}
+          if (u?.name) return u.name;
+        }
+      } catch (e) {
+        console.warn("Failed to parse teacher session, using demo fallback", e);
       }
     }
     return "Rahela Khatun (Lead Mentor)";
   });
 
-  /* ── BATCH & ROSTER SYNC FROM BATCH STORE & GUARDIAN STORE ── */
-  const [batches, setBatches] = useState<BatchItem[]>(() => getStoredBatches());
+  /* ── SAFE STATE INITIALIZATIONS WITH FALLBACKS ── */
+  const [batches, setBatches] = useState<BatchItem[]>(() => {
+    try {
+      return getStoredBatches() || [];
+    } catch {
+      return [];
+    }
+  });
 
   // Function to build unified student list from live guardianStore + batchStore
   const buildStudentsFromBatches = (batchList: BatchItem[]): Student[] => {
     const list: Student[] = [];
 
-    // 1. Include registered guardians from guardianStore
-    const storedGuardians = getStoredGuardians();
-    storedGuardians.forEach((g, idx) => {
-      list.push({
-        id: g.id,
-        name: { bn: g.studentName, en: g.studentName },
-        rollNo: String(idx + 1).padStart(2, "0"),
-        batch: { bn: g.batchName, en: g.batchName },
-        batchId: g.batchId,
-        courseId: 1,
-        phone: g.guardianPhone,
-        whatsappNumber: g.guardianPhone,
-        attendanceStatus: "Present",
-        submittedHwCount: 4,
-        totalHwCount: 5,
-        progressPercent: g.paymentConfirmed ? 95 : 75,
-      });
-    });
-
-    // 2. Include roster items from batches
-    batchList.forEach((b, bIdx) => {
-      b.roster.forEach((r) => {
-        if (!list.some((s) => s.id === r.id || s.phone === r.phone)) {
+    try {
+      // 1. Include registered guardians from guardianStore
+      const storedGuardians = getStoredGuardians() || [];
+      (storedGuardians || []).forEach((g, idx) => {
+        if (g && g.studentName) {
           list.push({
-            id: r.id,
-            name: { bn: r.name, en: r.name },
-            rollNo: r.rollNo || String(list.length + 1).padStart(2, "0"),
-            batch: { bn: b.name, en: b.name },
-            batchId: b.id,
-            courseId: bIdx + 1,
-            phone: r.phone,
-            whatsappNumber: r.whatsappNumber || r.phone,
+            id: g.id || `grd-${idx}`,
+            name: { bn: g.studentName, en: g.studentName },
+            rollNo: String(idx + 1).padStart(2, "0"),
+            batch: { bn: g.batchName || "ব্যাচ", en: g.batchName || "Batch" },
+            batchId: g.batchId || "batch-101",
+            courseId: 1,
+            phone: g.guardianPhone || "",
+            whatsappNumber: g.guardianPhone || "",
             attendanceStatus: "Present",
-            submittedHwCount: 3,
-            totalHwCount: 4,
-            progressPercent: r.attendancePercentage || 85,
+            submittedHwCount: 4,
+            totalHwCount: 5,
+            progressPercent: g.paymentConfirmed ? 95 : 75,
           });
         }
       });
-    });
+
+      // 2. Include roster items from batches
+      (batchList || []).forEach((b, bIdx) => {
+        (b?.roster || []).forEach((r) => {
+          if (r && !list.some((s) => s.id === r.id || (r.phone && s.phone === r.phone))) {
+            list.push({
+              id: r.id || `std-${bIdx}`,
+              name: { bn: r.name || "শিক্ষার্থী", en: r.name || "Student" },
+              rollNo: r.rollNo || String(list.length + 1).padStart(2, "0"),
+              batch: { bn: b.name || "ব্যাচ", en: b.name || "Batch" },
+              batchId: b.id || "batch-101",
+              courseId: bIdx + 1,
+              phone: r.phone || "",
+              whatsappNumber: r.whatsappNumber || r.phone || "",
+              attendanceStatus: "Present",
+              submittedHwCount: 3,
+              totalHwCount: 4,
+              progressPercent: r.attendancePercentage || 85,
+            });
+          }
+        });
+      });
+    } catch (err) {
+      console.warn("Error building students from batches, using default roster:", err);
+    }
 
     // 3. Fallback to initial mock list if empty
     if (list.length === 0) {
-      return INITIAL_STUDENTS;
+      return INITIAL_STUDENTS || [];
     }
 
     return list;
   };
 
-  /* ── STATES ── */
-  const [students, setStudents] = useState<Student[]>(() => buildStudentsFromBatches(getStoredBatches()));
-  const [homeworks, setHomeworks] = useState<HomeworkSubmission[]>(INITIAL_HOMEWORKS);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  /* ── SAFE STATES ── */
+  const [students, setStudents] = useState<Student[]>(() => {
+    try {
+      return buildStudentsFromBatches(getStoredBatches() || []);
+    } catch {
+      return INITIAL_STUDENTS || [];
+    }
+  });
+
+  const [homeworks, setHomeworks] = useState<HomeworkSubmission[]>(() => INITIAL_HOMEWORKS || []);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => INITIAL_NOTIFICATIONS || []);
   const [activeTab, setActiveTab] = useState<"students" | "queue" | "assign" | "attendance" | "stats" | "notifs">("students");
 
-  // Subscribe to live batch store updates
+  // Master Try/Catch Guard for useEffect data fetching & real-time listeners
   useEffect(() => {
-    const initialBatches = getStoredBatches();
-    setBatches(initialBatches);
-    setStudents(buildStudentsFromBatches(initialBatches));
+    let isSubscribed = true;
 
-    const unsub = subscribeToBatchUpdates((updatedBatches) => {
-      setBatches(updatedBatches);
-      setStudents(buildStudentsFromBatches(updatedBatches));
-    });
-    return unsub;
+    async function initializeTeacherPortal() {
+      try {
+        const initialBatches = getStoredBatches() || [];
+        if (isSubscribed) {
+          setBatches(initialBatches || []);
+          setStudents(buildStudentsFromBatches(initialBatches || []));
+        }
+
+        // Fetch live confirmed enrollments from Supabase
+        const { data: dbEnrollments, error: dbErr } = await supabase
+          .from("enrollments")
+          .select("*")
+          .eq("payment_status", "Confirmed");
+
+        if (dbErr) {
+          console.warn("Teacher portal Supabase enrollments fetch notice:", dbErr.message);
+        } else if (dbEnrollments && dbEnrollments.length > 0 && isSubscribed) {
+          setStudents((prev) => {
+            const updated = [...(prev || [])];
+            dbEnrollments.forEach((e: any, idx: number) => {
+              if (e && !updated.some((s) => s.phone === e.phone || s.id === e.id)) {
+                updated.push({
+                  id: e.id || `enr-${Date.now()}-${idx}`,
+                  name: { bn: e.student_name || "শিক্ষার্থী", en: e.student_name || "Student" },
+                  rollNo: String(updated.length + 1).padStart(2, "0"),
+                  batch: { bn: e.batch_name || "ব্যাচ ০১", en: e.batch_name || "Batch 01" },
+                  batchId: e.batch_id || "batch-101",
+                  courseId: 1,
+                  phone: e.phone || "",
+                  whatsappNumber: e.phone || "",
+                  attendanceStatus: "Present",
+                  submittedHwCount: 0,
+                  totalHwCount: 5,
+                  progressPercent: 100,
+                });
+              }
+            });
+            return updated;
+          });
+        }
+      } catch (err) {
+        console.warn("Teacher portal fetch error (handled safely with fallbacks):", err);
+        if (isSubscribed) {
+          setBatches((prev) => (prev && prev.length > 0 ? prev : getStoredBatches() || []));
+          setStudents((prev) => (prev && prev.length > 0 ? prev : INITIAL_STUDENTS || []));
+        }
+      }
+    }
+
+    initializeTeacherPortal();
+
+    let unsubBatch = () => {};
+    let unsubGuardian = () => {};
+
+    try {
+      unsubBatch = subscribeToBatchUpdates((updatedBatches) => {
+        if (!isSubscribed) return;
+        setBatches(updatedBatches || []);
+        setStudents(buildStudentsFromBatches(updatedBatches || []));
+      });
+
+      unsubGuardian = subscribeToGuardianUpdates(() => {
+        if (!isSubscribed) return;
+        const currentBatches = getStoredBatches() || [];
+        setStudents(buildStudentsFromBatches(currentBatches || []));
+      });
+    } catch (subErr) {
+      console.warn("Teacher portal subscription error:", subErr);
+    }
+
+    return () => {
+      isSubscribed = false;
+      unsubBatch();
+      unsubGuardian();
+    };
   }, []);
 
   // WhatsApp 1-Click Direct Messaging Helper
@@ -995,11 +1090,11 @@ export default function TeacherPage() {
                 <select
                   value={selectedCourseId}
                   onChange={(e) => setSelectedCourseId(e.target.value === "all" ? "all" : Number(e.target.value))}
-                  className="bg-white text-amber-950 font-bold text-xs px-3 py-1.5 rounded-xl border-none focus:ring-2 focus:ring-amber-300 outline-none cursor-pointer max-w-[200px] sm:max-w-[240px] truncate"
+                  className="bg-slate-900 text-emerald-300 border border-emerald-500/40 font-extrabold text-xs px-3 py-1.5 rounded-xl outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer max-w-[200px] sm:max-w-[240px] truncate shadow-inner"
                   style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}
                 >
                   {ASSIGNED_COURSES.map((course) => (
-                    <option key={course.id} value={course.id} className="text-foreground">
+                    <option key={course.id} value={course.id} className="bg-slate-900 text-emerald-300 font-bold">
                       {getLocalizedText(course.title, currentLang)}
                     </option>
                   ))}
@@ -1332,7 +1427,24 @@ export default function TeacherPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
-                  {filteredStudents.map((std) => (
+                  {(filteredStudents || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 px-4 text-center">
+                        <div className="max-w-md mx-auto space-y-3">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto border border-amber-500/20">
+                            <Users className="w-6 h-6" />
+                          </div>
+                          <h3 className="text-base font-bold text-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
+                            {currentLang === 'bn' ? "এই ব্যাচে বর্তমানে কোনো শিক্ষার্থী নথিভুক্ত নেই" : "No students currently enrolled in this batch"}
+                          </h3>
+                          <p className="text-xs text-muted-foreground" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
+                            {currentLang === 'bn' ? "সেলস পোর্টাল থেকে পেমেন্ট নিশ্চিতকরণের পর নতুন শিক্ষার্থীরা এখানে যুক্ত হবে।" : "Newly confirmed students will populate here automatically upon payment verification."}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    (filteredStudents || []).map((std) => (
                     <tr key={std.id} className="hover:bg-muted/30 transition-colors">
                       
                       {/* Name & Roll */}
@@ -1415,15 +1527,9 @@ export default function TeacherPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
-
-              {filteredStudents.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground text-sm" style={{ fontFamily: currentLang === 'bn' ? "'Hind Siliguri', sans-serif" : "inherit" }}>
-                  {t.noStudentsFound}
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -2237,5 +2343,61 @@ export default function TeacherPage() {
       )}
 
     </div>
+  );
+}
+
+/* ── ERROR BOUNDARY CLASS COMPONENT ── */
+class TeacherErrorBoundary extends React.Component<
+  { children: React.ReactNode; isEnglish: boolean },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error("TeacherPage ErrorBoundary caught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-6">
+          <div className="bg-card border border-border rounded-3xl p-8 max-w-md w-full text-center space-y-4 shadow-xl">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto border border-red-500/20">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h2 className="text-lg font-bold text-foreground">
+              {this.props.isEnglish ? "Teacher Portal Notice" : "শিক্ষক পোর্টাল নোটিশ"}
+            </h2>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {this.props.isEnglish
+                ? "An issue occurred while loading teacher portal data. Please refresh or contact support."
+                : "আপনার পোর্টাল ডেটা লোড করার সময় একটি সাময়িক সমস্যা হয়েছে। অনুগ্রহ করে পেজ রিফ্রেশ করুন।"}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-5 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs cursor-pointer shadow-md hover:bg-amber-500 transition-all"
+            >
+              {this.props.isEnglish ? "Reload Portal" : "পোর্টাল রিফ্রেশ করুন"}
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function TeacherPage() {
+  return (
+    <TeacherErrorBoundary isEnglish={false}>
+      <TeacherPageContent />
+    </TeacherErrorBoundary>
   );
 }

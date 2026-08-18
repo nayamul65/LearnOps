@@ -24,10 +24,10 @@ export function getStoredAttendance(): AttendanceRecord[] {
   }
 }
 
-export function getAttendanceRate(studentId?: string): number {
+export function getAttendanceRate(studentId?: string): number | null {
   const records = getStoredAttendance();
   const filtered = studentId ? records.filter((r) => r.studentId === studentId) : records;
-  if (filtered.length === 0) return 94; // default if no records yet
+  if (filtered.length === 0) return null;
   const present = filtered.filter((r) => r.status === "Present" || r.status === "Late").length;
   return Math.round((present / filtered.length) * 100);
 }
